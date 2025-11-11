@@ -8,9 +8,13 @@ import StickyRecommendations from './components/StickyRecommendations/StickyReco
 import SearchBar from './components/SearchBar/SearchBar';
 import './App.css';
 
+type PickerMode = 'team' | 'enemy';
+
 function App() {
-  const [selectedEnemies, setSelectedEnemies] = useState<Hero[]>([]);
+  const [yourTeam, setYourTeam] = useState<Hero[]>([]);
+  const [enemyTeam, setEnemyTeam] = useState<Hero[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pickerMode, setPickerMode] = useState<PickerMode>('enemy');
 
   const allHeroes = heroData.heroes as Hero[];
   const junglers = useMemo(() => getJunglers(allHeroes), []);
@@ -23,12 +27,25 @@ function App() {
   );
 
   const recommendations = useMemo(
-    () => recommendJunglers(junglers, selectedEnemies),
-    [junglers, selectedEnemies]
+    () => recommendJunglers(junglers, yourTeam, enemyTeam, [], 'Mythic'),
+    [junglers, yourTeam, enemyTeam]
   );
 
+  const handleSelectTeammate = (hero: Hero) => {
+    setYourTeam(prev => {
+      const isSelected = prev.some(h => h.id === hero.id);
+      if (isSelected) {
+        return prev.filter(h => h.id !== hero.id);
+      }
+      if (prev.length >= 4) {
+        return prev;
+      }
+      return [...prev, hero];
+    });
+  };
+
   const handleSelectEnemy = (hero: Hero) => {
-    setSelectedEnemies(prev => {
+    setEnemyTeam(prev => {
       const isSelected = prev.some(h => h.id === hero.id);
       if (isSelected) {
         return prev.filter(h => h.id !== hero.id);
@@ -40,34 +57,68 @@ function App() {
     });
   };
 
+  const currentPickerProps = pickerMode === 'team'
+    ? { selectedEnemies: yourTeam, onSelectEnemy: handleSelectTeammate }
+    : { selectedEnemies: enemyTeam, onSelectEnemy: handleSelectEnemy };
+
   return (
     <div className="app">
       <header className="header">
         <div className="headerTop">
-          <h1 className="logo">Retribution</h1>
-          <CompactEnemyTeam
-            enemies={selectedEnemies}
-            onRemove={handleSelectEnemy}
-          />
+          {yourTeam.length === 0 && enemyTeam.length === 0 ? (
+            <h1 className="logo">Retribution</h1>
+          ) : (
+            <div className="teamsContainer">
+              <CompactEnemyTeam
+                enemies={yourTeam}
+                onRemove={handleSelectTeammate}
+                maxSlots={4}
+                label="Your Team"
+                emptyText="Select your team"
+              />
+              <CompactEnemyTeam
+                enemies={enemyTeam}
+                onRemove={handleSelectEnemy}
+                maxSlots={5}
+                label="Enemy Team"
+                emptyText="Select enemies"
+              />
+            </div>
+          )}
         </div>
         <StickyRecommendations
           recommendations={recommendations}
-          selectedEnemies={selectedEnemies}
+          selectedEnemies={enemyTeam}
         />
       </header>
 
       <main className="main">
+        <div className="pickerModeSelector">
+          <button
+            className={`modeButton ${pickerMode === 'team' ? 'active' : ''}`}
+            onClick={() => setPickerMode('team')}
+          >
+            Your Team ({yourTeam.length}/4)
+          </button>
+          <button
+            className={`modeButton ${pickerMode === 'enemy' ? 'active' : ''}`}
+            onClick={() => setPickerMode('enemy')}
+          >
+            Enemy Team ({enemyTeam.length}/5)
+          </button>
+        </div>
+
         <div className="searchSection">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
           />
         </div>
-        <div className="heroSection">
+
+        <div className="pickerSection">
           <EnemyPicker
             heroes={filteredHeroes}
-            selectedEnemies={selectedEnemies}
-            onSelectEnemy={handleSelectEnemy}
+            {...currentPickerProps}
           />
         </div>
       </main>

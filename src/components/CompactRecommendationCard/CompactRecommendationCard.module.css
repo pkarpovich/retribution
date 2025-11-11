@@ -37,6 +37,21 @@
   z-index: 1;
 }
 
+.recommendationBadge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1rem;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .heroImage {
   width: 56px;
   height: 56px;
@@ -143,4 +158,156 @@
   border-radius: 0.25rem;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.7);
+}
+
+.recommendationLevel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.junglerType {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.typeLabel {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.typeValue {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  background: rgba(100, 108, 255, 0.2);
+  border-radius: 0.25rem;
+}
+
+.scoreSection {
+  margin-top: 0.25rem;
+}
+
+.totalScore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scoreLabel {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.scoreValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #646cff;
+}
+
+.breakdown {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breakdownTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.breakdownItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.positive {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.negative {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.strengths {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.strengthsTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4caf50;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.strengthsList {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.strengthItem {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.25rem;
+}
+
+.warnings {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.warningsTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f44336;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.warningsList {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.warningItem {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.warningItem.high {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.warningItem.medium {
+  color: #ff9800;
+  font-weight: 500;
+}
+
+.warningItem.low {
+  color: rgba(255, 255, 255, 0.6);
 }

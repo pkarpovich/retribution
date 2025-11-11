@@ -1,6 +1,9 @@
 export type HeroRole = 'Tank' | 'Fighter' | 'Assassin' | 'Mage' | 'Marksman' | 'Support';
 export type HeroLane = 'Jungle' | 'Exp Lane' | 'Mid Lane' | 'Gold Lane' | 'Roam';
 export type HeroTier = 'SS' | 'S' | 'A' | 'B' | 'C' | 'D';
+export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory';
+export type JunglerType = 'DAMAGE' | 'UTILITY' | 'HYBRID';
+export type RecommendationLevel = 'BEST_PICK' | 'STRONG_PICK' | 'GOOD_PICK' | 'SAFE_PICK' | 'RISKY_PICK';
 
 export interface HeroStatistic {
   hero_id: number;
@@ -12,6 +15,18 @@ export interface HeroStatistic {
   timeframe_name: string;
   timeframe_id: number;
   created_at: string;
+}
+
+export interface HeroRelation {
+  id: number;
+  hero_name: string;
+  img_src: string;
+  role: HeroRole[];
+  lane: HeroLane[];
+  speciality: string[];
+  weighted_score: number;
+  tier: HeroTier;
+  type?: string;
 }
 
 export interface Hero {
@@ -26,10 +41,50 @@ export interface Hero {
   previous_tier: HeroTier;
   score: number;
   statistics: HeroStatistic[];
+  counters?: HeroRelation[];
+  weakAgainst?: HeroRelation[];
+  synergies?: HeroRelation[];
 }
 
 export interface HeroData {
   lastUpdated: string;
   totalHeroes: number;
   heroes: Hero[];
+}
+
+export interface RecommendationWeights {
+  tier: number;
+  stats: number;
+  team_balance: number;
+  enemy_comp: number;
+  counter_penalty: number;
+  weak_penalty: number;
+  synergy_bonus: number;
+  meta: number;
+}
+
+export interface ScoreBreakdown {
+  base: number;
+  team_balance: number;
+  enemy_analysis: number;
+  counter_penalty: number;
+  synergy_bonus: number;
+  meta_bonus: number;
+}
+
+export interface RecommendationWarning {
+  type: 'STRONG_COUNTER' | 'WEAK_AGAINST' | 'NO_SYNERGY';
+  hero?: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  message: string;
+}
+
+export interface RecommendationResult {
+  hero: Hero;
+  total_score: number;
+  breakdown: ScoreBreakdown;
+  jungler_type: JunglerType;
+  recommendation_level: RecommendationLevel;
+  warnings: RecommendationWarning[];
+  strengths: string[];
 }

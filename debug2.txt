@@ -1,0 +1,178 @@
+[Enemy Analysis] Yi Sun-shin (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Alice (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:231   +50 (squishies >= 3 && UTILITY)
+heroUtils.ts:241   Total: 50
+heroUtils.ts:223 [Enemy Analysis] Hayabusa (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Lancelot (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Fredrinn (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Alucard (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Bane (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Freya (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Joy (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Saber (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Fanny (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Gusion (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Helcurt (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Sun (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Balmond (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Julian (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Hanzo (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Harley (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Popol and Kupa (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Baxia (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:231   +50 (squishies >= 3 && UTILITY)
+heroUtils.ts:241   Total: 50
+heroUtils.ts:223 [Enemy Analysis] Natalia (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Yin (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Roger (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Aulus (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Alpha (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Nolan (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Lukas (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Karina (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Leomord (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Martis (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+heroUtils.ts:223 [Enemy Analysis] Barats (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:231   +50 (squishies >= 3 && UTILITY)
+heroUtils.ts:241   Total: 50
+heroUtils.ts:223 [Enemy Analysis] Ling (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Suyou (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+heroUtils.ts:237   +30 (Assassin bonus: 3 × 10)
+heroUtils.ts:241   Total: 30
+heroUtils.ts:223 [Enemy Analysis] Dyrroth (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+heroUtils.ts:241   Total: 0
+installHook.js:1 [Enemy Analysis] Yi Sun-shin (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Alice (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   +50 (squishies >= 3 && UTILITY)
+installHook.js:1   Total: 50
+installHook.js:1 [Enemy Analysis] Hayabusa (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Lancelot (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Fredrinn (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Alucard (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Bane (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Freya (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Joy (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Saber (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Fanny (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Gusion (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Helcurt (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Sun (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Balmond (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Julian (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Hanzo (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Harley (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Popol and Kupa (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Baxia (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   +50 (squishies >= 3 && UTILITY)
+installHook.js:1   Total: 50
+installHook.js:1 [Enemy Analysis] Natalia (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Yin (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Roger (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Aulus (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Alpha (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Nolan (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Lukas (HYBRID), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Karina (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Leomord (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Martis (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0
+installHook.js:1 [Enemy Analysis] Barats (UTILITY), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   +50 (squishies >= 3 && UTILITY)
+installHook.js:1   Total: 50
+installHook.js:1 [Enemy Analysis] Ling (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Suyou (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: true
+installHook.js:1   +30 (Assassin bonus: 3 × 10)
+installHook.js:1   Total: 30
+installHook.js:1 [Enemy Analysis] Dyrroth (DAMAGE), Enemy: 1 tanks, 3 squishies, Is Assassin: false
+installHook.js:1   Total: 0

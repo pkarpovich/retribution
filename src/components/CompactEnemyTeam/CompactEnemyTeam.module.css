@@ -1,10 +1,30 @@
 .container {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  width: 100%;
 }
 
 .empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rightSection {
   display: flex;
   align-items: center;
   gap: 0.75rem;

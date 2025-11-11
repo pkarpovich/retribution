@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import type { Hero } from '../../types/hero';
+import type { Hero, RecommendationResult } from '../../types/hero';
 import CompactRecommendationCard from '../CompactRecommendationCard/CompactRecommendationCard';
 import styles from './StickyRecommendations.module.css';
 
 interface StickyRecommendationsProps {
-  recommendations: Hero[];
+  recommendations: RecommendationResult[];
   selectedEnemies: Hero[];
 }
 
@@ -25,10 +25,10 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
     <div className={styles.container}>
       <div className={styles.compactBar}>
         <div className={`${styles.compactScroll} ${isExpanded ? styles.expanded : ''}`}>
-          {displayRecommendations.map((hero, index) => (
+          {displayRecommendations.map((result, index) => (
             <CompactRecommendationCard
-              key={hero.id}
-              hero={hero}
+              key={result.hero.id}
+              result={result}
               rank={index + 1}
               expanded={isExpanded}
             />
