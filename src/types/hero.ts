@@ -66,10 +66,12 @@ export interface RecommendationWeights {
 export interface ScoreBreakdown {
   base: number;
   team_balance: number;
+  damage_type_balance: number;
   enemy_analysis: number;
   counter_penalty: number;
   synergy_bonus: number;
   meta_bonus: number;
+  early_late_game: number;
 }
 
 export interface RecommendationWarning {

@@ -73,6 +73,12 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                   </span>
                 </div>
                 <div className={styles.breakdownItem}>
+                  <span>Damage Type Balance</span>
+                  <span className={breakdown.damage_type_balance >= 0 ? styles.positive : styles.negative}>
+                    {breakdown.damage_type_balance >= 0 ? '+' : ''}{breakdown.damage_type_balance.toFixed(1)}
+                  </span>
+                </div>
+                <div className={styles.breakdownItem}>
                   <span>Enemy Analysis</span>
                   <span className={breakdown.enemy_analysis >= 0 ? styles.positive : styles.negative}>
                     {breakdown.enemy_analysis >= 0 ? '+' : ''}{breakdown.enemy_analysis.toFixed(1)}
@@ -94,6 +100,12 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                   <span>Meta</span>
                   <span className={breakdown.meta_bonus >= 0 ? styles.positive : styles.negative}>
                     {breakdown.meta_bonus >= 0 ? '+' : ''}{breakdown.meta_bonus.toFixed(1)}
+                  </span>
+                </div>
+                <div className={styles.breakdownItem}>
+                  <span>Early/Late Game</span>
+                  <span className={breakdown.early_late_game >= 0 ? styles.positive : styles.negative}>
+                    {breakdown.early_late_game >= 0 ? '+' : ''}{breakdown.early_late_game.toFixed(1)}
                   </span>
                 </div>
               </div>
