@@ -656,7 +656,7 @@ export function recommendJunglers(
 
   recommendations.sort((a, b) => b.total_score - a.total_score);
 
-  return recommendations.slice(0, 5);
+  return recommendations.slice(0, 8);
 }
 
 export function filterByRole(heroes: Hero[], role: HeroRole | 'All'): Hero[] {

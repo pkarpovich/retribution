@@ -20,7 +20,7 @@ export default function EnemyPicker({ heroes, selectedEnemies, onSelectEnemy }: 
             hero={hero}
             selected={selectedIds.has(hero.id)}
             onClick={() => onSelectEnemy(hero)}
-            size="medium"
+            size="small"
           />
         ))}
       </div>
