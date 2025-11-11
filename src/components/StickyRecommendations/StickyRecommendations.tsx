@@ -19,7 +19,7 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
     return null;
   }
 
-  const displayRecommendations = isExpanded ? recommendations : recommendations.slice(0, 3);
+  const displayRecommendations = isExpanded ? recommendations.slice(0, 8) : recommendations.slice(0, 3);
 
   return (
     <div className={styles.container}>
@@ -43,10 +43,11 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
           type="button"
           aria-label={isExpanded ? 'Collapse recommendations' : 'Expand recommendations'}
         >
+          <span>{isExpanded ? 'Show Less' : `Top ${Math.min(recommendations.length, 8)}`}</span>
           <svg
             className={`${styles.arrow} ${isExpanded ? styles.arrowUp : ''}`}
-            width="20"
-            height="20"
+            width="16"
+            height="16"
             viewBox="0 0 20 20"
             fill="none"
           >

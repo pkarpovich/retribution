@@ -9,12 +9,54 @@ interface CompactRecommendationCardProps {
   expanded?: boolean;
 }
 
-const RECOMMENDATION_BADGES: Record<RecommendationLevel, { label: string; color: string; icon: string }> = {
-  'BEST_PICK': { label: 'BEST PICK', color: '#FFD700', icon: '⚡' },
-  'STRONG_PICK': { label: 'Strong Pick', color: '#4caf50', icon: '🟢' },
-  'GOOD_PICK': { label: 'Good Pick', color: '#FFEB3B', icon: '🟡' },
-  'SAFE_PICK': { label: 'Safe Pick', color: '#2196F3', icon: '🔵' },
-  'RISKY_PICK': { label: 'Risky Pick', color: '#f44336', icon: '🔴' }
+const RECOMMENDATION_BADGES: Record<RecommendationLevel, {
+  label: string;
+  gradient: string;
+  glow: string;
+  border: string;
+  textColor: string;
+}> = {
+  'BEST_PICK': {
+    label: 'BEST PICK',
+    gradient: 'linear-gradient(135deg, #FFD700 0%, #FFA000 100%)',
+    glow: 'rgba(255, 215, 0, 0.5)',
+    border: '#FFD700',
+    textColor: '#000'
+  },
+  'STRONG_PICK': {
+    label: 'STRONG PICK',
+    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+    glow: 'rgba(16, 185, 129, 0.5)',
+    border: '#10B981',
+    textColor: '#fff'
+  },
+  'GOOD_PICK': {
+    label: 'GOOD PICK',
+    gradient: 'linear-gradient(135deg, #84CC16 0%, #65A30D 100%)',
+    glow: 'rgba(132, 204, 22, 0.5)',
+    border: '#84CC16',
+    textColor: '#000'
+  },
+  'SAFE_PICK': {
+    label: 'SAFE PICK',
+    gradient: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+    glow: 'rgba(249, 115, 22, 0.5)',
+    border: '#F97316',
+    textColor: '#000'
+  },
+  'RISKY_PICK': {
+    label: 'RISKY PICK',
+    gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+    glow: 'rgba(239, 68, 68, 0.5)',
+    border: '#EF4444',
+    textColor: '#fff'
+  }
+};
+
+const JUNGLER_TYPE_COLORS: Record<string, string> = {
+  'DAMAGE': '#f44336',
+  'UTILITY': '#2196F3',
+  'HYBRID': '#9C27B0'
 };
 
 export default function CompactRecommendationCard({ result, rank, expanded = false }: CompactRecommendationCardProps) {
@@ -22,36 +64,57 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
   const stats = getLatestStats(hero);
   const badge = RECOMMENDATION_BADGES[recommendation_level];
 
+  const maxScore = 200;
+  const scorePercentage = Math.min((total_score / maxScore) * 100, 100);
+  const filledDots = Math.round((scorePercentage / 100) * 5);
+
   return (
     <div className={`${styles.card} ${expanded ? styles.expanded : ''}`}>
-      <img src={hero.img_src} alt={hero.hero_name} className={styles.heroImage} />
-      <div className={styles.rankBadge}>#{rank}</div>
-      <div
-        className={styles.recommendationBadge}
-        style={{ backgroundColor: badge.color }}
-      >
-        {badge.icon}
+      <div className={styles.avatarContainer}>
+        <img
+          src={hero.img_src}
+          alt={hero.hero_name}
+          className={styles.heroImage}
+          style={{ borderColor: badge.border, boxShadow: `0 0 12px ${badge.glow}` }}
+        />
+        <div
+          className={styles.rankBadge}
+          style={{ background: badge.gradient, color: badge.textColor }}
+        >
+          #{rank}
+        </div>
       </div>
 
       <div className={styles.info}>
-        <div className={styles.nameRow}>
+        <div className={styles.topRow}>
           <h4 className={styles.heroName}>{hero.hero_name}</h4>
           <TierBadge tier={hero.tier} />
+          <div
+            className={styles.pickLevelBadge}
+            style={{ background: badge.gradient, color: badge.textColor }}
+          >
+            {badge.label}
+          </div>
         </div>
 
-        <div className={styles.recommendationLevel} style={{ color: badge.color }}>
-          {badge.label}
-        </div>
-
-        <div className={styles.junglerType}>
-          <span className={styles.typeLabel}>Type:</span>
-          <span className={styles.typeValue}>{jungler_type}</span>
-        </div>
-
-        <div className={styles.scoreSection}>
-          <div className={styles.totalScore}>
-            <span className={styles.scoreLabel}>Score:</span>
-            <span className={styles.scoreValue}>{total_score.toFixed(1)}</span>
+        <div className={styles.metaRow}>
+          <span
+            className={styles.typeLabel}
+            style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}
+          >
+            {jungler_type}
+          </span>
+          <div className={styles.scoreIndicator}>
+            <div className={styles.scoreDots}>
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`${styles.scoreDot} ${i < filledDots ? styles.active : ''}`}
+                  style={{ background: i < filledDots ? badge.border : undefined }}
+                />
+              ))}
+            </div>
+            <span className={styles.scoreValue}>{total_score.toFixed(0)}</span>
           </div>
         </div>
 
