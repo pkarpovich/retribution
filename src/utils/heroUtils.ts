@@ -482,7 +482,7 @@ function getRecommendationLevel(totalScore: number): RecommendationLevel {
 function generateWarnings(
   hero: Hero,
   enemyTeam: Hero[],
-  weights: RecommendationWeights
+  _weights: RecommendationWeights
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
@@ -520,7 +520,7 @@ function generateWarnings(
 
 function generateStrengths(
   hero: Hero,
-  yourTeam: Hero[],
+  _yourTeam: Hero[],
   enemyTeam: Hero[],
   breakdown: ScoreBreakdown
 ): string[] {
@@ -582,7 +582,7 @@ export function calculateJunglerRecommendation(
   hero: Hero,
   yourTeam: Hero[],
   enemyTeam: Hero[],
-  bannedHeroes: Hero[],
+  _bannedHeroes: Hero[],
   userRank: UserRank = 'Mythic',
   weights?: RecommendationWeights
 ): RecommendationResult {
