@@ -14,8 +14,11 @@ const ROLES: Array<HeroRole | 'All'> = ['All', 'Tank', 'Fighter', 'Assassin', 'M
 
 export default function EnemyPicker({ heroes, selectedEnemies, onSelectEnemy }: EnemyPickerProps) {
   const [roleFilter, setRoleFilter] = useState<HeroRole | 'All'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredHeroes = filterByRole(heroes, roleFilter);
+  const filteredHeroes = filterByRole(heroes, roleFilter).filter(hero =>
+    hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const selectedIds = new Set(selectedEnemies.map(h => h.id));
 
   return (
@@ -45,6 +48,26 @@ export default function EnemyPicker({ heroes, selectedEnemies, onSelectEnemy }: 
           ))}
         </div>
       )}
+
+      <div className={styles.searchContainer}>
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Search hero by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            className={styles.searchClear}
+            onClick={() => setSearchQuery('')}
+            type="button"
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
 
       <div className={styles.filters}>
         {ROLES.map(role => (
