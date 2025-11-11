@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Hero } from '../../types/hero';
 import CompactRecommendationCard from '../CompactRecommendationCard/CompactRecommendationCard';
-import JunglerRecommendations from '../JunglerRecommendations/JunglerRecommendations';
 import styles from './StickyRecommendations.module.css';
 
 interface StickyRecommendationsProps {
@@ -20,50 +19,47 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
     return null;
   }
 
-  const topRecommendations = recommendations.slice(0, 3);
+  const displayRecommendations = isExpanded ? recommendations : recommendations.slice(0, 3);
 
   return (
-    <>
+    <div className={styles.container}>
       <div className={styles.compactBar}>
-        <div className={styles.compactScroll}>
-          {topRecommendations.map((hero, index) => (
+        <div className={`${styles.compactScroll} ${isExpanded ? styles.expanded : ''}`}>
+          {displayRecommendations.map((hero, index) => (
             <CompactRecommendationCard
               key={hero.id}
               hero={hero}
               rank={index + 1}
-              onClick={() => setIsExpanded(true)}
+              expanded={isExpanded}
             />
           ))}
         </div>
-        {recommendations.length > 3 && (
-          <button
-            className={styles.expandButton}
-            onClick={() => setIsExpanded(true)}
-            type="button"
-          >
-            View All
-          </button>
-        )}
       </div>
 
-      {isExpanded && (
-        <div className={styles.overlay} onClick={() => setIsExpanded(false)}>
-          <div className={styles.expandedPanel} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.expandedHeader}>
-              <button
-                className={styles.closeButton}
-                onClick={() => setIsExpanded(false)}
-                type="button"
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.expandedContent}>
-              <JunglerRecommendations recommendations={recommendations} />
-            </div>
-          </div>
-        </div>
+      {recommendations.length > 3 && (
+        <button
+          className={styles.expandButton}
+          onClick={() => setIsExpanded(!isExpanded)}
+          type="button"
+          aria-label={isExpanded ? 'Collapse recommendations' : 'Expand recommendations'}
+        >
+          <svg
+            className={`${styles.arrow} ${isExpanded ? styles.arrowUp : ''}`}
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              d="M5 7.5L10 12.5L15 7.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       )}
-    </>
+    </div>
   );
 }
