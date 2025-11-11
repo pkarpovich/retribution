@@ -3,14 +3,24 @@ import type { Hero } from './types/hero';
 import heroData from './data/heroes.json';
 import { getJunglers, recommendJunglers } from './utils/heroUtils';
 import EnemyPicker from './components/EnemyPicker/EnemyPicker';
-import JunglerRecommendations from './components/JunglerRecommendations/JunglerRecommendations';
+import CompactEnemyTeam from './components/CompactEnemyTeam/CompactEnemyTeam';
+import StickyRecommendations from './components/StickyRecommendations/StickyRecommendations';
+import SearchBar from './components/SearchBar/SearchBar';
 import './App.css';
 
 function App() {
   const [selectedEnemies, setSelectedEnemies] = useState<Hero[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const allHeroes = heroData.heroes as Hero[];
   const junglers = useMemo(() => getJunglers(allHeroes), []);
+
+  const filteredHeroes = useMemo(
+    () => allHeroes.filter(hero =>
+      hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [allHeroes, searchQuery]
+  );
 
   const recommendations = useMemo(
     () => recommendJunglers(junglers, selectedEnemies),
@@ -30,32 +40,35 @@ function App() {
     });
   };
 
-  const handleReset = () => {
-    setSelectedEnemies([]);
-  };
-
   return (
     <div className="app">
       <header className="header">
-        <h1 className="logo">Retribution</h1>
-        {selectedEnemies.length > 0 && (
-          <button className="resetButton" onClick={handleReset}>
-            Reset
-          </button>
-        )}
+        <div className="headerTop">
+          <h1 className="logo">Retribution</h1>
+          <CompactEnemyTeam
+            enemies={selectedEnemies}
+            onRemove={handleSelectEnemy}
+          />
+        </div>
+        <StickyRecommendations
+          recommendations={recommendations}
+          selectedEnemies={selectedEnemies}
+        />
       </header>
 
       <main className="main">
-        <div className="section">
+        <div className="searchSection">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
+        </div>
+        <div className="heroSection">
           <EnemyPicker
-            heroes={allHeroes}
+            heroes={filteredHeroes}
             selectedEnemies={selectedEnemies}
             onSelectEnemy={handleSelectEnemy}
           />
-        </div>
-
-        <div className="section">
-          <JunglerRecommendations recommendations={recommendations} />
         </div>
       </main>
     </div>
