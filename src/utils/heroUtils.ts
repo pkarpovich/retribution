@@ -434,6 +434,25 @@ function calculateStrongAgainstBonus(
   return Math.min(totalBonus, 120);
 }
 
+function calculateCCChainSynergy(
+  hero: Hero,
+  yourTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  const teamCCScore = yourTeam.reduce((sum, teammate) => sum + getCCScore(teammate), 0);
+  const junglerType = classifyJunglerType(hero);
+
+  let bonus = 0;
+
+  if (teamCCScore >= 3 && junglerType === 'DAMAGE') {
+    bonus = 25 * weights.cc_chain;
+  } else if (teamCCScore <= 1 && getCCScore(hero) >= 2) {
+    bonus = 20 * weights.cc_chain;
+  }
+
+  return bonus;
+}
+
 function calculateCounterPenalty(
   hero: Hero,
   enemyTeam: Hero[],
@@ -692,6 +711,7 @@ export function calculateJunglerRecommendation(
   const damageTypeBalanceScore = calculateDamageTypeBalance(hero, yourTeam, finalWeights);
   const enemyAnalysisScore = calculateEnemyVulnerability(hero, enemyTeam, finalWeights);
   const strongAgainstBonus = calculateStrongAgainstBonus(hero, enemyTeam, finalWeights);
+  const ccChainSynergyScore = calculateCCChainSynergy(hero, yourTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
@@ -703,6 +723,7 @@ export function calculateJunglerRecommendation(
     damage_type_balance: damageTypeBalanceScore,
     enemy_analysis: enemyAnalysisScore,
     strong_against: strongAgainstBonus,
+    cc_chain_synergy: ccChainSynergyScore,
     counter_penalty: -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
@@ -714,7 +735,8 @@ export function calculateJunglerRecommendation(
     teamBalanceScore +
     damageTypeBalanceScore +
     enemyAnalysisScore +
-    strongAgainstBonus -
+    strongAgainstBonus +
+    ccChainSynergyScore -
     counterPenalty +
     synergyBonus +
     metaBonus +

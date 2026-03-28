@@ -118,10 +118,10 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 5: Implement cc_chain_synergy
-- [ ] Implement `calculateCCChainSynergy()` — count team CC from `capabilities.ccScore`
-- [ ] High team CC + burst jungler → followup bonus
-- [ ] Low team CC + CC jungler → fill-the-gap bonus
-- [ ] run `pnpm build` - must compile
+- [x] Implement `calculateCCChainSynergy()` — count team CC from `capabilities.ccScore`
+- [x] High team CC + burst jungler → followup bonus
+- [x] Low team CC + CC jungler → fill-the-gap bonus
+- [x] run `pnpm build` - must compile
 
 ### Task 6: Implement invade_resistance
 - [ ] Implement `calculateInvadeResistance()` — assess enemy early-game aggression

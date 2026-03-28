@@ -154,6 +154,12 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                   </span>
                 </div>
                 <div className={styles.breakdownItem}>
+                  <span>CC Chain Synergy</span>
+                  <span className={breakdown.cc_chain_synergy >= 0 ? styles.positive : styles.negative}>
+                    {breakdown.cc_chain_synergy >= 0 ? '+' : ''}{breakdown.cc_chain_synergy.toFixed(1)}
+                  </span>
+                </div>
+                <div className={styles.breakdownItem}>
                   <span>Counter Penalty</span>
                   <span className={breakdown.counter_penalty >= 0 ? styles.positive : styles.negative}>
                     {breakdown.counter_penalty >= 0 ? '+' : ''}{breakdown.counter_penalty.toFixed(1)}
