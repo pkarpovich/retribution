@@ -11,6 +11,8 @@
   top: 0;
   z-index: 10;
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
   box-sizing: border-box;
   background: var(--bg-2);
   border-bottom: 1px solid var(--border);
@@ -47,7 +49,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1400px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
