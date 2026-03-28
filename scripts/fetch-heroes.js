@@ -2,18 +2,35 @@ import fs from 'fs';
 import https from 'https';
 
 const API_SECRET = process.env.MLBB_API_SECRET;
-const BASE_URL = 'https://mlbb.io/api/hero';
+const CSRF_TOKEN = process.env.MLBB_CSRF_TOKEN;
 
-if (!API_SECRET) {
-  console.error('Error: MLBB_API_SECRET environment variable is not set');
+const useProxy = !API_SECRET;
+const BASE_URL = useProxy
+  ? 'https://mlbb.io/api/proxy/hero'
+  : 'https://mlbb.io/api/hero';
+
+if (!API_SECRET && !CSRF_TOKEN) {
+  console.error('Error: Set MLBB_API_SECRET or MLBB_CSRF_TOKEN environment variable');
+  console.error('  MLBB_CSRF_TOKEN — extract from browser cookies (__Host-next-auth.csrf-token value)');
+  console.error('  MLBB_API_SECRET — direct API secret');
   process.exit(1);
+}
+
+function buildHeaders() {
+  if (useProxy) {
+    return {
+      'Accept': 'application/json, text/plain, */*',
+      'Referer': 'https://mlbb.io/hero-tier',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
+      'Cookie': `locale=en; __Host-next-auth.csrf-token=${CSRF_TOKEN}; __Secure-next-auth.callback-url=https%3A%2F%2Fmlbb.io`,
+    };
+  }
+  return { 'x-client-secret': API_SECRET };
 }
 
 function httpsGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, {
-      headers: { 'x-client-secret': API_SECRET }
-    }, (res) => {
+    https.get(url, { headers: buildHeaders() }, (res) => {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
@@ -49,16 +66,17 @@ async function fetchHeroDetails(heroName) {
 }
 
 async function main() {
+  console.log(`Using ${useProxy ? 'proxy' : 'API secret'} mode`);
   console.log('Fetching hero tier list...');
 
   const tierResponse = await httpsGet(`${BASE_URL}/hero-tiers`);
 
   if (!tierResponse.success) {
-    console.error('Failed to fetch tier list');
+    console.error('Failed to fetch tier list:', tierResponse.message || 'unknown error');
     process.exit(1);
   }
 
-  const heroes = tierResponse.data;
+  const heroes = useProxy ? tierResponse.data.heroes : tierResponse.data;
   console.log(`Found ${heroes.length} heroes`);
 
   const heroesWithDetails = [];
