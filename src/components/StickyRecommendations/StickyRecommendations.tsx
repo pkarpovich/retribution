@@ -31,6 +31,7 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
               result={result}
               rank={index + 1}
               expanded={isExpanded}
+              enemyTeam={selectedEnemies}
             />
           ))}
         </div>

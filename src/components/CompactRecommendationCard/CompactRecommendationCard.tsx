@@ -1,5 +1,6 @@
-import type { RecommendationResult, RecommendationLevel } from '../../types/hero';
-import { getLatestStats } from '../../utils/heroUtils';
+import { useMemo } from 'react';
+import type { Hero, RecommendationResult, RecommendationLevel, ScoreBreakdown } from '../../types/hero';
+import { getLatestStats, getMobilityScore, getCCScore, hasSustainCapability, hasImmunityCapability } from '../../utils/heroUtils';
 import TierBadge from '../TierBadge/TierBadge';
 import styles from './CompactRecommendationCard.module.css';
 
@@ -7,6 +8,7 @@ interface CompactRecommendationCardProps {
   result: RecommendationResult;
   rank: number;
   expanded?: boolean;
+  enemyTeam?: Hero[];
 }
 
 const RECOMMENDATION_BADGES: Record<RecommendationLevel, {
@@ -17,204 +19,323 @@ const RECOMMENDATION_BADGES: Record<RecommendationLevel, {
   textColor: string;
 }> = {
   'BEST_PICK': {
-    label: 'BEST PICK',
-    gradient: 'linear-gradient(135deg, #FFD700 0%, #FFA000 100%)',
-    glow: 'rgba(255, 215, 0, 0.5)',
-    border: '#FFD700',
-    textColor: '#000'
+    label: 'BEST',
+    gradient: 'linear-gradient(135deg, #D0A215 0%, #AD8301 100%)',
+    glow: 'rgba(208, 162, 21, 0.4)',
+    border: '#D0A215',
+    textColor: '#100F0F'
   },
   'STRONG_PICK': {
-    label: 'STRONG PICK',
-    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    glow: 'rgba(16, 185, 129, 0.5)',
-    border: '#10B981',
+    label: 'STRONG',
+    gradient: 'linear-gradient(135deg, #879A39 0%, #66800B 100%)',
+    glow: 'rgba(135, 154, 57, 0.4)',
+    border: '#879A39',
     textColor: '#fff'
   },
   'GOOD_PICK': {
-    label: 'GOOD PICK',
-    gradient: 'linear-gradient(135deg, #84CC16 0%, #65A30D 100%)',
-    glow: 'rgba(132, 204, 22, 0.5)',
-    border: '#84CC16',
-    textColor: '#000'
+    label: 'GOOD',
+    gradient: 'linear-gradient(135deg, #3AA99F 0%, #24837B 100%)',
+    glow: 'rgba(58, 169, 159, 0.4)',
+    border: '#3AA99F',
+    textColor: '#fff'
   },
   'SAFE_PICK': {
-    label: 'SAFE PICK',
-    gradient: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-    glow: 'rgba(249, 115, 22, 0.5)',
-    border: '#F97316',
-    textColor: '#000'
+    label: 'SAFE',
+    gradient: 'linear-gradient(135deg, #DA702C 0%, #BC5215 100%)',
+    glow: 'rgba(218, 112, 44, 0.4)',
+    border: '#DA702C',
+    textColor: '#100F0F'
   },
   'RISKY_PICK': {
-    label: 'RISKY PICK',
-    gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-    glow: 'rgba(239, 68, 68, 0.5)',
-    border: '#EF4444',
+    label: 'RISKY',
+    gradient: 'linear-gradient(135deg, #D14D41 0%, #AF3029 100%)',
+    glow: 'rgba(209, 77, 65, 0.4)',
+    border: '#D14D41',
     textColor: '#fff'
   }
 };
 
 const JUNGLER_TYPE_COLORS: Record<string, string> = {
-  'DAMAGE': '#f44336',
-  'UTILITY': '#2196F3',
-  'HYBRID': '#9C27B0'
+  'DAMAGE': 'var(--red)',
+  'UTILITY': 'var(--blue)',
+  'HYBRID': 'var(--purple)'
 };
 
-export default function CompactRecommendationCard({ result, rank, expanded = false }: CompactRecommendationCardProps) {
-  const { hero, breakdown, recommendation_level, jungler_type, warnings, strengths, total_score } = result;
+const HERO_RADAR_AXES = ['Burst', 'Mobility', 'CC', 'Sustain', 'AOE'] as const;
+
+function getHeroRadarValues(hero: Hero): number[] {
+  const mob = Math.min(getMobilityScore(hero) / 3, 1);
+  const cc = Math.min(getCCScore(hero) / 3, 1);
+  const sustain = hasSustainCapability(hero) ? 1 : 0;
+  const aoe = hero.capabilities?.hasAOE ? 1 : 0;
+
+  const burstSpecs = ['Burst', 'Finisher', 'Damage', 'Magic Damage'];
+  let burst = burstSpecs.filter(s => hero.speciality.includes(s)).length > 0 ? 0.5 : 0;
+  if (hero.capabilities?.maxBurstDamage && hero.capabilities.maxBurstDamage > 500) burst = 1;
+  else if (hero.capabilities?.maxBurstDamage && hero.capabilities.maxBurstDamage > 200) burst = 0.7;
+
+  return [burst, mob, cc, sustain, aoe];
+}
+
+function miniRadarPath(values: number[], cx: number, cy: number, r: number): string {
+  return values.map((v, i) => {
+    const angle = (Math.PI * 2 * i) / values.length - Math.PI / 2;
+    const vr = Math.max(v, 0.08) * r;
+    const x = cx + vr * Math.cos(angle);
+    const y = cy + vr * Math.sin(angle);
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ') + 'Z';
+}
+
+function miniRadarLabelPos(i: number, total: number, cx: number, cy: number, r: number) {
+  const angle = (Math.PI * 2 * i) / total - Math.PI / 2;
+  return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+}
+
+function getSignificantBars(breakdown: ScoreBreakdown) {
+  const all = [
+    { label: 'Team', value: breakdown.team_balance },
+    { label: 'Enemy', value: breakdown.enemy_analysis },
+    { label: 'Strong vs', value: breakdown.strong_against },
+    { label: 'CC Chain', value: breakdown.cc_chain_synergy },
+    { label: 'Invade', value: breakdown.invade_resistance },
+    { label: 'Counter', value: breakdown.counter_penalty },
+    { label: 'Synergy', value: breakdown.synergy_bonus },
+    { label: 'Meta', value: breakdown.meta_bonus },
+    { label: 'Tempo', value: breakdown.early_late_game },
+    { label: 'DMG Type', value: breakdown.damage_type_balance },
+    { label: 'Base', value: breakdown.base },
+  ];
+  return all
+    .filter(item => Math.abs(item.value) >= 3)
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 6);
+}
+
+function getMatchups(hero: Hero, enemyTeam: Hero[]): { strong: Hero[]; weak: Hero[] } {
+  const enemyIds = new Set(enemyTeam.map(e => e.id));
+  const strong: Hero[] = [];
+  const weak: Hero[] = [];
+
+  if (hero.strongAgainst) {
+    for (const sa of hero.strongAgainst) {
+      if (enemyIds.has(sa.id)) {
+        const match = enemyTeam.find(e => e.id === sa.id);
+        if (match) strong.push(match);
+      }
+    }
+  }
+
+  if (hero.weakAgainst) {
+    for (const wa of hero.weakAgainst) {
+      if (enemyIds.has(wa.id)) {
+        const match = enemyTeam.find(e => e.id === wa.id);
+        if (match) weak.push(match);
+      }
+    }
+  }
+
+  return { strong: strong.slice(0, 3), weak: weak.slice(0, 3) };
+}
+
+export default function CompactRecommendationCard({ result, rank, expanded = false, enemyTeam = [] }: CompactRecommendationCardProps) {
+  const { hero, breakdown, recommendation_level, jungler_type, warnings, strengths } = result;
   const stats = getLatestStats(hero);
   const badge = RECOMMENDATION_BADGES[recommendation_level];
 
-  const maxScore = 200;
-  const scorePercentage = Math.min((total_score / maxScore) * 100, 100);
-  const filledDots = Math.round((scorePercentage / 100) * 5);
+
+  const heroRadar = useMemo(() => getHeroRadarValues(hero), [hero]);
+  const matchups = useMemo(() => getMatchups(hero, enemyTeam), [hero, enemyTeam]);
+  const bars = useMemo(() => getSignificantBars(breakdown), [breakdown]);
+  const maxBar = useMemo(() => Math.max(...bars.map(b => Math.abs(b.value)), 1), [bars]);
+
+  const capTags = useMemo(() => {
+    const tags: { label: string; color: string }[] = [];
+    const mob = getMobilityScore(hero);
+    const cc = getCCScore(hero);
+    if (mob > 0) tags.push({ label: `MOB ${mob}`, color: 'var(--cyan)' });
+    if (cc > 0) tags.push({ label: `CC ${cc}`, color: 'var(--yellow)' });
+    if (hasSustainCapability(hero)) tags.push({ label: 'SUST', color: 'var(--green)' });
+    if (hero.capabilities?.hasAOE) tags.push({ label: 'AOE', color: 'var(--orange)' });
+    if (hasImmunityCapability(hero)) tags.push({ label: 'IMM', color: 'var(--magenta)' });
+    return tags;
+  }, [hero]);
 
   return (
     <div className={`${styles.card} ${expanded ? styles.expanded : ''}`}>
-      <div className={styles.avatarContainer}>
-        <img
-          src={hero.img_src}
-          alt={hero.hero_name}
-          className={styles.heroImage}
-          style={{ borderColor: badge.border, boxShadow: `0 0 12px ${badge.glow}` }}
-        />
-        <div
-          className={styles.rankBadge}
-          style={{ background: badge.gradient, color: badge.textColor }}
-        >
-          #{rank}
-        </div>
-      </div>
-
-      <div className={styles.info}>
-        <div className={styles.topRow}>
-          <h4 className={styles.heroName}>{hero.hero_name}</h4>
-          <TierBadge tier={hero.tier} />
-          <div
-            className={styles.pickLevelBadge}
-            style={{ background: badge.gradient, color: badge.textColor }}
-          >
-            {badge.label}
+      {!expanded ? (
+        <>
+          <div className={styles.avatarContainer}>
+            <img
+              src={hero.img_src}
+              alt={hero.hero_name}
+              className={styles.heroImage}
+              style={{ borderColor: badge.border, boxShadow: `0 0 12px ${badge.glow}` }}
+            />
+            <div
+              className={styles.rankBadge}
+              style={{ background: badge.gradient, color: badge.textColor }}
+            >
+              #{rank}
+            </div>
           </div>
-        </div>
-
-        <div className={styles.metaRow}>
-          <span
-            className={styles.typeLabel}
-            style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}
-          >
-            {jungler_type}
-          </span>
-          <div className={styles.scoreIndicator}>
-            <div className={styles.scoreDots}>
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`${styles.scoreDot} ${i < filledDots ? styles.active : ''}`}
-                  style={{ background: i < filledDots ? badge.border : undefined }}
+          <div className={styles.info}>
+            <div className={styles.topRow}>
+              <h4 className={styles.heroName}>{hero.hero_name}</h4>
+              <TierBadge tier={hero.tier} />
+              <div
+                className={styles.pickLevelBadge}
+                style={{ background: badge.gradient, color: badge.textColor }}
+              >
+                {badge.label}
+              </div>
+            </div>
+            <div className={styles.metaRow}>
+              <span className={styles.typeLabel} style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}>
+                {jungler_type}
+              </span>
+              <svg viewBox="0 0 120 120" className={styles.miniRadarInline}>
+                {[0.5, 1].map(level => {
+                  const pts = HERO_RADAR_AXES.map((_, i) => {
+                    const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 40 * level);
+                    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                  }).join(' ');
+                  return <polygon key={level} points={pts} className={styles.heroRadarGrid} />;
+                })}
+                <path
+                  d={miniRadarPath(heroRadar, 60, 60, 40)}
+                  className={styles.heroRadarArea}
+                  style={{ stroke: badge.border }}
                 />
+              </svg>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={styles.cardHeader}>
+            <div className={styles.headerLeft}>
+              <div className={styles.headerTop}>
+                <div className={styles.avatarContainer}>
+                  <img src={hero.img_src} alt={hero.hero_name} className={styles.heroImage} style={{ borderColor: badge.border, boxShadow: `0 0 12px ${badge.glow}` }} />
+                  <div className={styles.rankBadge} style={{ background: badge.gradient, color: badge.textColor }}>#{rank}</div>
+                </div>
+                <div className={styles.info}>
+                  <div className={styles.topRow}>
+                    <h4 className={styles.heroName}>{hero.hero_name}</h4>
+                    <TierBadge tier={hero.tier} />
+                    <div className={styles.pickLevelBadge} style={{ background: badge.gradient, color: badge.textColor }}>{badge.label}</div>
+                  </div>
+                  <div className={styles.metaRow}>
+                    <span className={styles.typeLabel} style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}>{jungler_type}</span>
+                  </div>
+                  {stats && (
+                    <div className={styles.statsInline}>
+                      <span>{stats.win_rate.toFixed(1)}% WR</span>
+                      <span className={styles.statDot}>·</span>
+                      <span>{stats.pick_rate.toFixed(1)}% PR</span>
+                      <span className={styles.statDot}>·</span>
+                      <span>{stats.ban_rate.toFixed(1)}% BR</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {capTags.length > 0 && (
+                <div className={styles.capRow}>
+                  {capTags.map(tag => (
+                    <span key={tag.label} className={styles.capTag} style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>
+                  ))}
+                </div>
+              )}
+              {(matchups.strong.length > 0 || matchups.weak.length > 0) && (
+                <div className={styles.matchups}>
+                  {matchups.strong.length > 0 && (
+                    <div className={styles.matchupGroup}>
+                      <span className={styles.matchupLabel}>Strong vs</span>
+                      <div className={styles.matchupAvatars}>
+                        {matchups.strong.map(enemy => (
+                          <img key={enemy.id} src={enemy.img_src} alt={enemy.hero_name} className={styles.matchupAvatar} style={{ borderColor: 'var(--green)' }} title={enemy.hero_name} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {matchups.weak.length > 0 && (
+                    <div className={styles.matchupGroup}>
+                      <span className={styles.matchupLabelWarn}>Weak vs</span>
+                      <div className={styles.matchupAvatars}>
+                        {matchups.weak.map(enemy => (
+                          <img key={enemy.id} src={enemy.img_src} alt={enemy.hero_name} className={styles.matchupAvatar} style={{ borderColor: 'var(--red)' }} title={enemy.hero_name} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className={styles.heroRadar}>
+              <svg viewBox="0 0 120 120" className={styles.heroRadarSvg}>
+                {[0.33, 0.66, 1].map(level => {
+                  const pts = HERO_RADAR_AXES.map((_, i) => {
+                    const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 40 * level);
+                    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                  }).join(' ');
+                  return <polygon key={level} points={pts} className={styles.heroRadarGrid} />;
+                })}
+                {HERO_RADAR_AXES.map((_, i) => {
+                  const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 40);
+                  return <line key={i} x1="60" y1="60" x2={p.x.toFixed(1)} y2={p.y.toFixed(1)} className={styles.heroRadarAxis} />;
+                })}
+                <path d={miniRadarPath(heroRadar, 60, 60, 40)} className={styles.heroRadarArea} style={{ stroke: badge.border }} />
+                {HERO_RADAR_AXES.map((label, i) => {
+                  const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 52);
+                  return (
+                    <text key={label} x={p.x.toFixed(1)} y={p.y.toFixed(1)} className={styles.heroRadarLabel} textAnchor="middle" dominantBaseline="central">{label}</text>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+
+          <div className={styles.barChart}>
+            {bars.map(bar => {
+              const pct = (Math.abs(bar.value) / maxBar) * 100;
+              const isPositive = bar.value >= 0;
+              return (
+                <div key={bar.label} className={styles.barRow}>
+                  <span className={styles.barLabel}>{bar.label}</span>
+                  <div className={styles.barTrack}>
+                    <div className={styles.barCenter} />
+                    {isPositive ? (
+                      <div className={styles.barPositive} style={{ width: `${pct / 2}%`, left: '50%' }} />
+                    ) : (
+                      <div className={styles.barNegative} style={{ width: `${pct / 2}%`, right: '50%' }} />
+                    )}
+                  </div>
+                  <span className={`${styles.barValue} ${isPositive ? styles.positive : styles.negative}`}>
+                    {isPositive ? '+' : ''}{bar.value.toFixed(0)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {strengths.length > 0 && (
+            <div className={styles.strengths}>
+              {strengths.slice(0, 3).map((strength, idx) => (
+                <span key={idx} className={styles.strengthTag}>{strength}</span>
               ))}
             </div>
-            <span className={styles.scoreValue}>{total_score.toFixed(0)}</span>
-          </div>
-        </div>
+          )}
 
-        {expanded && (
-          <>
-            <div className={styles.breakdown}>
-              <h5 className={styles.breakdownTitle}>Score Breakdown</h5>
-              <div className={styles.breakdownItems}>
-                <div className={styles.breakdownItem}>
-                  <span>Base</span>
-                  <span className={breakdown.base >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.base >= 0 ? '+' : ''}{breakdown.base.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Team Balance</span>
-                  <span className={breakdown.team_balance >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.team_balance >= 0 ? '+' : ''}{breakdown.team_balance.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Damage Type Balance</span>
-                  <span className={breakdown.damage_type_balance >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.damage_type_balance >= 0 ? '+' : ''}{breakdown.damage_type_balance.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Enemy Analysis</span>
-                  <span className={breakdown.enemy_analysis >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.enemy_analysis >= 0 ? '+' : ''}{breakdown.enemy_analysis.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Counter Penalty</span>
-                  <span className={breakdown.counter_penalty >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.counter_penalty >= 0 ? '+' : ''}{breakdown.counter_penalty.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Synergy</span>
-                  <span className={breakdown.synergy_bonus >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.synergy_bonus >= 0 ? '+' : ''}{breakdown.synergy_bonus.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Meta</span>
-                  <span className={breakdown.meta_bonus >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.meta_bonus >= 0 ? '+' : ''}{breakdown.meta_bonus.toFixed(1)}
-                  </span>
-                </div>
-                <div className={styles.breakdownItem}>
-                  <span>Early/Late Game</span>
-                  <span className={breakdown.early_late_game >= 0 ? styles.positive : styles.negative}>
-                    {breakdown.early_late_game >= 0 ? '+' : ''}{breakdown.early_late_game.toFixed(1)}
-                  </span>
-                </div>
-              </div>
+          {warnings.length > 0 && (
+            <div className={styles.warnings}>
+              {warnings.slice(0, 2).map((warning, idx) => (
+                <span key={idx} className={`${styles.warningTag} ${styles[warning.severity.toLowerCase()]}`}>{warning.message}</span>
+              ))}
             </div>
-
-            {strengths.length > 0 && (
-              <div className={styles.strengths}>
-                <h5 className={styles.strengthsTitle}>Strengths</h5>
-                <ul className={styles.strengthsList}>
-                  {strengths.map((strength, idx) => (
-                    <li key={idx} className={styles.strengthItem}>{strength}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {warnings.length > 0 && (
-              <div className={styles.warnings}>
-                <h5 className={styles.warningsTitle}>Warnings</h5>
-                <ul className={styles.warningsList}>
-                  {warnings.map((warning, idx) => (
-                    <li key={idx} className={`${styles.warningItem} ${styles[warning.severity.toLowerCase()]}`}>
-                      {warning.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className={styles.stats}>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Win Rate</span>
-                <span className={styles.statValue}>{stats.win_rate.toFixed(1)}%</span>
-              </div>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Pick Rate</span>
-                <span className={styles.statValue}>{stats.pick_rate.toFixed(1)}%</span>
-              </div>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Ban Rate</span>
-                <span className={styles.statValue}>{stats.ban_rate.toFixed(1)}%</span>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

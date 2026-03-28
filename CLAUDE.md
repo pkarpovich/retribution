@@ -15,17 +15,21 @@ pnpm lint             # Run ESLint
 pnpm preview          # Preview production build
 ```
 
-Note: This project uses `rolldown-vite` (a faster Vite variant with Rolldown bundler) via pnpm overrides.
+Note: This project uses Vite 8 with native Rolldown bundler.
 
 ## Data Management
 
 Hero data is fetched from the mlbb.io API and stored in `src/data/heroes.json`:
 
 ```bash
+# Direct API mode:
 MLBB_API_SECRET=your_secret node scripts/fetch-heroes.js
+
+# Proxy mode (browser cookie auth):
+MLBB_CSRF_TOKEN=your_token node scripts/fetch-heroes.js
 ```
 
-This script fetches all 130+ heroes with complete statistics (pick rate, win rate, ban rate, tier rankings) and saves to `src/data/heroes.json`. The frontend filters for jungle heroes only.
+The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst relationships, and computes `capabilities` (mobilityScore, ccScore, hasSustain, hasImmunity) and `strongAgainst` matchups from skill data. The frontend filters for jungle heroes only.
 
 ## Architecture
 
@@ -36,43 +40,56 @@ This script fetches all 130+ heroes with complete statistics (pick rate, win rat
 
 ### Core Logic (`src/utils/heroUtils.ts`)
 - `getJunglers()`: Filters heroes by Jungle lane
-- `recommendJunglers()`: Scores junglers based on tier, counter matchups, and win rates
-- `getCounterScore()`: Implements rock-paper-scissors counter logic:
-  - Assassins/Burst counter Marksman/Mage (+2)
-  - Damage/Finisher counter Tank/Fighter (+1)
-  - Tank/Fighter counter Assassin (+1.5)
+- `recommendJunglers()`: Scores junglers using an 11-component pipeline:
+  - base_score (tier + win rate + pick rate reliability)
+  - strong_against_bonus (hero's strongAgainst matchup data)
+  - team_balance (damage/utility/tank composition needs)
+  - damage_type_balance (physical vs magic diversity)
+  - enemy_vulnerability (squishy targets weighted by mobility, immunity vs CC)
+  - cc_chain_synergy (team CC followup or CC gap filling)
+  - invade_resistance (sustain/mobility vs early-game enemies)
+  - counter_penalty (weakAgainst matchup data)
+  - synergy_bonus (synergy data with teammates)
+  - meta_bonus (ban rate and pick rate signals)
+  - early_late_game (tempo mismatch bonuses)
+- Capability helpers: `getMobilityScore()`, `getCCScore()`, `hasSustainCapability()`, `hasImmunityCapability()` read from `hero.capabilities`
 
 ### Component Structure
 Components follow a co-located pattern (component + CSS in same directory):
 - `EnemyPicker`: Grid of all heroes for enemy selection
 - `CompactEnemyTeam`: Header display of selected enemies
-- `StickyRecommendations`: Top 5 jungler recommendations
+- `StickyRecommendations`: Top 8 jungler recommendations
 - `CompactRecommendationCard`: Individual recommendation card with expandable details
 - `SearchBar`: Hero search filter
 - `HeroAvatar`: Reusable hero image component
 - `TierBadge`: Hero tier display (SS/S/A/B/C/D)
 
 ### Data Flow
-1. User selects enemy heroes (max 5)
-2. `recommendJunglers()` calculates scores combining:
-   - Tier score (SS=5, S=4, A=3, B=2, C=1, D=0)
-   - Counter score (role/specialty matchup bonuses)
-   - Win rate bonus (normalized from 50% baseline)
-3. Top 5 recommendations displayed with stats and reasoning
+1. User selects enemy heroes (max 5) and optionally ally heroes (max 4)
+2. `recommendJunglers()` calculates scores combining 11 components:
+   - Base score (tier: SS=100..D=10, quadratic win rate bonus, pick rate reliability)
+   - Matchup data (strongAgainst bonus, counter penalty, synergy bonus)
+   - Team composition (balance, damage type balance, CC chain synergy)
+   - Situational (enemy vulnerability, invade resistance, early/late game tempo)
+   - Meta relevance (ban rate and pick rate signals)
+3. Top 8 recommendations displayed with score breakdowns, warnings, and strengths
 
 ## Type System
 
 All types defined in `src/types/hero.ts`:
-- `Hero`: Complete hero data including role, lane, tier, specialties, statistics
+- `Hero`: Complete hero data including role, lane, tier, specialties, statistics, capabilities, counters/weakAgainst/synergies/strongAgainst
 - `HeroStatistic`: Pick/win/ban rates by rank and timeframe
-- `HeroRole`: Tank | Fighter | Assassin | Mage | Marksman | Support
-- `HeroLane`: Jungle | Exp Lane | Mid Lane | Gold Lane | Roam
-- `HeroTier`: SS | S | A | B | C | D
+- `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
+- `HeroRelation`: Counter/synergy/strongAgainst relationship with weighted_score
+- `ScoreBreakdown`: Individual score for each of the 11 scoring components
+- `RecommendationResult`: Full recommendation output with hero, scores, breakdown, warnings, strengths
+- `UserRank`: Epic | Legend | Mythic | Mythical Honor | Mythical Glory+
 
 ## Key Implementation Details
 
 - Hero data loaded as static JSON import (not async)
-- Latest stats prioritize "Past 7 days" timeframe with "ALL" rank
-- Recommendations recalculated via `useMemo` when enemy selection changes
-- Hero selection limited to 5 enemies (standard MLBB team size)
+- Latest stats prioritize "Past 7 days" timeframe with rank-specific data (defaults to Mythic)
+- Recommendations recalculated via `useMemo` when enemy or team selection changes
+- Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
+- Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching

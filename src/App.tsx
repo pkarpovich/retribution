@@ -4,12 +4,14 @@ import heroData from './data/heroes.json';
 import { getJunglers, recommendJunglers } from './utils/heroUtils';
 import EnemyPicker from './components/EnemyPicker/EnemyPicker';
 import CompactEnemyTeam from './components/CompactEnemyTeam/CompactEnemyTeam';
-import TeamCompositionBar from './components/TeamCompositionBar/TeamCompositionBar';
+import TeamRadar from './components/TeamRadar/TeamRadar';
 import StickyRecommendations from './components/StickyRecommendations/StickyRecommendations';
 import SearchBar from './components/SearchBar/SearchBar';
 import './App.css';
 
 type PickerMode = 'team' | 'enemy';
+
+const allHeroes = heroData.heroes as Hero[];
 
 function App() {
   const [yourTeam, setYourTeam] = useState<Hero[]>([]);
@@ -17,14 +19,13 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>('enemy');
 
-  const allHeroes = heroData.heroes as Hero[];
   const junglers = useMemo(() => getJunglers(allHeroes), []);
 
   const filteredHeroes = useMemo(
     () => allHeroes.filter(hero =>
       hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
     ),
-    [allHeroes, searchQuery]
+    [searchQuery]
   );
 
   const recommendations = useMemo(
@@ -33,34 +34,35 @@ function App() {
   );
 
   const handleSelectTeammate = (hero: Hero) => {
+    if (enemyTeam.some(h => h.id === hero.id)) return;
     setYourTeam(prev => {
       const isSelected = prev.some(h => h.id === hero.id);
-      if (isSelected) {
-        return prev.filter(h => h.id !== hero.id);
-      }
-      if (prev.length >= 4) {
-        return prev;
-      }
+      if (isSelected) return prev.filter(h => h.id !== hero.id);
+      if (prev.length >= 4) return prev;
       return [...prev, hero];
     });
   };
 
   const handleSelectEnemy = (hero: Hero) => {
+    if (yourTeam.some(h => h.id === hero.id)) return;
     setEnemyTeam(prev => {
       const isSelected = prev.some(h => h.id === hero.id);
-      if (isSelected) {
-        return prev.filter(h => h.id !== hero.id);
-      }
-      if (prev.length >= 5) {
-        return prev;
-      }
+      if (isSelected) return prev.filter(h => h.id !== hero.id);
+      if (prev.length >= 5) return prev;
       return [...prev, hero];
     });
   };
 
+  const lockedIds = useMemo(() => {
+    const ids = pickerMode === 'team'
+      ? enemyTeam.map(h => h.id)
+      : yourTeam.map(h => h.id);
+    return new Set(ids);
+  }, [pickerMode, enemyTeam, yourTeam]);
+
   const currentPickerProps = pickerMode === 'team'
-    ? { selectedEnemies: yourTeam, onSelectEnemy: handleSelectTeammate }
-    : { selectedEnemies: enemyTeam, onSelectEnemy: handleSelectEnemy };
+    ? { selectedEnemies: yourTeam, onSelectEnemy: handleSelectTeammate, lockedIds }
+    : { selectedEnemies: enemyTeam, onSelectEnemy: handleSelectEnemy, lockedIds };
 
   return (
     <div className="app">
@@ -87,7 +89,7 @@ function App() {
             </div>
           )}
         </div>
-        <TeamCompositionBar
+        <TeamRadar
           enemyTeam={enemyTeam}
           yourTeam={yourTeam}
         />

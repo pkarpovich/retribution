@@ -1,7 +1,6 @@
 import type {
   Hero,
   HeroTier,
-  HeroRole,
   UserRank,
   JunglerType,
   RecommendationLevel,
@@ -11,9 +10,47 @@ import type {
   RecommendationWarning
 } from '../types/hero';
 
+// ---------------------------------------------------------------------------
+// Public API: getJunglers, recommendJunglers, calculateJunglerRecommendation
+// ---------------------------------------------------------------------------
+
 export function getJunglers(heroes: Hero[]): Hero[] {
   return heroes.filter(hero => hero.lane?.includes('Jungle'));
 }
+
+// ---------------------------------------------------------------------------
+// Capability helpers (NEW — use enriched hero.capabilities data)
+// ---------------------------------------------------------------------------
+
+export function getMobilityScore(hero: Hero): number {
+  const mobilitySpecs = ['Charge', 'Chase', 'Blink'];
+  const specScore = Math.min(mobilitySpecs.filter(i => hero.speciality.includes(i)).length, 3);
+  if (hero.capabilities) return Math.min(Math.max(hero.capabilities.mobilityScore, specScore), 3);
+  if (specScore > 0) return specScore;
+  if (hero.role.includes('Assassin')) return 1;
+  return 0;
+}
+
+export function getCCScore(hero: Hero): number {
+  if (hero.capabilities) return hero.capabilities.ccScore;
+  const ccIndicators = ['Crowd Control', 'Control', 'Initiator'];
+  const matches = ccIndicators.filter(i => hero.speciality.includes(i));
+  return Math.min(matches.length * 2, 3);
+}
+
+export function hasSustainCapability(hero: Hero): boolean {
+  if (hero.capabilities) return hero.capabilities.hasSustain;
+  return hero.speciality.includes('Regen') || hero.speciality.includes('Support');
+}
+
+export function hasImmunityCapability(hero: Hero): boolean {
+  if (hero.capabilities) return hero.capabilities.hasImmunity;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Kept helpers: tier, stats, classification, damage type, roles
+// ---------------------------------------------------------------------------
 
 export function getTierScore(tier: HeroTier): number {
   const scores: Record<HeroTier, number> = {
@@ -53,18 +90,13 @@ function isPrimarilyMagic(hero: Hero): boolean {
   return hero.role.includes('Mage') || hero.speciality.includes('Magic Damage');
 }
 
-function hasEscape(hero: Hero): boolean {
-  const escapeIndicators = ['Charge', 'Chase', 'Blink'];
-  return escapeIndicators.some(indicator => hero.speciality.includes(indicator));
-}
-
 function isEarlyGame(hero: Hero): boolean {
-  const earlyIndicators = ['Early Game', 'Burst', 'Initiator'];
+  const earlyIndicators = ['Burst', 'Initiator', 'Charge', 'Push'];
   return earlyIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
 function isLateGame(hero: Hero): boolean {
-  const lateIndicators = ['Late Game', 'Scaling'];
+  const lateIndicators = ['Finisher'];
   return lateIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
@@ -76,16 +108,6 @@ function isDamageDealer(hero: Hero): boolean {
   const hasDamageSpec = hero.speciality.some(s => damageSpecs.includes(s));
 
   return hasDamageRole || hasDamageSpec;
-}
-
-function hasCrowdControl(hero: Hero): boolean {
-  const ccIndicators = ['Crowd Control', 'Control', 'Initiator'];
-  return ccIndicators.some(indicator => hero.speciality.includes(indicator));
-}
-
-function hasHealing(hero: Hero): boolean {
-  const healIndicators = ['Regen', 'Support'];
-  return healIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
 export function classifyJunglerType(hero: Hero): JunglerType {
@@ -128,6 +150,10 @@ export function classifyJunglerType(hero: Hero): JunglerType {
   return 'HYBRID';
 }
 
+// ---------------------------------------------------------------------------
+// Weights
+// ---------------------------------------------------------------------------
+
 export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
   const weightsByRank: Record<UserRank, RecommendationWeights> = {
     'Epic': {
@@ -137,8 +163,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 0.6,
       counter_penalty: 5,
       weak_penalty: 7,
+      strong_against: 4,
       synergy_bonus: 3,
-      meta: 0.4
+      meta: 0.4,
+      cc_chain: 0.5,
+      invade_resistance: 0.4
     },
     'Legend': {
       tier: 0.4,
@@ -147,8 +176,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 0.8,
       counter_penalty: 8,
       weak_penalty: 10,
+      strong_against: 6,
       synergy_bonus: 5,
-      meta: 0.6
+      meta: 0.6,
+      cc_chain: 0.7,
+      invade_resistance: 0.6
     },
     'Mythic': {
       tier: 0.3,
@@ -157,8 +189,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 1.0,
       counter_penalty: 10,
       weak_penalty: 15,
+      strong_against: 8,
       synergy_bonus: 5,
-      meta: 0.8
+      meta: 0.8,
+      cc_chain: 1.0,
+      invade_resistance: 0.8
     },
     'Mythical Honor': {
       tier: 0.3,
@@ -167,23 +202,33 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 1.2,
       counter_penalty: 12,
       weak_penalty: 18,
+      strong_against: 10,
       synergy_bonus: 6,
-      meta: 1.0
+      meta: 1.0,
+      cc_chain: 1.2,
+      invade_resistance: 1.0
     },
-    'Mythical Glory': {
+    'Mythical Glory+': {
       tier: 0.2,
       stats: 0.7,
       team_balance: 1.8,
       enemy_comp: 1.5,
       counter_penalty: 15,
       weak_penalty: 20,
+      strong_against: 12,
       synergy_bonus: 8,
-      meta: 1.2
+      meta: 1.2,
+      cc_chain: 1.5,
+      invade_resistance: 1.2
     }
   };
 
   return weightsByRank[userRank];
 }
+
+// ---------------------------------------------------------------------------
+// Scoring components (will be enhanced in subsequent tasks)
+// ---------------------------------------------------------------------------
 
 function calculateBaseScore(
   hero: Hero,
@@ -216,7 +261,7 @@ function calculateTeamBalance(
   const teamStats = {
     damageDealers: 0,
     tanks: 0,
-    supports: 0
+    hasAOE: false
   };
 
   for (const teammate of yourTeam) {
@@ -226,8 +271,8 @@ function calculateTeamBalance(
     if (teammate.role.includes('Tank')) {
       teamStats.tanks += 1;
     }
-    if (teammate.role.includes('Support')) {
-      teamStats.supports += 1;
+    if (teammate.capabilities?.hasAOE) {
+      teamStats.hasAOE = true;
     }
   }
 
@@ -254,6 +299,10 @@ function calculateTeamBalance(
 
   if (teamStats.tanks >= 2 && heroType === 'UTILITY') {
     score -= 20 * weights.team_balance;
+  }
+
+  if (!teamStats.hasAOE && hero.capabilities?.hasAOE) {
+    score += 20 * weights.team_balance;
   }
 
   return score;
@@ -287,7 +336,7 @@ function calculateDamageTypeBalance(
   return score;
 }
 
-function calculateEnemyAnalysis(
+function calculateEnemyVulnerability(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
@@ -296,59 +345,114 @@ function calculateEnemyAnalysis(
 
   const enemyStats = {
     tanks: 0,
-    squishyValue: 0,
-    ccCount: 0,
-    healers: 0
+    squishyTargetValue: 0,
+    ccCount: 0
   };
 
   for (const enemy of enemyTeam) {
     if (enemy.role.includes('Tank')) {
       enemyStats.tanks += 1;
-    } else if (
-      enemy.role.includes('Mage') ||
-      enemy.role.includes('Marksman') ||
-      enemy.role.includes('Assassin')
-    ) {
-      const mobility = hasEscape(enemy) ? 0.7 : 1.3;
-      enemyStats.squishyValue += mobility;
     }
 
-    if (hasCrowdControl(enemy)) {
+    const isSquishyRole =
+      !enemy.role.includes('Tank') && (
+        enemy.role.includes('Mage') ||
+        enemy.role.includes('Marksman') ||
+        enemy.role.includes('Assassin')
+      );
+
+    if (isSquishyRole) {
+      const enemyMobility = getMobilityScore(enemy);
+      const mobilityFactor = Math.max(0.2, (3 - enemyMobility) / 3);
+      enemyStats.squishyTargetValue += mobilityFactor;
+    }
+
+    if (getCCScore(enemy) >= 1) {
       enemyStats.ccCount += 1;
-    }
-
-    if (hasHealing(enemy)) {
-      enemyStats.healers += 1;
     }
   }
 
   let score = 0;
 
   const tankBonus = enemyStats.tanks >= 2 ? 50 : 0;
-  const squishyBonus = enemyStats.squishyValue >= 3 ? 50 : 0;
+  const squishyBonus = enemyStats.squishyTargetValue >= 2 ? 50 : 0;
 
   if (heroType === 'DAMAGE') {
-    score += tankBonus * weights.enemy_comp;
-  } else if (heroType === 'UTILITY') {
     score += squishyBonus * weights.enemy_comp;
+  } else if (heroType === 'UTILITY') {
+    score += tankBonus * weights.enemy_comp;
   } else if (heroType === 'HYBRID') {
     score += Math.max(tankBonus, squishyBonus) * 0.6 * weights.enemy_comp;
   }
 
-  if (hero.role.includes('Assassin') && enemyStats.squishyValue >= 2) {
-    const bonus = enemyStats.squishyValue * 10 * weights.enemy_comp;
-    score += bonus;
+  if (hero.role.includes('Assassin') && enemyStats.squishyTargetValue >= 1) {
+    score += enemyStats.squishyTargetValue * 15 * weights.enemy_comp;
   }
 
-  if (enemyStats.ccCount >= 3 && hasEscape(hero)) {
-    score += 15 * weights.enemy_comp;
-  }
-
-  if (enemyStats.healers >= 1 && hero.speciality.includes('Anti-Heal')) {
+  if (enemyStats.ccCount >= 3 && hasImmunityCapability(hero)) {
     score += 20 * weights.enemy_comp;
   }
 
   return score;
+}
+
+function calculateStrongAgainstBonus(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  if (!hero.strongAgainst) return 0;
+
+  const enemyIds = new Set(enemyTeam.map(e => e.id));
+  let rawScore = 0;
+
+  for (const target of hero.strongAgainst) {
+    if (enemyIds.has(target.id)) {
+      rawScore += target.weighted_score;
+    }
+  }
+
+  const totalBonus = Math.sqrt(rawScore) * 15 * (weights.strong_against / 10);
+
+  return Math.min(totalBonus, 120);
+}
+
+function calculateCCChainSynergy(
+  hero: Hero,
+  yourTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  if (yourTeam.length === 0) return 0;
+
+  const teamCCScore = yourTeam.reduce((sum, teammate) => sum + getCCScore(teammate), 0);
+  const junglerType = classifyJunglerType(hero);
+
+  let bonus = 0;
+
+  if (teamCCScore >= 3 && junglerType === 'DAMAGE') {
+    bonus = 25 * weights.cc_chain;
+  } else if (teamCCScore <= 1 && getCCScore(hero) >= 2) {
+    bonus = 20 * weights.cc_chain;
+  }
+
+  return bonus;
+}
+
+function calculateInvadeResistance(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  const enemyEarlyCount = enemyTeam.filter(e => isEarlyGame(e)).length;
+
+  if (enemyEarlyCount < 2) return 0;
+
+  const sustainBonus = hasSustainCapability(hero) ? 15 : 0;
+  const mobilityBonus = getMobilityScore(hero) >= 2 ? 10 : 0;
+  const fragile = !hasSustainCapability(hero) && getMobilityScore(hero) <= 1;
+  const fragilePenalty = fragile ? -20 : 0;
+
+  return (sustainBonus + mobilityBonus + fragilePenalty) * weights.invade_resistance;
 }
 
 function calculateCounterPenalty(
@@ -357,27 +461,19 @@ function calculateCounterPenalty(
   weights: RecommendationWeights
 ): number {
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  let rawPenalty = 0;
-
-  if (hero.counters) {
-    for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id)) {
-        rawPenalty += counter.weighted_score * weights.counter_penalty;
-      }
-    }
-  }
+  let weakScore = 0;
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
       if (enemyIds.has(weak.id)) {
-        rawPenalty += weak.weighted_score * weights.weak_penalty * 1.5;
+        weakScore += weak.weighted_score;
       }
     }
   }
 
-  const totalPenalty = Math.sqrt(rawPenalty) * 15;
+  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.weak_penalty / 10);
 
-  return Math.min(totalPenalty, 120);
+  return Math.min(weakPenalty, 120);
 }
 
 function calculateSynergyBonus(
@@ -386,17 +482,18 @@ function calculateSynergyBonus(
   weights: RecommendationWeights
 ): number {
   const teamIds = new Set(yourTeam.map(t => t.id));
-  let totalBonus = 0;
+  let rawScore = 0;
 
   if (hero.synergies) {
     for (const synergy of hero.synergies) {
       if (teamIds.has(synergy.id)) {
-        totalBonus += synergy.weighted_score * weights.synergy_bonus;
+        rawScore += synergy.weighted_score;
       }
     }
   }
 
-  return totalBonus;
+  const totalBonus = Math.sqrt(rawScore) * 15 * (weights.synergy_bonus / 10);
+  return Math.min(totalBonus, 120);
 }
 
 function calculateMetaBonus(
@@ -431,6 +528,7 @@ function calculateEarlyLateGameFactor(
   const heroIsEarly = isEarlyGame(hero);
   const heroIsLate = isLateGame(hero);
 
+  if (heroIsEarly && heroIsLate) return 0;
   if (!heroIsEarly && !heroIsLate) return 0;
 
   let teamEarlyCount = 0;
@@ -471,6 +569,10 @@ function calculateEarlyLateGameFactor(
   return score;
 }
 
+// ---------------------------------------------------------------------------
+// Recommendation level
+// ---------------------------------------------------------------------------
+
 function getRecommendationLevel(totalScore: number): RecommendationLevel {
   if (totalScore >= 180) return 'BEST_PICK';
   if (totalScore >= 140) return 'STRONG_PICK';
@@ -479,19 +581,25 @@ function getRecommendationLevel(totalScore: number): RecommendationLevel {
   return 'RISKY_PICK';
 }
 
+// ---------------------------------------------------------------------------
+// Warnings and strengths
+// ---------------------------------------------------------------------------
+
 function generateWarnings(
   hero: Hero,
   enemyTeam: Hero[],
-  _weights: RecommendationWeights
+  weights: RecommendationWeights
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
+  const weakScale = weights.weak_penalty / 10;
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
       if (enemyIds.has(weak.id)) {
-        const severity = weak.weighted_score > 5 ? 'HIGH' :
-                        weak.weighted_score > 2 ? 'MEDIUM' : 'LOW';
+        const scaledScore = weak.weighted_score * weakScale;
+        const severity = scaledScore > 5 ? 'HIGH' :
+                        scaledScore > 2 ? 'MEDIUM' : 'LOW';
         warnings.push({
           type: 'WEAK_AGAINST',
           hero: weak.hero_name,
@@ -502,17 +610,22 @@ function generateWarnings(
     }
   }
 
-  if (hero.counters) {
-    for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id) && counter.weighted_score > 5) {
-        warnings.push({
-          type: 'STRONG_COUNTER',
-          hero: counter.hero_name,
-          severity: 'MEDIUM',
-          message: `${counter.hero_name} can counter ${hero.hero_name}`
-        });
-      }
-    }
+  const enemyEarlyCount = enemyTeam.filter(e => isEarlyGame(e)).length;
+  if (enemyEarlyCount >= 2 && !hasSustainCapability(hero) && getMobilityScore(hero) <= 1) {
+    warnings.push({
+      type: 'INVADE_VULNERABLE',
+      severity: 'HIGH',
+      message: `${hero.hero_name} is vulnerable to early invades from aggressive enemy comp`
+    });
+  }
+
+  const enemyCCCount = enemyTeam.filter(e => getCCScore(e) >= 1).length;
+  if (enemyCCCount >= 3 && !hasImmunityCapability(hero)) {
+    warnings.push({
+      type: 'HIGH_CC_THREAT',
+      severity: 'MEDIUM',
+      message: `Enemy has ${enemyCCCount} CC heroes — ${hero.hero_name} lacks immunity`
+    });
   }
 
   return warnings;
@@ -520,9 +633,9 @@ function generateWarnings(
 
 function generateStrengths(
   hero: Hero,
-  _yourTeam: Hero[],
   enemyTeam: Hero[],
-  breakdown: ScoreBreakdown
+  breakdown: ScoreBreakdown,
+  userRank: UserRank = 'Mythic'
 ): string[] {
   const strengths: string[] = [];
   const heroType = classifyJunglerType(hero);
@@ -562,6 +675,29 @@ function generateStrengths(
     }
   }
 
+  if (breakdown.strong_against > 20) {
+    const enemyIds = new Set(enemyTeam.map(e => e.id));
+    const countered = (hero.strongAgainst || [])
+      .filter(sa => enemyIds.has(sa.id))
+      .map(sa => sa.hero_name);
+    if (countered.length > 0) {
+      strengths.push(`Counters ${countered.join(', ')}`);
+    }
+  }
+
+  if (breakdown.cc_chain_synergy > 15) {
+    const junglerType = classifyJunglerType(hero);
+    if (junglerType === 'DAMAGE') {
+      strengths.push('Can follow up on team CC chains');
+    } else {
+      strengths.push('Fills team CC gap');
+    }
+  }
+
+  if (breakdown.invade_resistance > 10) {
+    strengths.push('Resistant to early invades');
+  }
+
   if (breakdown.synergy_bonus > 15) {
     strengths.push('Strong synergy with team');
   }
@@ -570,7 +706,7 @@ function generateStrengths(
     strengths.push('High meta relevance');
   }
 
-  const stats = getLatestStats(hero);
+  const stats = getLatestStats(hero, userRank);
   if (stats && stats.win_rate > 52) {
     strengths.push(`${stats.win_rate.toFixed(1)}% win rate`);
   }
@@ -578,11 +714,14 @@ function generateStrengths(
   return strengths;
 }
 
+// ---------------------------------------------------------------------------
+// Public API: calculateJunglerRecommendation, recommendJunglers
+// ---------------------------------------------------------------------------
+
 export function calculateJunglerRecommendation(
   hero: Hero,
   yourTeam: Hero[],
   enemyTeam: Hero[],
-  _bannedHeroes: Hero[],
   userRank: UserRank = 'Mythic',
   weights?: RecommendationWeights
 ): RecommendationResult {
@@ -591,7 +730,10 @@ export function calculateJunglerRecommendation(
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
   const teamBalanceScore = calculateTeamBalance(hero, yourTeam, finalWeights);
   const damageTypeBalanceScore = calculateDamageTypeBalance(hero, yourTeam, finalWeights);
-  const enemyAnalysisScore = calculateEnemyAnalysis(hero, enemyTeam, finalWeights);
+  const enemyAnalysisScore = calculateEnemyVulnerability(hero, enemyTeam, finalWeights);
+  const strongAgainstBonus = calculateStrongAgainstBonus(hero, enemyTeam, finalWeights);
+  const ccChainSynergyScore = calculateCCChainSynergy(hero, yourTeam, finalWeights);
+  const invadeResistanceScore = calculateInvadeResistance(hero, enemyTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
@@ -602,6 +744,9 @@ export function calculateJunglerRecommendation(
     team_balance: teamBalanceScore,
     damage_type_balance: damageTypeBalanceScore,
     enemy_analysis: enemyAnalysisScore,
+    strong_against: strongAgainstBonus,
+    cc_chain_synergy: ccChainSynergyScore,
+    invade_resistance: invadeResistanceScore,
     counter_penalty: -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
@@ -612,7 +757,10 @@ export function calculateJunglerRecommendation(
     baseScore +
     teamBalanceScore +
     damageTypeBalanceScore +
-    enemyAnalysisScore -
+    enemyAnalysisScore +
+    strongAgainstBonus +
+    ccChainSynergyScore +
+    invadeResistanceScore -
     counterPenalty +
     synergyBonus +
     metaBonus +
@@ -621,7 +769,7 @@ export function calculateJunglerRecommendation(
   const junglerType = classifyJunglerType(hero);
   const recommendationLevel = getRecommendationLevel(totalScore);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
-  const strengths = generateStrengths(hero, yourTeam, enemyTeam, breakdown);
+  const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
 
   return {
     hero,
@@ -651,15 +799,10 @@ export function recommendJunglers(
   const availableJunglers = junglers.filter(j => !unavailableIds.has(j.id));
 
   const recommendations = availableJunglers.map(jungler =>
-    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, bannedHeroes, userRank)
+    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank)
   );
 
   recommendations.sort((a, b) => b.total_score - a.total_score);
 
   return recommendations.slice(0, 8);
-}
-
-export function filterByRole(heroes: Hero[], role: HeroRole | 'All'): Hero[] {
-  if (role === 'All') return heroes;
-  return heroes.filter(hero => hero.role.includes(role));
 }

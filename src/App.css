@@ -12,9 +12,8 @@
   z-index: 10;
   width: 100%;
   box-sizing: border-box;
-  background: rgba(36, 36, 36, 0.95);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .headerTop {
@@ -29,7 +28,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #646cff, #9333ea);
+  background: linear-gradient(135deg, var(--accent), var(--magenta));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -58,7 +57,7 @@
 
 .searchSection {
   padding: 1.5rem 1.5rem 1rem 1.5rem;
-  background: #242424;
+  background: var(--bg-2);
   flex-shrink: 0;
 }
 
@@ -66,9 +65,9 @@
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.5rem 0 1.5rem;
-  background: #242424;
+  background: var(--bg-2);
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border);
 }
 
 .modeButton {
@@ -76,7 +75,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   background: transparent;
-  color: #a0a0a0;
+  color: var(--tx-3);
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
@@ -84,12 +83,12 @@
 }
 
 .modeButton:hover {
-  color: #e0e0e0;
+  color: var(--tx-1);
 }
 
 .modeButton.active {
-  color: #646cff;
-  border-bottom-color: #646cff;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .pickerSection {

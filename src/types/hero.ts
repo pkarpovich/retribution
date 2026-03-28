@@ -1,7 +1,7 @@
 export type HeroRole = 'Tank' | 'Fighter' | 'Assassin' | 'Mage' | 'Marksman' | 'Support';
 export type HeroLane = 'Jungle' | 'Exp Lane' | 'Mid Lane' | 'Gold Lane' | 'Roam';
 export type HeroTier = 'SS' | 'S' | 'A' | 'B' | 'C' | 'D';
-export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory';
+export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory+';
 export type JunglerType = 'DAMAGE' | 'UTILITY' | 'HYBRID';
 export type RecommendationLevel = 'BEST_PICK' | 'STRONG_PICK' | 'GOOD_PICK' | 'SAFE_PICK' | 'RISKY_PICK';
 
@@ -29,6 +29,23 @@ export interface HeroRelation {
   type?: string;
 }
 
+export interface SkillSummary {
+  name: string;
+  tags: string[];
+  cooldown: number | null;
+}
+
+export interface HeroCapabilities {
+  mobilityScore: number;
+  ccScore: number;
+  hasSustain: boolean;
+  hasAOE: boolean;
+  hasImmunity: boolean;
+  maxBurstDamage: number;
+  avgCooldown: number | null;
+  skillsSummary: SkillSummary[];
+}
+
 export interface Hero {
   id: number;
   hero_name: string;
@@ -44,6 +61,8 @@ export interface Hero {
   counters?: HeroRelation[];
   weakAgainst?: HeroRelation[];
   synergies?: HeroRelation[];
+  strongAgainst?: HeroRelation[];
+  capabilities?: HeroCapabilities;
 }
 
 export interface HeroData {
@@ -59,8 +78,11 @@ export interface RecommendationWeights {
   enemy_comp: number;
   counter_penalty: number;
   weak_penalty: number;
+  strong_against: number;
   synergy_bonus: number;
   meta: number;
+  cc_chain: number;
+  invade_resistance: number;
 }
 
 export interface ScoreBreakdown {
@@ -68,14 +90,17 @@ export interface ScoreBreakdown {
   team_balance: number;
   damage_type_balance: number;
   enemy_analysis: number;
+  strong_against: number;
+  cc_chain_synergy: number;
   counter_penalty: number;
   synergy_bonus: number;
   meta_bonus: number;
   early_late_game: number;
+  invade_resistance: number;
 }
 
 export interface RecommendationWarning {
-  type: 'STRONG_COUNTER' | 'WEAK_AGAINST' | 'NO_SYNERGY';
+  type: 'WEAK_AGAINST' | 'INVADE_VULNERABLE' | 'HIGH_CC_THREAT';
   hero?: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
