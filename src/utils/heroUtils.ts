@@ -159,7 +159,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.3,
       team_balance: 0.8,
       enemy_comp: 0.6,
-      counter_penalty: 5,
       weak_penalty: 7,
       strong_against: 4,
       synergy_bonus: 3,
@@ -172,7 +171,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.4,
       team_balance: 1.0,
       enemy_comp: 0.8,
-      counter_penalty: 8,
       weak_penalty: 10,
       strong_against: 6,
       synergy_bonus: 5,
@@ -185,7 +183,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.5,
       team_balance: 1.2,
       enemy_comp: 1.0,
-      counter_penalty: 10,
       weak_penalty: 15,
       strong_against: 8,
       synergy_bonus: 5,
@@ -198,7 +195,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.6,
       team_balance: 1.5,
       enemy_comp: 1.2,
-      counter_penalty: 12,
       weak_penalty: 18,
       strong_against: 10,
       synergy_bonus: 6,
@@ -211,7 +207,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.7,
       team_balance: 1.8,
       enemy_comp: 1.5,
-      counter_penalty: 15,
       weak_penalty: 20,
       strong_against: 12,
       synergy_bonus: 8,
@@ -514,6 +509,7 @@ function calculateEarlyLateGameFactor(
   const heroIsEarly = isEarlyGame(hero);
   const heroIsLate = isLateGame(hero);
 
+  if (heroIsEarly && heroIsLate) return 0;
   if (!heroIsEarly && !heroIsLate) return 0;
 
   let teamEarlyCount = 0;
@@ -619,7 +615,8 @@ function generateWarnings(
 function generateStrengths(
   hero: Hero,
   enemyTeam: Hero[],
-  breakdown: ScoreBreakdown
+  breakdown: ScoreBreakdown,
+  userRank: UserRank = 'Mythic'
 ): string[] {
   const strengths: string[] = [];
   const heroType = classifyJunglerType(hero);
@@ -690,7 +687,7 @@ function generateStrengths(
     strengths.push('High meta relevance');
   }
 
-  const stats = getLatestStats(hero);
+  const stats = getLatestStats(hero, userRank);
   if (stats && stats.win_rate > 52) {
     strengths.push(`${stats.win_rate.toFixed(1)}% win rate`);
   }
@@ -753,7 +750,7 @@ export function calculateJunglerRecommendation(
   const junglerType = classifyJunglerType(hero);
   const recommendationLevel = getRecommendationLevel(totalScore);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
-  const strengths = generateStrengths(hero, enemyTeam, breakdown);
+  const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
 
   return {
     hero,

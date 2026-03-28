@@ -34,27 +34,21 @@ function App() {
   );
 
   const handleSelectTeammate = (hero: Hero) => {
+    if (enemyTeam.some(h => h.id === hero.id)) return;
     setYourTeam(prev => {
       const isSelected = prev.some(h => h.id === hero.id);
-      if (isSelected) {
-        return prev.filter(h => h.id !== hero.id);
-      }
-      if (prev.length >= 4) {
-        return prev;
-      }
+      if (isSelected) return prev.filter(h => h.id !== hero.id);
+      if (prev.length >= 4) return prev;
       return [...prev, hero];
     });
   };
 
   const handleSelectEnemy = (hero: Hero) => {
+    if (yourTeam.some(h => h.id === hero.id)) return;
     setEnemyTeam(prev => {
       const isSelected = prev.some(h => h.id === hero.id);
-      if (isSelected) {
-        return prev.filter(h => h.id !== hero.id);
-      }
-      if (prev.length >= 5) {
-        return prev;
-      }
+      if (isSelected) return prev.filter(h => h.id !== hero.id);
+      if (prev.length >= 5) return prev;
       return [...prev, hero];
     });
   };
