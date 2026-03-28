@@ -64,8 +64,8 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
   const stats = getLatestStats(hero);
   const badge = RECOMMENDATION_BADGES[recommendation_level];
 
-  const maxScore = 200;
-  const scorePercentage = Math.min((total_score / maxScore) * 100, 100);
+  const maxScore = 400;
+  const scorePercentage = Math.max(0, Math.min((total_score / maxScore) * 100, 100));
   const filledDots = Math.round((scorePercentage / 100) * 5);
 
   return (
@@ -216,20 +216,22 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
               </div>
             )}
 
-            <div className={styles.stats}>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Win Rate</span>
-                <span className={styles.statValue}>{stats.win_rate.toFixed(1)}%</span>
+            {stats && (
+              <div className={styles.stats}>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Win Rate</span>
+                  <span className={styles.statValue}>{stats.win_rate.toFixed(1)}%</span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Pick Rate</span>
+                  <span className={styles.statValue}>{stats.pick_rate.toFixed(1)}%</span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Ban Rate</span>
+                  <span className={styles.statValue}>{stats.ban_rate.toFixed(1)}%</span>
+                </div>
               </div>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Pick Rate</span>
-                <span className={styles.statValue}>{stats.pick_rate.toFixed(1)}%</span>
-              </div>
-              <div className={styles.stat}>
-                <span className={styles.statLabel}>Ban Rate</span>
-                <span className={styles.statValue}>{stats.ban_rate.toFixed(1)}%</span>
-              </div>
-            </div>
+            )}
           </>
         )}
       </div>

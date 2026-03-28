@@ -1,7 +1,6 @@
 import type {
   Hero,
   HeroTier,
-  HeroRole,
   UserRank,
   JunglerType,
   RecommendationLevel,
@@ -17,11 +16,6 @@ import type {
 
 export function getJunglers(heroes: Hero[]): Hero[] {
   return heroes.filter(hero => hero.lane?.includes('Jungle'));
-}
-
-export function filterByRole(heroes: Hero[], role: HeroRole | 'All'): Hero[] {
-  if (role === 'All') return heroes;
-  return heroes.filter(hero => hero.role.includes(role));
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +89,7 @@ function isPrimarilyMagic(hero: Hero): boolean {
 }
 
 function isEarlyGame(hero: Hero): boolean {
-  const earlyIndicators = ['Early Game', 'Burst', 'Initiator'];
+  const earlyIndicators = ['Early Game', 'Initiator'];
   return earlyIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
@@ -112,11 +106,6 @@ function isDamageDealer(hero: Hero): boolean {
   const hasDamageSpec = hero.speciality.some(s => damageSpecs.includes(s));
 
   return hasDamageRole || hasDamageSpec;
-}
-
-function hasCrowdControl(hero: Hero): boolean {
-  const ccIndicators = ['Crowd Control', 'Control', 'Initiator'];
-  return ccIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
 function hasHealing(hero: Hero): boolean {
@@ -274,8 +263,7 @@ function calculateTeamBalance(
 
   const teamStats = {
     damageDealers: 0,
-    tanks: 0,
-    supports: 0
+    tanks: 0
   };
 
   for (const teammate of yourTeam) {
@@ -284,9 +272,6 @@ function calculateTeamBalance(
     }
     if (teammate.role.includes('Tank')) {
       teamStats.tanks += 1;
-    }
-    if (teammate.role.includes('Support')) {
-      teamStats.supports += 1;
     }
   }
 
@@ -376,7 +361,7 @@ function calculateEnemyVulnerability(
       enemyStats.squishyTargetValue += mobilityFactor;
     }
 
-    if (hasCrowdControl(enemy)) {
+    if (getCCScore(enemy) >= 1) {
       enemyStats.ccCount += 1;
     }
 
@@ -478,14 +463,6 @@ function calculateCounterPenalty(
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   let rawPenalty = 0;
 
-  if (hero.counters) {
-    for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id)) {
-        rawPenalty += counter.weighted_score * weights.counter_penalty;
-      }
-    }
-  }
-
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
       if (enemyIds.has(weak.id)) {
@@ -505,17 +482,18 @@ function calculateSynergyBonus(
   weights: RecommendationWeights
 ): number {
   const teamIds = new Set(yourTeam.map(t => t.id));
-  let totalBonus = 0;
+  let rawBonus = 0;
 
   if (hero.synergies) {
     for (const synergy of hero.synergies) {
       if (teamIds.has(synergy.id)) {
-        totalBonus += synergy.weighted_score * weights.synergy_bonus;
+        rawBonus += synergy.weighted_score * weights.synergy_bonus;
       }
     }
   }
 
-  return totalBonus;
+  const totalBonus = Math.sqrt(rawBonus) * 15;
+  return Math.min(totalBonus, 120);
 }
 
 function calculateMetaBonus(
@@ -614,7 +592,6 @@ function generateWarnings(
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   const weakScale = weights.weak_penalty / 10;
-  const counterScale = weights.counter_penalty / 10;
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
@@ -632,20 +609,6 @@ function generateWarnings(
     }
   }
 
-  if (hero.counters) {
-    for (const counter of hero.counters) {
-      const scaledScore = counter.weighted_score * counterScale;
-      if (enemyIds.has(counter.id) && scaledScore > 5) {
-        warnings.push({
-          type: 'STRONG_COUNTER',
-          hero: counter.hero_name,
-          severity: 'MEDIUM',
-          message: `${counter.hero_name} can counter ${hero.hero_name}`
-        });
-      }
-    }
-  }
-
   const enemyEarlyCount = enemyTeam.filter(e => isEarlyGame(e)).length;
   if (enemyEarlyCount >= 2 && !hasSustainCapability(hero) && getMobilityScore(hero) <= 1) {
     warnings.push({
@@ -655,7 +618,7 @@ function generateWarnings(
     });
   }
 
-  const enemyCCCount = enemyTeam.filter(e => hasCrowdControl(e)).length;
+  const enemyCCCount = enemyTeam.filter(e => getCCScore(e) >= 1).length;
   if (enemyCCCount >= 3 && !hasImmunityCapability(hero)) {
     warnings.push({
       type: 'HIGH_CC_THREAT',
@@ -669,7 +632,6 @@ function generateWarnings(
 
 function generateStrengths(
   hero: Hero,
-  _yourTeam: Hero[],
   enemyTeam: Hero[],
   breakdown: ScoreBreakdown
 ): string[] {
@@ -758,7 +720,6 @@ export function calculateJunglerRecommendation(
   hero: Hero,
   yourTeam: Hero[],
   enemyTeam: Hero[],
-  _bannedHeroes: Hero[],
   userRank: UserRank = 'Mythic',
   weights?: RecommendationWeights
 ): RecommendationResult {
@@ -806,7 +767,7 @@ export function calculateJunglerRecommendation(
   const junglerType = classifyJunglerType(hero);
   const recommendationLevel = getRecommendationLevel(totalScore);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
-  const strengths = generateStrengths(hero, yourTeam, enemyTeam, breakdown);
+  const strengths = generateStrengths(hero, enemyTeam, breakdown);
 
   return {
     hero,
@@ -836,7 +797,7 @@ export function recommendJunglers(
   const availableJunglers = junglers.filter(j => !unavailableIds.has(j.id));
 
   const recommendations = availableJunglers.map(jungler =>
-    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, bannedHeroes, userRank)
+    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank)
   );
 
   recommendations.sort((a, b) => b.total_score - a.total_score);
