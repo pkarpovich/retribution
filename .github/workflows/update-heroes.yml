@@ -29,8 +29,8 @@ jobs:
 
       - name: Commit and push if changed
         run: |
-          LINES=$(git diff src/data/heroes.json | grep '^[+-]' | grep -v '^[+-][+-]' | grep -vc 'lastUpdated')
-          [ "$LINES" -eq 0 ] && { git checkout src/data/heroes.json; exit 0; }
+          LINES=$(git diff src/data/heroes.json | grep '^[+-]' | grep -v '^[+-][+-]' | grep -v 'lastUpdated' | wc -l)
+          if [ "$LINES" -eq 0 ]; then git checkout src/data/heroes.json; echo "No meaningful changes"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/heroes.json
