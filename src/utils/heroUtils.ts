@@ -482,16 +482,19 @@ function getRecommendationLevel(totalScore: number): RecommendationLevel {
 function generateWarnings(
   hero: Hero,
   enemyTeam: Hero[],
-  _weights: RecommendationWeights
+  weights: RecommendationWeights
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
+  const weakScale = weights.weak_penalty / 10;
+  const counterScale = weights.counter_penalty / 10;
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
       if (enemyIds.has(weak.id)) {
-        const severity = weak.weighted_score > 5 ? 'HIGH' :
-                        weak.weighted_score > 2 ? 'MEDIUM' : 'LOW';
+        const scaledScore = weak.weighted_score * weakScale;
+        const severity = scaledScore > 5 ? 'HIGH' :
+                        scaledScore > 2 ? 'MEDIUM' : 'LOW';
         warnings.push({
           type: 'WEAK_AGAINST',
           hero: weak.hero_name,
@@ -504,7 +507,8 @@ function generateWarnings(
 
   if (hero.counters) {
     for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id) && counter.weighted_score > 5) {
+      const scaledScore = counter.weighted_score * counterScale;
+      if (enemyIds.has(counter.id) && scaledScore > 5) {
         warnings.push({
           type: 'STRONG_COUNTER',
           hero: counter.hero_name,

@@ -11,20 +11,21 @@ import './App.css';
 
 type PickerMode = 'team' | 'enemy';
 
+const allHeroes = heroData.heroes as Hero[];
+
 function App() {
   const [yourTeam, setYourTeam] = useState<Hero[]>([]);
   const [enemyTeam, setEnemyTeam] = useState<Hero[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>('enemy');
 
-  const allHeroes = heroData.heroes as Hero[];
   const junglers = useMemo(() => getJunglers(allHeroes), []);
 
   const filteredHeroes = useMemo(
     () => allHeroes.filter(hero =>
       hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
     ),
-    [allHeroes, searchQuery]
+    [searchQuery]
   );
 
   const recommendations = useMemo(
