@@ -131,10 +131,10 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 7: Implement team_balance, damage_type_balance, early_late_game
-- [ ] Port `calculateTeamBalance()` — keep existing logic
-- [ ] Port `calculateDamageTypeBalance()` — keep existing logic
-- [ ] Port `calculateEarlyLateGameFactor()` with enhancement: early jungler vs late enemy comp → extra bonus
-- [ ] run `pnpm build` - must compile
+- [x] Port `calculateTeamBalance()` — keep existing logic
+- [x] Port `calculateDamageTypeBalance()` — keep existing logic
+- [x] Port `calculateEarlyLateGameFactor()` with enhancement: early jungler vs late enemy comp → extra bonus
+- [x] run `pnpm build` - must compile
 
 ### Task 8: Implement counter_penalty and synergy_bonus
 - [ ] Port `calculateCounterPenalty()` — same existing logic with weights
