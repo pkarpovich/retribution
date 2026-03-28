@@ -148,6 +148,12 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                   </span>
                 </div>
                 <div className={styles.breakdownItem}>
+                  <span>Strong Against</span>
+                  <span className={breakdown.strong_against >= 0 ? styles.positive : styles.negative}>
+                    {breakdown.strong_against >= 0 ? '+' : ''}{breakdown.strong_against.toFixed(1)}
+                  </span>
+                </div>
+                <div className={styles.breakdownItem}>
                   <span>Counter Penalty</span>
                   <span className={breakdown.counter_penalty >= 0 ? styles.positive : styles.negative}>
                     {breakdown.counter_penalty >= 0 ? '+' : ''}{breakdown.counter_penalty.toFixed(1)}

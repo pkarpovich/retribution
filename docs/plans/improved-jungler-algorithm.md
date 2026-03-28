@@ -104,10 +104,10 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 3: Implement strong_against_bonus
-- [ ] Implement `calculateStrongAgainstBonus()` — for each enemy in `hero.strongAgainst` → weighted bonus
-- [ ] Use `weighted_score * weights.strong_against` scaling
-- [ ] Cap at reasonable max (like counter_penalty cap of 120)
-- [ ] run `pnpm build` - must compile
+- [x] Implement `calculateStrongAgainstBonus()` — for each enemy in `hero.strongAgainst` → weighted bonus
+- [x] Use `weighted_score * weights.strong_against` scaling
+- [x] Cap at reasonable max (like counter_penalty cap of 120)
+- [x] run `pnpm build` - must compile
 
 ### Task 4: Implement improved enemy_vulnerability
 - [ ] Implement `calculateEnemyVulnerability()` replacing old `calculateEnemyAnalysis()`

@@ -90,6 +90,7 @@ export interface ScoreBreakdown {
   team_balance: number;
   damage_type_balance: number;
   enemy_analysis: number;
+  strong_against: number;
   counter_penalty: number;
   synergy_bonus: number;
   meta_bonus: number;

@@ -415,6 +415,27 @@ function calculateEnemyAnalysis(
   return score;
 }
 
+function calculateStrongAgainstBonus(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  if (!hero.strongAgainst) return 0;
+
+  const enemyIds = new Set(enemyTeam.map(e => e.id));
+  let rawBonus = 0;
+
+  for (const target of hero.strongAgainst) {
+    if (enemyIds.has(target.id)) {
+      rawBonus += target.weighted_score * weights.strong_against;
+    }
+  }
+
+  const totalBonus = Math.sqrt(rawBonus) * 15;
+
+  return Math.min(totalBonus, 120);
+}
+
 function calculateCounterPenalty(
   hero: Hero,
   enemyTeam: Hero[],
@@ -672,6 +693,7 @@ export function calculateJunglerRecommendation(
   const teamBalanceScore = calculateTeamBalance(hero, yourTeam, finalWeights);
   const damageTypeBalanceScore = calculateDamageTypeBalance(hero, yourTeam, finalWeights);
   const enemyAnalysisScore = calculateEnemyAnalysis(hero, enemyTeam, finalWeights);
+  const strongAgainstBonus = calculateStrongAgainstBonus(hero, enemyTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
@@ -682,6 +704,7 @@ export function calculateJunglerRecommendation(
     team_balance: teamBalanceScore,
     damage_type_balance: damageTypeBalanceScore,
     enemy_analysis: enemyAnalysisScore,
+    strong_against: strongAgainstBonus,
     counter_penalty: -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
@@ -692,7 +715,8 @@ export function calculateJunglerRecommendation(
     baseScore +
     teamBalanceScore +
     damageTypeBalanceScore +
-    enemyAnalysisScore -
+    enemyAnalysisScore +
+    strongAgainstBonus -
     counterPenalty +
     synergyBonus +
     metaBonus +
