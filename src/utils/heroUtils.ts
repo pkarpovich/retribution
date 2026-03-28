@@ -11,7 +11,7 @@ import type {
 } from '../types/hero';
 
 // ---------------------------------------------------------------------------
-// Public API: getJunglers, filterByRole
+// Public API: getJunglers, recommendJunglers, calculateJunglerRecommendation
 // ---------------------------------------------------------------------------
 
 export function getJunglers(heroes: Hero[]): Hero[] {
@@ -23,7 +23,7 @@ export function getJunglers(heroes: Hero[]): Hero[] {
 // ---------------------------------------------------------------------------
 
 export function getMobilityScore(hero: Hero): number {
-  if (hero.capabilities) return hero.capabilities.mobilityScore;
+  if (hero.capabilities) return Math.min(hero.capabilities.mobilityScore, 3);
   const escapeIndicators = ['Charge', 'Chase', 'Blink'];
   const matches = escapeIndicators.filter(i => hero.speciality.includes(i));
   return Math.min(matches.length, 3);
@@ -89,12 +89,12 @@ function isPrimarilyMagic(hero: Hero): boolean {
 }
 
 function isEarlyGame(hero: Hero): boolean {
-  const earlyIndicators = ['Early Game', 'Initiator'];
+  const earlyIndicators = ['Charge', 'Push'];
   return earlyIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
 function isLateGame(hero: Hero): boolean {
-  const lateIndicators = ['Late Game', 'Scaling'];
+  const lateIndicators = ['Finisher'];
   return lateIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
@@ -106,11 +106,6 @@ function isDamageDealer(hero: Hero): boolean {
   const hasDamageSpec = hero.speciality.some(s => damageSpecs.includes(s));
 
   return hasDamageRole || hasDamageSpec;
-}
-
-function hasHealing(hero: Hero): boolean {
-  const healIndicators = ['Regen', 'Support'];
-  return healIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
 export function classifyJunglerType(hero: Hero): JunglerType {
@@ -341,8 +336,7 @@ function calculateEnemyVulnerability(
   const enemyStats = {
     tanks: 0,
     squishyTargetValue: 0,
-    ccCount: 0,
-    healers: 0
+    ccCount: 0
   };
 
   for (const enemy of enemyTeam) {
@@ -363,10 +357,6 @@ function calculateEnemyVulnerability(
 
     if (getCCScore(enemy) >= 1) {
       enemyStats.ccCount += 1;
-    }
-
-    if (hasHealing(enemy)) {
-      enemyStats.healers += 1;
     }
   }
 
@@ -391,10 +381,6 @@ function calculateEnemyVulnerability(
     score += 20 * weights.enemy_comp;
   }
 
-  if (enemyStats.healers >= 1 && hero.speciality.includes('Anti-Heal')) {
-    score += 20 * weights.enemy_comp;
-  }
-
   return score;
 }
 
@@ -406,15 +392,15 @@ function calculateStrongAgainstBonus(
   if (!hero.strongAgainst) return 0;
 
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  let rawBonus = 0;
+  let rawScore = 0;
 
   for (const target of hero.strongAgainst) {
     if (enemyIds.has(target.id)) {
-      rawBonus += target.weighted_score * weights.strong_against;
+      rawScore += target.weighted_score;
     }
   }
 
-  const totalBonus = Math.sqrt(rawBonus) * 15;
+  const totalBonus = Math.sqrt(rawScore) * 15 * (weights.strong_against / 10);
 
   return Math.min(totalBonus, 120);
 }
@@ -461,17 +447,17 @@ function calculateCounterPenalty(
   weights: RecommendationWeights
 ): number {
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  let rawPenalty = 0;
+  let rawScore = 0;
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
       if (enemyIds.has(weak.id)) {
-        rawPenalty += weak.weighted_score * weights.weak_penalty * 1.5;
+        rawScore += weak.weighted_score;
       }
     }
   }
 
-  const totalPenalty = Math.sqrt(rawPenalty) * 15;
+  const totalPenalty = Math.sqrt(rawScore) * 15 * (weights.weak_penalty / 10);
 
   return Math.min(totalPenalty, 120);
 }
@@ -482,17 +468,17 @@ function calculateSynergyBonus(
   weights: RecommendationWeights
 ): number {
   const teamIds = new Set(yourTeam.map(t => t.id));
-  let rawBonus = 0;
+  let rawScore = 0;
 
   if (hero.synergies) {
     for (const synergy of hero.synergies) {
       if (teamIds.has(synergy.id)) {
-        rawBonus += synergy.weighted_score * weights.synergy_bonus;
+        rawScore += synergy.weighted_score;
       }
     }
   }
 
-  const totalBonus = Math.sqrt(rawBonus) * 15;
+  const totalBonus = Math.sqrt(rawScore) * 15 * (weights.synergy_bonus / 10);
   return Math.min(totalBonus, 120);
 }
 
