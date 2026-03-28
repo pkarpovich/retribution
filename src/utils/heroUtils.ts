@@ -646,6 +646,24 @@ function generateWarnings(
     }
   }
 
+  const enemyEarlyCount = enemyTeam.filter(e => isEarlyGame(e)).length;
+  if (enemyEarlyCount >= 2 && !hasSustainCapability(hero) && getMobilityScore(hero) <= 1) {
+    warnings.push({
+      type: 'INVADE_VULNERABLE',
+      severity: 'HIGH',
+      message: `${hero.hero_name} is vulnerable to early invades from aggressive enemy comp`
+    });
+  }
+
+  const enemyCCCount = enemyTeam.filter(e => hasCrowdControl(e)).length;
+  if (enemyCCCount >= 3 && !hasImmunityCapability(hero)) {
+    warnings.push({
+      type: 'HIGH_CC_THREAT',
+      severity: 'MEDIUM',
+      message: `Enemy has ${enemyCCCount} CC heroes — ${hero.hero_name} lacks immunity`
+    });
+  }
+
   return warnings;
 }
 
@@ -691,6 +709,29 @@ function generateStrengths(
     } else if (isLateGame(hero)) {
       strengths.push('Excellent late game scaling');
     }
+  }
+
+  if (breakdown.strong_against > 20) {
+    const enemyIds = new Set(enemyTeam.map(e => e.id));
+    const countered = (hero.strongAgainst || [])
+      .filter(sa => enemyIds.has(sa.id))
+      .map(sa => sa.hero_name);
+    if (countered.length > 0) {
+      strengths.push(`Counters ${countered.join(', ')}`);
+    }
+  }
+
+  if (breakdown.cc_chain_synergy > 15) {
+    const junglerType = classifyJunglerType(hero);
+    if (junglerType === 'DAMAGE') {
+      strengths.push('Can follow up on team CC chains');
+    } else {
+      strengths.push('Fills team CC gap');
+    }
+  }
+
+  if (breakdown.invade_resistance > 10) {
+    strengths.push('Resistant to early invades');
   }
 
   if (breakdown.synergy_bonus > 15) {

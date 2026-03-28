@@ -142,13 +142,13 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 9: Wire up scoring pipeline and recommendation
-- [ ] Implement `calculateJunglerRecommendation()` combining all components
-- [ ] Update `ScoreBreakdown` type to include new fields: `strong_against`, `cc_chain_synergy`, `invade_resistance`
-- [ ] Update `getRecommendationLevel()` thresholds if needed
-- [ ] Implement `generateWarnings()` — port existing + add new warning types
-- [ ] Implement `generateStrengths()` — port existing + add new strength types
-- [ ] Implement `recommendJunglers()` — same signature, uses new scoring
-- [ ] run `pnpm build && pnpm lint` - must pass
+- [x] Implement `calculateJunglerRecommendation()` combining all components
+- [x] Update `ScoreBreakdown` type to include new fields: `strong_against`, `cc_chain_synergy`, `invade_resistance`
+- [x] Update `getRecommendationLevel()` thresholds if needed
+- [x] Implement `generateWarnings()` — port existing + add new warning types
+- [x] Implement `generateStrengths()` — port existing + add new strength types
+- [x] Implement `recommendJunglers()` — same signature, uses new scoring
+- [x] run `pnpm build && pnpm lint` - must pass
 
 ### Task 10: Verify and tune
 - [ ] Verify all requirements from Overview are implemented

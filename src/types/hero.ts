@@ -100,7 +100,7 @@ export interface ScoreBreakdown {
 }
 
 export interface RecommendationWarning {
-  type: 'STRONG_COUNTER' | 'WEAK_AGAINST' | 'NO_SYNERGY';
+  type: 'STRONG_COUNTER' | 'WEAK_AGAINST' | 'NO_SYNERGY' | 'INVADE_VULNERABLE' | 'HIGH_CC_THREAT';
   hero?: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
