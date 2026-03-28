@@ -23,10 +23,12 @@ export function getJunglers(heroes: Hero[]): Hero[] {
 // ---------------------------------------------------------------------------
 
 export function getMobilityScore(hero: Hero): number {
-  if (hero.capabilities) return Math.min(hero.capabilities.mobilityScore, 3);
-  const escapeIndicators = ['Charge', 'Chase', 'Blink'];
-  const matches = escapeIndicators.filter(i => hero.speciality.includes(i));
-  return Math.min(matches.length, 3);
+  const mobilitySpecs = ['Charge', 'Chase', 'Blink'];
+  const specScore = Math.min(mobilitySpecs.filter(i => hero.speciality.includes(i)).length, 3);
+  if (hero.capabilities) return Math.min(Math.max(hero.capabilities.mobilityScore, specScore), 3);
+  if (specScore > 0) return specScore;
+  if (hero.role.includes('Assassin')) return 1;
+  return 0;
 }
 
 export function getCCScore(hero: Hero): number {
