@@ -2,19 +2,11 @@ import fs from 'fs';
 import https from 'https';
 
 const API_SECRET = process.env.MLBB_API_SECRET;
-const CSRF_TOKEN = process.env.MLBB_CSRF_TOKEN;
 
 const useProxy = !API_SECRET;
 const BASE_URL = useProxy
   ? 'https://mlbb.io/api/proxy/hero'
   : 'https://mlbb.io/api/hero';
-
-if (!API_SECRET && !CSRF_TOKEN) {
-  console.error('Error: Set MLBB_API_SECRET or MLBB_CSRF_TOKEN environment variable');
-  console.error('  MLBB_CSRF_TOKEN — extract from browser cookies (__Host-next-auth.csrf-token value)');
-  console.error('  MLBB_API_SECRET — direct API secret');
-  process.exit(1);
-}
 
 function buildHeaders() {
   if (useProxy) {
@@ -22,7 +14,7 @@ function buildHeaders() {
       'Accept': 'application/json, text/plain, */*',
       'Referer': 'https://mlbb.io/hero-tier',
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
-      'Cookie': `locale=en; __Host-next-auth.csrf-token=${CSRF_TOKEN}; __Secure-next-auth.callback-url=https%3A%2F%2Fmlbb.io`,
+      'Cookie': 'locale=en',
     };
   }
   return { 'x-client-secret': API_SECRET };
