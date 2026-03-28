@@ -34,6 +34,10 @@ function httpsGet(url) {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 200)}`));
+          return;
+        }
         try {
           resolve(JSON.parse(data));
         } catch (e) {

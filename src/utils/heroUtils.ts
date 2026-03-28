@@ -91,7 +91,7 @@ function isPrimarilyMagic(hero: Hero): boolean {
 }
 
 function isEarlyGame(hero: Hero): boolean {
-  const earlyIndicators = ['Charge', 'Push'];
+  const earlyIndicators = ['Burst', 'Initiator', 'Charge', 'Push'];
   return earlyIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
@@ -260,7 +260,8 @@ function calculateTeamBalance(
 
   const teamStats = {
     damageDealers: 0,
-    tanks: 0
+    tanks: 0,
+    hasAOE: false
   };
 
   for (const teammate of yourTeam) {
@@ -269,6 +270,9 @@ function calculateTeamBalance(
     }
     if (teammate.role.includes('Tank')) {
       teamStats.tanks += 1;
+    }
+    if (teammate.capabilities?.hasAOE) {
+      teamStats.hasAOE = true;
     }
   }
 
@@ -295,6 +299,10 @@ function calculateTeamBalance(
 
   if (teamStats.tanks >= 2 && heroType === 'UTILITY') {
     score -= 20 * weights.team_balance;
+  }
+
+  if (!teamStats.hasAOE && hero.capabilities?.hasAOE) {
+    score += 20 * weights.team_balance;
   }
 
   return score;
@@ -453,16 +461,7 @@ function calculateCounterPenalty(
   weights: RecommendationWeights
 ): number {
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  let counterScore = 0;
   let weakScore = 0;
-
-  if (hero.counters) {
-    for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id)) {
-        counterScore += counter.weighted_score;
-      }
-    }
-  }
 
   if (hero.weakAgainst) {
     for (const weak of hero.weakAgainst) {
@@ -472,10 +471,9 @@ function calculateCounterPenalty(
     }
   }
 
-  const counterPenalty = Math.sqrt(counterScore) * 15 * (weights.counter_penalty / 10);
   const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.weak_penalty / 10);
 
-  return Math.min(counterPenalty + weakPenalty, 120);
+  return Math.min(weakPenalty, 120);
 }
 
 function calculateSynergyBonus(
