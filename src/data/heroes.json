@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-28T18:02:37.681Z",
+  "lastUpdated": "2026-03-28T19:55:33.108Z",
   "totalHeroes": 132,
   "heroes": [
     {
@@ -1713,7 +1713,7 @@
       ],
       "tier": "SS",
       "previous_tier": "SS",
-      "score": 1018.57,
+      "score": 999.067,
       "statistics": [
         {
           "hero_id": 125,
@@ -36497,7 +36497,7 @@
         }
       ],
       "capabilities": {
-        "mobilityScore": 0,
+        "mobilityScore": 2,
         "ccScore": 1,
         "hasSustain": false,
         "hasAOE": true,
@@ -47170,7 +47170,7 @@
         }
       ],
       "capabilities": {
-        "mobilityScore": 0,
+        "mobilityScore": 1,
         "ccScore": 2,
         "hasSustain": true,
         "hasAOE": true,
@@ -100629,7 +100629,7 @@
         }
       ],
       "capabilities": {
-        "mobilityScore": 0,
+        "mobilityScore": 1,
         "ccScore": 2,
         "hasSustain": false,
         "hasAOE": true,

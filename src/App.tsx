@@ -4,7 +4,7 @@ import heroData from './data/heroes.json';
 import { getJunglers, recommendJunglers } from './utils/heroUtils';
 import EnemyPicker from './components/EnemyPicker/EnemyPicker';
 import CompactEnemyTeam from './components/CompactEnemyTeam/CompactEnemyTeam';
-import TeamCompositionBar from './components/TeamCompositionBar/TeamCompositionBar';
+import TeamRadar from './components/TeamRadar/TeamRadar';
 import StickyRecommendations from './components/StickyRecommendations/StickyRecommendations';
 import SearchBar from './components/SearchBar/SearchBar';
 import './App.css';
@@ -82,7 +82,7 @@ function App() {
             </div>
           )}
         </div>
-        <TeamCompositionBar
+        <TeamRadar
           enemyTeam={enemyTeam}
           yourTeam={yourTeam}
         />
