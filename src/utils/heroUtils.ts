@@ -161,6 +161,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.3,
       team_balance: 0.8,
       enemy_comp: 0.6,
+      counter_penalty: 5,
       weak_penalty: 7,
       strong_against: 4,
       synergy_bonus: 3,
@@ -173,6 +174,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.4,
       team_balance: 1.0,
       enemy_comp: 0.8,
+      counter_penalty: 8,
       weak_penalty: 10,
       strong_against: 6,
       synergy_bonus: 5,
@@ -185,6 +187,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.5,
       team_balance: 1.2,
       enemy_comp: 1.0,
+      counter_penalty: 10,
       weak_penalty: 15,
       strong_against: 8,
       synergy_bonus: 5,
@@ -197,6 +200,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.6,
       team_balance: 1.5,
       enemy_comp: 1.2,
+      counter_penalty: 12,
       weak_penalty: 18,
       strong_against: 10,
       synergy_bonus: 6,
@@ -209,6 +213,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.7,
       team_balance: 1.8,
       enemy_comp: 1.5,
+      counter_penalty: 15,
       weak_penalty: 20,
       strong_against: 12,
       synergy_bonus: 8,
@@ -409,6 +414,8 @@ function calculateCCChainSynergy(
   yourTeam: Hero[],
   weights: RecommendationWeights
 ): number {
+  if (yourTeam.length === 0) return 0;
+
   const teamCCScore = yourTeam.reduce((sum, teammate) => sum + getCCScore(teammate), 0);
   const junglerType = classifyJunglerType(hero);
 
@@ -446,19 +453,29 @@ function calculateCounterPenalty(
   weights: RecommendationWeights
 ): number {
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  let rawScore = 0;
+  let counterScore = 0;
+  let weakScore = 0;
 
-  if (hero.weakAgainst) {
-    for (const weak of hero.weakAgainst) {
-      if (enemyIds.has(weak.id)) {
-        rawScore += weak.weighted_score;
+  if (hero.counters) {
+    for (const counter of hero.counters) {
+      if (enemyIds.has(counter.id)) {
+        counterScore += counter.weighted_score;
       }
     }
   }
 
-  const totalPenalty = Math.sqrt(rawScore) * 15 * (weights.weak_penalty / 10);
+  if (hero.weakAgainst) {
+    for (const weak of hero.weakAgainst) {
+      if (enemyIds.has(weak.id)) {
+        weakScore += weak.weighted_score;
+      }
+    }
+  }
 
-  return Math.min(totalPenalty, 120);
+  const counterPenalty = Math.sqrt(counterScore) * 15 * (weights.counter_penalty / 10);
+  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.weak_penalty / 10);
+
+  return Math.min(counterPenalty + weakPenalty, 120);
 }
 
 function calculateSynergyBonus(
