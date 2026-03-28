@@ -202,7 +202,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       cc_chain: 1.2,
       invade_resistance: 1.0
     },
-    'Mythical Glory': {
+    'Mythical Glory+': {
       tier: 0.2,
       stats: 0.7,
       team_balance: 1.8,

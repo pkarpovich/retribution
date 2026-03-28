@@ -83,7 +83,7 @@ All types defined in `src/types/hero.ts`:
 - `HeroRelation`: Counter/synergy/strongAgainst relationship with weighted_score
 - `ScoreBreakdown`: Individual score for each of the 11 scoring components
 - `RecommendationResult`: Full recommendation output with hero, scores, breakdown, warnings, strengths
-- `UserRank`: Epic | Legend | Mythic | Mythical Honor | Mythical Glory
+- `UserRank`: Epic | Legend | Mythic | Mythical Honor | Mythical Glory+
 
 ## Key Implementation Details
 
@@ -91,5 +91,5 @@ All types defined in `src/types/hero.ts`:
 - Latest stats prioritize "Past 7 days" timeframe with rank-specific data (defaults to Mythic)
 - Recommendations recalculated via `useMemo` when enemy or team selection changes
 - Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
-- Scoring weights are tuned per user rank (Epic through Mythical Glory)
+- Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching

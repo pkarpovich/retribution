@@ -1,7 +1,7 @@
 export type HeroRole = 'Tank' | 'Fighter' | 'Assassin' | 'Mage' | 'Marksman' | 'Support';
 export type HeroLane = 'Jungle' | 'Exp Lane' | 'Mid Lane' | 'Gold Lane' | 'Roam';
 export type HeroTier = 'SS' | 'S' | 'A' | 'B' | 'C' | 'D';
-export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory';
+export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory+';
 export type JunglerType = 'DAMAGE' | 'UTILITY' | 'HYBRID';
 export type RecommendationLevel = 'BEST_PICK' | 'STRONG_PICK' | 'GOOD_PICK' | 'SAFE_PICK' | 'RISKY_PICK';
 
