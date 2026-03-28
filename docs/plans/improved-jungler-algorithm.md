@@ -137,9 +137,9 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 8: Implement counter_penalty and synergy_bonus
-- [ ] Port `calculateCounterPenalty()` — same existing logic with weights
-- [ ] Port `calculateSynergyBonus()` — same existing logic
-- [ ] run `pnpm build` - must compile
+- [x] Port `calculateCounterPenalty()` — same existing logic with weights
+- [x] Port `calculateSynergyBonus()` — same existing logic
+- [x] run `pnpm build` - must compile
 
 ### Task 9: Wire up scoring pipeline and recommendation
 - [ ] Implement `calculateJunglerRecommendation()` combining all components
