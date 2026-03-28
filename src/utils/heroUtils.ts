@@ -453,6 +453,23 @@ function calculateCCChainSynergy(
   return bonus;
 }
 
+function calculateInvadeResistance(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  const enemyEarlyCount = enemyTeam.filter(e => isEarlyGame(e)).length;
+
+  if (enemyEarlyCount < 2) return 0;
+
+  const sustainBonus = hasSustainCapability(hero) ? 15 : 0;
+  const mobilityBonus = getMobilityScore(hero) >= 2 ? 10 : 0;
+  const fragile = !hasSustainCapability(hero) && getMobilityScore(hero) <= 1;
+  const fragilePenalty = fragile ? -20 : 0;
+
+  return (sustainBonus + mobilityBonus + fragilePenalty) * weights.invade_resistance;
+}
+
 function calculateCounterPenalty(
   hero: Hero,
   enemyTeam: Hero[],
@@ -712,6 +729,7 @@ export function calculateJunglerRecommendation(
   const enemyAnalysisScore = calculateEnemyVulnerability(hero, enemyTeam, finalWeights);
   const strongAgainstBonus = calculateStrongAgainstBonus(hero, enemyTeam, finalWeights);
   const ccChainSynergyScore = calculateCCChainSynergy(hero, yourTeam, finalWeights);
+  const invadeResistanceScore = calculateInvadeResistance(hero, enemyTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
@@ -724,6 +742,7 @@ export function calculateJunglerRecommendation(
     enemy_analysis: enemyAnalysisScore,
     strong_against: strongAgainstBonus,
     cc_chain_synergy: ccChainSynergyScore,
+    invade_resistance: invadeResistanceScore,
     counter_penalty: -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
@@ -736,7 +755,8 @@ export function calculateJunglerRecommendation(
     damageTypeBalanceScore +
     enemyAnalysisScore +
     strongAgainstBonus +
-    ccChainSynergyScore -
+    ccChainSynergyScore +
+    invadeResistanceScore -
     counterPenalty +
     synergyBonus +
     metaBonus +

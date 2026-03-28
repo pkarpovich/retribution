@@ -96,6 +96,7 @@ export interface ScoreBreakdown {
   synergy_bonus: number;
   meta_bonus: number;
   early_late_game: number;
+  invade_resistance: number;
 }
 
 export interface RecommendationWarning {

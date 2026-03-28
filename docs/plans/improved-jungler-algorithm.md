@@ -124,11 +124,11 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 6: Implement invade_resistance
-- [ ] Implement `calculateInvadeResistance()` — assess enemy early-game aggression
-- [ ] Junglers with sustain/high mobility → bonus vs aggressive comps
-- [ ] Fragile junglers (no sustain, low mobility) → penalty vs aggressive comps
-- [ ] Only activate when 2+ enemy heroes are early-game
-- [ ] run `pnpm build` - must compile
+- [x] Implement `calculateInvadeResistance()` — assess enemy early-game aggression
+- [x] Junglers with sustain/high mobility → bonus vs aggressive comps
+- [x] Fragile junglers (no sustain, low mobility) → penalty vs aggressive comps
+- [x] Only activate when 2+ enemy heroes are early-game
+- [x] run `pnpm build` - must compile
 
 ### Task 7: Implement team_balance, damage_type_balance, early_late_game
 - [ ] Port `calculateTeamBalance()` — keep existing logic
