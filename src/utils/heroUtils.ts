@@ -340,9 +340,11 @@ function calculateEnemyVulnerability(
     }
 
     const isSquishyRole =
-      enemy.role.includes('Mage') ||
-      enemy.role.includes('Marksman') ||
-      enemy.role.includes('Assassin');
+      !enemy.role.includes('Tank') && (
+        enemy.role.includes('Mage') ||
+        enemy.role.includes('Marksman') ||
+        enemy.role.includes('Assassin')
+      );
 
     if (isSquishyRole) {
       const enemyMobility = getMobilityScore(enemy);
