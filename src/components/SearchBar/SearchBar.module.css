@@ -8,23 +8,23 @@
 .input {
   width: 100%;
   padding: 0.75rem 2.5rem 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--tx-1);
   font-size: 0.875rem;
   font-family: inherit;
   transition: all 0.2s ease;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--tx-3);
 }
 
 .input:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #646cff;
+  background: var(--bg-hover);
+  border-color: var(--accent);
 }
 
 .clearButton {
@@ -36,10 +36,10 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
   border: none;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--tx-2);
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
@@ -47,6 +47,6 @@
 }
 
 .clearButton:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--border);
+  color: var(--tx-1);
 }
