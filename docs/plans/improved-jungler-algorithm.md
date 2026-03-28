@@ -110,12 +110,12 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 4: Implement improved enemy_vulnerability
-- [ ] Implement `calculateEnemyVulnerability()` replacing old `calculateEnemyAnalysis()`
-- [ ] Use `capabilities.mobilityScore` for enemy squishy value calculation
-- [ ] Assassin bonus scales with total target vulnerability
-- [ ] Add `hasImmunity` bonus when enemy has high CC count
-- [ ] Keep anti-heal bonus for enemies with healers
-- [ ] run `pnpm build` - must compile
+- [x] Implement `calculateEnemyVulnerability()` replacing old `calculateEnemyAnalysis()`
+- [x] Use `capabilities.mobilityScore` for enemy squishy value calculation
+- [x] Assassin bonus scales with total target vulnerability
+- [x] Add `hasImmunity` bonus when enemy has high CC count
+- [x] Keep anti-heal bonus for enemies with healers
+- [x] run `pnpm build` - must compile
 
 ### Task 5: Implement cc_chain_synergy
 - [ ] Implement `calculateCCChainSynergy()` — count team CC from `capabilities.ccScore`

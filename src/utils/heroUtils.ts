@@ -94,11 +94,6 @@ function isPrimarilyMagic(hero: Hero): boolean {
   return hero.role.includes('Mage') || hero.speciality.includes('Magic Damage');
 }
 
-function hasEscape(hero: Hero): boolean {
-  const escapeIndicators = ['Charge', 'Chase', 'Blink'];
-  return escapeIndicators.some(indicator => hero.speciality.includes(indicator));
-}
-
 function isEarlyGame(hero: Hero): boolean {
   const earlyIndicators = ['Early Game', 'Burst', 'Initiator'];
   return earlyIndicators.some(indicator => hero.speciality.includes(indicator));
@@ -351,7 +346,7 @@ function calculateDamageTypeBalance(
   return score;
 }
 
-function calculateEnemyAnalysis(
+function calculateEnemyVulnerability(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
@@ -360,7 +355,7 @@ function calculateEnemyAnalysis(
 
   const enemyStats = {
     tanks: 0,
-    squishyValue: 0,
+    squishyTargetValue: 0,
     ccCount: 0,
     healers: 0
   };
@@ -368,13 +363,17 @@ function calculateEnemyAnalysis(
   for (const enemy of enemyTeam) {
     if (enemy.role.includes('Tank')) {
       enemyStats.tanks += 1;
-    } else if (
+    }
+
+    const isSquishyRole =
       enemy.role.includes('Mage') ||
       enemy.role.includes('Marksman') ||
-      enemy.role.includes('Assassin')
-    ) {
-      const mobility = hasEscape(enemy) ? 0.7 : 1.3;
-      enemyStats.squishyValue += mobility;
+      enemy.role.includes('Assassin');
+
+    if (isSquishyRole) {
+      const enemyMobility = getMobilityScore(enemy);
+      const mobilityFactor = Math.max(0.2, (3 - enemyMobility) / 3);
+      enemyStats.squishyTargetValue += mobilityFactor;
     }
 
     if (hasCrowdControl(enemy)) {
@@ -389,23 +388,22 @@ function calculateEnemyAnalysis(
   let score = 0;
 
   const tankBonus = enemyStats.tanks >= 2 ? 50 : 0;
-  const squishyBonus = enemyStats.squishyValue >= 3 ? 50 : 0;
+  const squishyBonus = enemyStats.squishyTargetValue >= 2 ? 50 : 0;
 
   if (heroType === 'DAMAGE') {
-    score += tankBonus * weights.enemy_comp;
-  } else if (heroType === 'UTILITY') {
     score += squishyBonus * weights.enemy_comp;
+  } else if (heroType === 'UTILITY') {
+    score += tankBonus * weights.enemy_comp;
   } else if (heroType === 'HYBRID') {
     score += Math.max(tankBonus, squishyBonus) * 0.6 * weights.enemy_comp;
   }
 
-  if (hero.role.includes('Assassin') && enemyStats.squishyValue >= 2) {
-    const bonus = enemyStats.squishyValue * 10 * weights.enemy_comp;
-    score += bonus;
+  if (hero.role.includes('Assassin') && enemyStats.squishyTargetValue >= 1) {
+    score += enemyStats.squishyTargetValue * 15 * weights.enemy_comp;
   }
 
-  if (enemyStats.ccCount >= 3 && hasEscape(hero)) {
-    score += 15 * weights.enemy_comp;
+  if (enemyStats.ccCount >= 3 && hasImmunityCapability(hero)) {
+    score += 20 * weights.enemy_comp;
   }
 
   if (enemyStats.healers >= 1 && hero.speciality.includes('Anti-Heal')) {
@@ -692,7 +690,7 @@ export function calculateJunglerRecommendation(
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
   const teamBalanceScore = calculateTeamBalance(hero, yourTeam, finalWeights);
   const damageTypeBalanceScore = calculateDamageTypeBalance(hero, yourTeam, finalWeights);
-  const enemyAnalysisScore = calculateEnemyAnalysis(hero, enemyTeam, finalWeights);
+  const enemyAnalysisScore = calculateEnemyVulnerability(hero, enemyTeam, finalWeights);
   const strongAgainstBonus = calculateStrongAgainstBonus(hero, enemyTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
