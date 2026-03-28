@@ -11,9 +11,50 @@ import type {
   RecommendationWarning
 } from '../types/hero';
 
+// ---------------------------------------------------------------------------
+// Public API: getJunglers, filterByRole
+// ---------------------------------------------------------------------------
+
 export function getJunglers(heroes: Hero[]): Hero[] {
   return heroes.filter(hero => hero.lane?.includes('Jungle'));
 }
+
+export function filterByRole(heroes: Hero[], role: HeroRole | 'All'): Hero[] {
+  if (role === 'All') return heroes;
+  return heroes.filter(hero => hero.role.includes(role));
+}
+
+// ---------------------------------------------------------------------------
+// Capability helpers (NEW — use enriched hero.capabilities data)
+// ---------------------------------------------------------------------------
+
+export function getMobilityScore(hero: Hero): number {
+  if (hero.capabilities) return hero.capabilities.mobilityScore;
+  const escapeIndicators = ['Charge', 'Chase', 'Blink'];
+  const matches = escapeIndicators.filter(i => hero.speciality.includes(i));
+  return Math.min(matches.length, 3);
+}
+
+export function getCCScore(hero: Hero): number {
+  if (hero.capabilities) return hero.capabilities.ccScore;
+  const ccIndicators = ['Crowd Control', 'Control', 'Initiator'];
+  const matches = ccIndicators.filter(i => hero.speciality.includes(i));
+  return Math.min(matches.length * 2, 3);
+}
+
+export function hasSustainCapability(hero: Hero): boolean {
+  if (hero.capabilities) return hero.capabilities.hasSustain;
+  return hero.speciality.includes('Regen') || hero.speciality.includes('Support');
+}
+
+export function hasImmunityCapability(hero: Hero): boolean {
+  if (hero.capabilities) return hero.capabilities.hasImmunity;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Kept helpers: tier, stats, classification, damage type, roles
+// ---------------------------------------------------------------------------
 
 export function getTierScore(tier: HeroTier): number {
   const scores: Record<HeroTier, number> = {
@@ -128,6 +169,10 @@ export function classifyJunglerType(hero: Hero): JunglerType {
   return 'HYBRID';
 }
 
+// ---------------------------------------------------------------------------
+// Weights
+// ---------------------------------------------------------------------------
+
 export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
   const weightsByRank: Record<UserRank, RecommendationWeights> = {
     'Epic': {
@@ -184,6 +229,10 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
 
   return weightsByRank[userRank];
 }
+
+// ---------------------------------------------------------------------------
+// Scoring components (will be enhanced in subsequent tasks)
+// ---------------------------------------------------------------------------
 
 function calculateBaseScore(
   hero: Hero,
@@ -471,6 +520,10 @@ function calculateEarlyLateGameFactor(
   return score;
 }
 
+// ---------------------------------------------------------------------------
+// Recommendation level
+// ---------------------------------------------------------------------------
+
 function getRecommendationLevel(totalScore: number): RecommendationLevel {
   if (totalScore >= 180) return 'BEST_PICK';
   if (totalScore >= 140) return 'STRONG_PICK';
@@ -478,6 +531,10 @@ function getRecommendationLevel(totalScore: number): RecommendationLevel {
   if (totalScore >= 60) return 'SAFE_PICK';
   return 'RISKY_PICK';
 }
+
+// ---------------------------------------------------------------------------
+// Warnings and strengths
+// ---------------------------------------------------------------------------
 
 function generateWarnings(
   hero: Hero,
@@ -582,6 +639,10 @@ function generateStrengths(
   return strengths;
 }
 
+// ---------------------------------------------------------------------------
+// Public API: calculateJunglerRecommendation, recommendJunglers
+// ---------------------------------------------------------------------------
+
 export function calculateJunglerRecommendation(
   hero: Hero,
   yourTeam: Hero[],
@@ -661,9 +722,4 @@ export function recommendJunglers(
   recommendations.sort((a, b) => b.total_score - a.total_score);
 
   return recommendations.slice(0, 8);
-}
-
-export function filterByRole(heroes: Hero[], role: HeroRole | 'All'): Hero[] {
-  if (role === 'All') return heroes;
-  return heroes.filter(hero => hero.role.includes(role));
 }
