@@ -53,9 +53,16 @@ function App() {
     });
   };
 
+  const lockedIds = useMemo(() => {
+    const ids = pickerMode === 'team'
+      ? enemyTeam.map(h => h.id)
+      : yourTeam.map(h => h.id);
+    return new Set(ids);
+  }, [pickerMode, enemyTeam, yourTeam]);
+
   const currentPickerProps = pickerMode === 'team'
-    ? { selectedEnemies: yourTeam, onSelectEnemy: handleSelectTeammate }
-    : { selectedEnemies: enemyTeam, onSelectEnemy: handleSelectEnemy };
+    ? { selectedEnemies: yourTeam, onSelectEnemy: handleSelectTeammate, lockedIds }
+    : { selectedEnemies: enemyTeam, onSelectEnemy: handleSelectEnemy, lockedIds };
 
   return (
     <div className="app">
