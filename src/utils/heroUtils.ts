@@ -182,8 +182,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 0.6,
       counter_penalty: 5,
       weak_penalty: 7,
+      strong_against: 4,
       synergy_bonus: 3,
-      meta: 0.4
+      meta: 0.4,
+      cc_chain: 0.5,
+      invade_resistance: 0.4
     },
     'Legend': {
       tier: 0.4,
@@ -192,8 +195,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 0.8,
       counter_penalty: 8,
       weak_penalty: 10,
+      strong_against: 6,
       synergy_bonus: 5,
-      meta: 0.6
+      meta: 0.6,
+      cc_chain: 0.7,
+      invade_resistance: 0.6
     },
     'Mythic': {
       tier: 0.3,
@@ -202,8 +208,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 1.0,
       counter_penalty: 10,
       weak_penalty: 15,
+      strong_against: 8,
       synergy_bonus: 5,
-      meta: 0.8
+      meta: 0.8,
+      cc_chain: 1.0,
+      invade_resistance: 0.8
     },
     'Mythical Honor': {
       tier: 0.3,
@@ -212,8 +221,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 1.2,
       counter_penalty: 12,
       weak_penalty: 18,
+      strong_against: 10,
       synergy_bonus: 6,
-      meta: 1.0
+      meta: 1.0,
+      cc_chain: 1.2,
+      invade_resistance: 1.0
     },
     'Mythical Glory': {
       tier: 0.2,
@@ -222,8 +234,11 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       enemy_comp: 1.5,
       counter_penalty: 15,
       weak_penalty: 20,
+      strong_against: 12,
       synergy_bonus: 8,
-      meta: 1.2
+      meta: 1.2,
+      cc_chain: 1.5,
+      invade_resistance: 1.2
     }
   };
 

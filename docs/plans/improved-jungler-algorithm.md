@@ -97,11 +97,11 @@ Total Score = base_score
 - [x] run `pnpm build` - must compile
 
 ### Task 2: Implement base_score and meta_bonus
-- [ ] Implement `calculateBaseScore()` — tier + win rate + pick rate (same logic)
-- [ ] Implement `calculateMetaBonus()` — ban rate + pick rate signals (same logic)
-- [ ] Implement `getDefaultWeights()` with new weight keys for new components
-- [ ] Update `RecommendationWeights` type to include `strong_against`, `cc_chain`, `invade_resistance`
-- [ ] run `pnpm build` - must compile
+- [x] Implement `calculateBaseScore()` — tier + win rate + pick rate (same logic)
+- [x] Implement `calculateMetaBonus()` — ban rate + pick rate signals (same logic)
+- [x] Implement `getDefaultWeights()` with new weight keys for new components
+- [x] Update `RecommendationWeights` type to include `strong_against`, `cc_chain`, `invade_resistance`
+- [x] run `pnpm build` - must compile
 
 ### Task 3: Implement strong_against_bonus
 - [ ] Implement `calculateStrongAgainstBonus()` — for each enemy in `hero.strongAgainst` → weighted bonus

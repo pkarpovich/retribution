@@ -29,6 +29,23 @@ export interface HeroRelation {
   type?: string;
 }
 
+export interface SkillSummary {
+  name: string;
+  tags: string[];
+  cooldown: number | null;
+}
+
+export interface HeroCapabilities {
+  mobilityScore: number;
+  ccScore: number;
+  hasSustain: boolean;
+  hasAOE: boolean;
+  hasImmunity: boolean;
+  maxBurstDamage: number;
+  avgCooldown: number | null;
+  skillsSummary: SkillSummary[];
+}
+
 export interface Hero {
   id: number;
   hero_name: string;
@@ -44,6 +61,8 @@ export interface Hero {
   counters?: HeroRelation[];
   weakAgainst?: HeroRelation[];
   synergies?: HeroRelation[];
+  strongAgainst?: HeroRelation[];
+  capabilities?: HeroCapabilities;
 }
 
 export interface HeroData {
@@ -59,8 +78,11 @@ export interface RecommendationWeights {
   enemy_comp: number;
   counter_penalty: number;
   weak_penalty: number;
+  strong_against: number;
   synergy_bonus: number;
   meta: number;
+  cc_chain: number;
+  invade_resistance: number;
 }
 
 export interface ScoreBreakdown {
