@@ -21,7 +21,11 @@ export default function CompactEnemyTeam({
       <div className={styles.empty}>
         {label && <span className={styles.label}>{label}</span>}
         <div className={styles.rightSection}>
-          <span className={styles.emptyText}>{emptyText}</span>
+          <div className={styles.avatars}>
+            {[...Array(maxSlots)].map((_, i) => (
+              <div key={`empty-${i}`} className={styles.emptySlot} />
+            ))}
+          </div>
           <span className={styles.emptyCount}>0/{maxSlots}</span>
         </div>
       </div>

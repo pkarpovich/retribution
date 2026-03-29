@@ -89,6 +89,20 @@ function App() {
             </div>
           )}
         </div>
+        {(yourTeam.length > 0 || enemyTeam.length > 0) && (
+          <div className="resetWrap">
+            <button
+              className="resetButton"
+              onClick={() => { setYourTeam([]); setEnemyTeam([]); }}
+              type="button"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Clear All
+            </button>
+          </div>
+        )}
         <TeamRadar
           enemyTeam={enemyTeam}
           yourTeam={yourTeam}

@@ -116,6 +116,9 @@
   font-weight: 600;
   color: var(--orange);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 @media (max-width: 360px) {
