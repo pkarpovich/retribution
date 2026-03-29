@@ -14,7 +14,6 @@ export default function CompactEnemyTeam({
   onRemove,
   maxSlots = 5,
   label,
-  emptyText = 'Select heroes'
 }: CompactEnemyTeamProps) {
   if (enemies.length === 0) {
     return (

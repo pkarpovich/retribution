@@ -20,6 +20,7 @@
 .avatar.selected {
   background: color-mix(in srgb, var(--accent) 20%, var(--bg-1));
   border-color: var(--accent);
+  animation: fadeIn 0.2s ease;
 }
 
 .image {

@@ -26,13 +26,14 @@ export default function StickyRecommendations({ recommendations, selectedEnemies
       <div className={styles.compactBar}>
         <div className={`${styles.compactScroll} ${isExpanded ? styles.expanded : ''}`}>
           {displayRecommendations.map((result, index) => (
-            <CompactRecommendationCard
-              key={result.hero.id}
-              result={result}
-              rank={index + 1}
-              expanded={isExpanded}
-              enemyTeam={selectedEnemies}
-            />
+            <div key={result.hero.id} style={{ animationDelay: `${index * 50}ms` }}>
+              <CompactRecommendationCard
+                result={result}
+                rank={index + 1}
+                expanded={isExpanded}
+                enemyTeam={selectedEnemies}
+              />
+            </div>
           ))}
         </div>
       </div>
