@@ -61,14 +61,14 @@ async function fetchHeroDetails(heroName, maxRetries = 3) {
       }
       console.error(`Failed to fetch ${heroName} after ${maxRetries + 1} attempts:`, response.message);
     } catch (error) {
-      const is429 = error.message.includes('429');
-      const delayMs = is429 ? 60000 : 2000 * (attempt + 1);
+      const isServerOverload = error.message.includes('429') || error.message.includes('502') || error.message.includes('503');
+      const delayMs = isServerOverload ? 30000 * (attempt + 1) : 3000 * (attempt + 1);
 
       if (attempt < maxRetries) {
-        if (is429) {
-          console.warn(`Rate limited fetching ${heroName} — waiting 60s before retry ${attempt + 1}/${maxRetries}...`);
+        if (isServerOverload) {
+          console.warn(`Server overloaded fetching ${heroName} — waiting ${delayMs / 1000}s before retry ${attempt + 1}/${maxRetries}...`);
         } else {
-          console.warn(`Error fetching ${heroName} (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message} — retrying...`);
+          console.warn(`Error fetching ${heroName} (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message} — retrying in ${delayMs / 1000}s...`);
         }
         await wait(delayMs);
         continue;
@@ -299,7 +299,7 @@ async function main() {
       droppedHeroes.push(hero.hero_name);
     }
 
-    await wait(1000);
+    await wait(2000);
   }
 
   if (droppedHeroes.length > 0) {
