@@ -44,7 +44,7 @@ async function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function fetchHeroDetails(heroName, maxRetries = 2) {
+async function fetchHeroDetails(heroName, maxRetries = 3) {
   const encodedName = encodeURIComponent(heroName);
   const url = `${BASE_URL}/detail/${encodedName}`;
 
@@ -56,17 +56,24 @@ async function fetchHeroDetails(heroName, maxRetries = 2) {
       }
       if (attempt < maxRetries) {
         console.warn(`Failed to fetch ${heroName} (attempt ${attempt + 1}/${maxRetries + 1}): ${response.message} — retrying...`);
-        await wait(1000 * (attempt + 1));
+        await wait(2000 * (attempt + 1));
         continue;
       }
       console.error(`Failed to fetch ${heroName} after ${maxRetries + 1} attempts:`, response.message);
     } catch (error) {
+      const is429 = error.message.includes('429');
+      const delayMs = is429 ? 60000 : 2000 * (attempt + 1);
+
       if (attempt < maxRetries) {
-        console.warn(`Error fetching ${heroName} (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message} — retrying...`);
-        await wait(1000 * (attempt + 1));
+        if (is429) {
+          console.warn(`Rate limited fetching ${heroName} — waiting 60s before retry ${attempt + 1}/${maxRetries}...`);
+        } else {
+          console.warn(`Error fetching ${heroName} (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message} — retrying...`);
+        }
+        await wait(delayMs);
         continue;
       }
-      console.error(`Error fetching ${heroName} after ${maxRetries + 1} attempts:`, error.message);
+      console.error(`Failed to fetch ${heroName} after ${maxRetries + 1} attempts:`, error.message);
     }
   }
   return null;
@@ -292,7 +299,7 @@ async function main() {
       droppedHeroes.push(hero.hero_name);
     }
 
-    await wait(200);
+    await wait(1000);
   }
 
   if (droppedHeroes.length > 0) {
