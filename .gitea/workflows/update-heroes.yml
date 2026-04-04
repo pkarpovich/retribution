@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout from GitHub
         run: |
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/pkarpovich/retribution.git .
+          git clone https://${{ secrets.GH_PAT }}@github.com/pkarpovich/retribution.git .
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
 
