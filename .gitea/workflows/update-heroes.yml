@@ -1,0 +1,32 @@
+name: Update Hero Data
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout from GitHub
+        run: |
+          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/pkarpovich/retribution.git .
+          git config user.name "gitea-actions[bot]"
+          git config user.email "gitea-actions[bot]@users.noreply.github.com"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install -g pnpm@10 && pnpm install --frozen-lockfile
+
+      - run: node scripts/fetch-heroes.js --allow-partial
+
+      - name: Commit and push if changed
+        run: |
+          LINES=$(git diff src/data/heroes.json | grep '^[+-]' | grep -v '^[+-][+-]' | grep -v 'lastUpdated' | wc -l)
+          if [ "$LINES" -eq 0 ]; then echo "No meaningful changes"; exit 0; fi
+          git add src/data/heroes.json
+          git commit -m "chore(data): update hero database $(date -u +%Y-%m-%d)"
+          git push

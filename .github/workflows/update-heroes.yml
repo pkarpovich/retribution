@@ -25,9 +25,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: node scripts/fetch-heroes.js --allow-partial
+      - name: Fetch hero data
+        id: fetch
+        continue-on-error: true
+        run: node scripts/fetch-heroes.js --allow-partial
 
       - name: Commit and push if changed
+        if: steps.fetch.outcome == 'success'
         run: |
           LINES=$(git diff src/data/heroes.json | grep '^[+-]' | grep -v '^[+-][+-]' | grep -v 'lastUpdated' | wc -l)
           if [ "$LINES" -eq 0 ]; then git checkout src/data/heroes.json; echo "No meaningful changes"; exit 0; fi
