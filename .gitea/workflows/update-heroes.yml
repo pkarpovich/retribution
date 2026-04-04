@@ -13,7 +13,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          git config --global url."https://x-access-token:${GH_PAT}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://pkarpovich:${GH_PAT}@github.com/".insteadOf "https://github.com/"
           git clone https://github.com/pkarpovich/retribution.git .
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
