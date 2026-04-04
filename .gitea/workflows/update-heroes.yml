@@ -29,4 +29,5 @@ jobs:
           if [ "$LINES" -eq 0 ]; then echo "No meaningful changes"; exit 0; fi
           git add src/data/heroes.json
           git commit -m "chore(data): update hero database $(date -u +%Y-%m-%d)"
+          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/pkarpovich/retribution.git
           git push
