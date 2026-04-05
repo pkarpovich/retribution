@@ -62,8 +62,8 @@ After hardening, the workflow will:
 - [x] validate YAML parses
 
 ### Task 4: Add job-level timeout
-- [ ] add `timeout-minutes: 30` under `jobs.update:` (same level as `runs-on`)
-- [ ] validate YAML parses
+- [x] add `timeout-minutes: 30` under `jobs.update:` (same level as `runs-on`)
+- [x] validate YAML parses
 
 ### Task 5: Add Telegram notification step
 - [ ] add final step `Notify Telegram` using `appleboy/telegram-action@v1.0.1`
