@@ -39,6 +39,15 @@ jobs:
             echo "No changes"
             exit 0
           fi
+          TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')
+          echo "Raw secret length: ${#GH_PAT}, stripped length: ${#TOKEN}, prefix: ${TOKEN:0:10}"
+          if [ -z "$TOKEN" ]; then
+            echo "ERROR: GH_PAT secret is empty on runner"
+            exit 1
+          fi
           git add src/data/heroes.json
           git commit -m "chore(data): bump lastUpdated $(date -u +%Y-%m-%d)"
-          git push "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" HEAD:master
+          AUTH=$(printf '%s' "pkarpovich:${TOKEN}" | base64 | tr -d '\n')
+          git -c http.extraheader="Authorization: Basic ${AUTH}" \
+              -c credential.helper= \
+              push https://github.com/pkarpovich/retribution.git HEAD:ci/test-auth
