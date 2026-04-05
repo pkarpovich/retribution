@@ -381,6 +381,18 @@ async function main() {
     console.log(`  ${j.hero_name}: mob=${j.capabilities.mobilityScore} cc=${j.capabilities.ccScore} sustain=${j.capabilities.hasSustain} aoe=${j.capabilities.hasAOE} immune=${j.capabilities.hasImmunity} burst=${j.capabilities.maxBurstDamage} strongVs=${j.strongAgainst.length}`);
   }
 
+  if (dataDegraded) {
+    const ghOutput = process.env.GITHUB_OUTPUT;
+    if (ghOutput) {
+      const parts = [];
+      if (droppedHeroes.length > 0) parts.push(`${droppedHeroes.length} heroes dropped`);
+      if (missingSkills.length > 0) parts.push(`${missingSkills.length} missing skills`);
+      if (placeholderHeroes.length > 0) parts.push(`${placeholderHeroes.length} malformed skills`);
+      fs.appendFileSync(ghOutput, `degraded=true\n`);
+      fs.appendFileSync(ghOutput, `degradation_summary=${parts.join(', ')}\n`);
+    }
+  }
+
   if (dataDegraded && !allowPartial) {
     console.warn('\nData written but quality is degraded (dropped heroes or missing skills).');
     console.warn('Re-run to fix, or pass --allow-partial to suppress this exit code.');

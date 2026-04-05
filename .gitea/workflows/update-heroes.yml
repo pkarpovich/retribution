@@ -22,7 +22,7 @@ jobs:
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
@@ -32,7 +32,7 @@ jobs:
           corepack prepare pnpm@10 --activate
 
       - name: Cache pnpm store
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         continue-on-error: true
         with:
           path: ~/.local/share/pnpm/store
@@ -43,6 +43,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fetch hero data
+        id: fetch
         run: node scripts/fetch-heroes.js --allow-partial
 
       - name: Commit and push if changed
@@ -67,11 +68,13 @@ jobs:
 
       - name: Notify Telegram
         if: always()
-        uses: appleboy/telegram-action@v1.0.1
+        continue-on-error: true
+        uses: appleboy/telegram-action@221e6b684967abe813051ee4a37dd61770a83ad3 # v1.0.1
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ${{ job.status == 'success' && '✅' || '❌' }} Update Hero Data — ${{ job.status }}
+            ${{ steps.fetch.outputs.degraded == 'true' && format('⚠️ Degraded: {0}', steps.fetch.outputs.degradation_summary) || '' }}
             Commit: https://github.com/pkarpovich/retribution/commit/${{ env.DATA_SHA || github.sha }}
             Actor: ${{ github.actor }}
