@@ -50,11 +50,11 @@ After hardening, the workflow will:
 - [x] validate YAML parses: `node -e "const yaml=require('yaml');yaml.parse(require('fs').readFileSync('.gitea/workflows/update-heroes.yml','utf8'))"` (use `js-yaml` if `yaml` package not available — check via `node -e "require('js-yaml')"` first)
 
 ### Task 2: Restore push target to master and drop diagnostics
-- [ ] change `HEAD:ci/test-auth` to `HEAD:master` in push command
-- [ ] remove echo line printing token length/prefix
-- [ ] remove `if [ -z "$TOKEN" ]` guard (kept as defensive, but was only for debugging empty-secret case)
-- [ ] keep `TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')` whitespace stripping
-- [ ] validate YAML parses
+- [x] change `HEAD:ci/test-auth` to `HEAD:master` in push command
+- [x] remove echo line printing token length/prefix
+- [x] remove `if [ -z "$TOKEN" ]` guard (kept as defensive, but was only for debugging empty-secret case)
+- [x] keep `TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')` whitespace stripping
+- [x] validate YAML parses
 
 ### Task 3: Add rebase guard before push
 - [ ] insert `git -c http.extraheader="Authorization: Basic ${AUTH}" -c credential.helper= pull --rebase origin master` between commit and push
