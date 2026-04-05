@@ -65,6 +65,7 @@ jobs:
               -c credential.helper= \
               push https://github.com/pkarpovich/retribution.git HEAD:master
           echo "DATA_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DATA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Notify Telegram
         if: always()
@@ -73,8 +74,13 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          disable_web_page_preview: true
           message: |
-            ${{ job.status == 'success' && '✅' || '❌' }} Update Hero Data — ${{ job.status }}
-            ${{ steps.fetch.outputs.degraded == 'true' && format('⚠️ Degraded: {0}', steps.fetch.outputs.degradation_summary) || '' }}
-            Commit: https://github.com/pkarpovich/retribution/commit/${{ env.DATA_SHA || github.sha }}
-            Actor: ${{ github.actor }}
+            <b>⚔️ Retribution — Hero Data Update</b>
+            —
+            ${{ job.status == 'success' && '✅ <b>Success</b>' || '❌ <b>Failed</b>' }}
+            ${{ steps.fetch.outputs.degraded == 'true' && format('⚠️ <b>Degraded:</b> {0}', steps.fetch.outputs.degradation_summary) || '' }}
+            —
+            <b>Commit:</b> <a href="https://github.com/pkarpovich/retribution/commit/${{ env.DATA_SHA || github.sha }}"><code>${{ env.DATA_SHORT || github.sha }}</code></a>
+            <b>Actor:</b> ${{ github.actor }}
