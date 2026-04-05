@@ -21,15 +21,18 @@ jobs:
         with:
           node-version: 22
 
-      - name: Bump lastUpdated (mock fetch)
+      - name: Setup pnpm via corepack
         run: |
-          node -e "
-            const fs = require('fs');
-            const p = 'src/data/heroes.json';
-            const d = JSON.parse(fs.readFileSync(p, 'utf8'));
-            d.lastUpdated = new Date().toISOString();
-            fs.writeFileSync(p, JSON.stringify(d, null, 2));
-          "
+          corepack enable
+          corepack prepare pnpm@10 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch hero data
+        env:
+          MLBB_CSRF_TOKEN: ${{ secrets.MLBB_CSRF_TOKEN }}
+        run: node scripts/fetch-heroes.js --allow-partial
 
       - name: Commit and push if changed
         env:
