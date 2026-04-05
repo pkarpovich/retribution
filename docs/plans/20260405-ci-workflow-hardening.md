@@ -57,9 +57,9 @@ After hardening, the workflow will:
 - [x] validate YAML parses
 
 ### Task 3: Add rebase guard before push
-- [ ] insert `git -c http.extraheader="Authorization: Basic ${AUTH}" -c credential.helper= pull --rebase origin master` between commit and push
-- [ ] ensures non-fast-forward failure can't happen during long fetch runs
-- [ ] validate YAML parses
+- [x] insert `git -c http.extraheader="Authorization: Basic ${AUTH}" -c credential.helper= pull --rebase origin master` between commit and push
+- [x] ensures non-fast-forward failure can't happen during long fetch runs
+- [x] validate YAML parses
 
 ### Task 4: Add job-level timeout
 - [ ] add `timeout-minutes: 30` under `jobs.update:` (same level as `runs-on`)

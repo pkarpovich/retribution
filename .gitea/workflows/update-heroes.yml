@@ -48,4 +48,7 @@ jobs:
           AUTH=$(printf '%s' "pkarpovich:${TOKEN}" | base64 | tr -d '\n')
           git -c http.extraheader="Authorization: Basic ${AUTH}" \
               -c credential.helper= \
+              pull --rebase https://github.com/pkarpovich/retribution.git master
+          git -c http.extraheader="Authorization: Basic ${AUTH}" \
+              -c credential.helper= \
               push https://github.com/pkarpovich/retribution.git HEAD:master
