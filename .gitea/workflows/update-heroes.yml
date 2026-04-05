@@ -13,8 +13,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          git config --global url."https://pkarpovich:${GH_PAT}@github.com/".insteadOf "https://github.com/"
-          git clone https://github.com/pkarpovich/retribution.git .
+          git clone "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" .
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
 
@@ -22,14 +21,24 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm install -g pnpm@10 && pnpm install --frozen-lockfile
-
-      - run: node scripts/fetch-heroes.js --allow-partial
+      - name: Bump lastUpdated (mock fetch)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'src/data/heroes.json';
+            const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+            d.lastUpdated = new Date().toISOString();
+            fs.writeFileSync(p, JSON.stringify(d, null, 2));
+          "
 
       - name: Commit and push if changed
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          LINES=$(git diff src/data/heroes.json | grep '^[+-]' | grep -v '^[+-][+-]' | grep -v 'lastUpdated' | wc -l)
-          if [ "$LINES" -eq 0 ]; then echo "No meaningful changes"; exit 0; fi
+          if git diff --quiet src/data/heroes.json; then
+            echo "No changes"
+            exit 0
+          fi
           git add src/data/heroes.json
-          git commit -m "chore(data): update hero database $(date -u +%Y-%m-%d)"
-          git push
+          git commit -m "chore(data): bump lastUpdated $(date -u +%Y-%m-%d)"
+          git push "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" HEAD:master
