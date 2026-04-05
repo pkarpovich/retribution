@@ -381,6 +381,30 @@ async function main() {
     console.log(`  ${j.hero_name}: mob=${j.capabilities.mobilityScore} cc=${j.capabilities.ccScore} sustain=${j.capabilities.hasSustain} aoe=${j.capabilities.hasAOE} immune=${j.capabilities.hasImmunity} burst=${j.capabilities.maxBurstDamage} strongVs=${j.strongAgainst.length}`);
   }
 
+  if (dataDegraded) {
+    const ghOutput = process.env.GITHUB_OUTPUT;
+    if (ghOutput) {
+      const parts = [];
+      if (droppedHeroes.length > 0) {
+        const names = droppedHeroes.slice(0, 3).join(', ');
+        const more = droppedHeroes.length > 3 ? ` +${droppedHeroes.length - 3}` : '';
+        parts.push(`dropped ${droppedHeroes.length}: ${names}${more}`);
+      }
+      if (missingSkills.length > 0) {
+        const names = missingSkills.slice(0, 3).map(h => h.hero_name).join(', ');
+        const more = missingSkills.length > 3 ? ` +${missingSkills.length - 3}` : '';
+        parts.push(`missing skills ${missingSkills.length}: ${names}${more}`);
+      }
+      if (placeholderHeroes.length > 0) {
+        const names = placeholderHeroes.slice(0, 3).map(h => h.hero_name).join(', ');
+        const more = placeholderHeroes.length > 3 ? ` +${placeholderHeroes.length - 3}` : '';
+        parts.push(`placeholder ${placeholderHeroes.length}: ${names}${more}`);
+      }
+      fs.appendFileSync(ghOutput, `degraded=true\n`);
+      fs.appendFileSync(ghOutput, `degradation_summary=${parts.join('; ')}\n`);
+    }
+  }
+
   if (dataDegraded && !allowPartial) {
     console.warn('\nData written but quality is degraded (dropped heroes or missing skills).');
     console.warn('Re-run to fix, or pass --allow-partial to suppress this exit code.');

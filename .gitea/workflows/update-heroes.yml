@@ -2,43 +2,85 @@ name: Update Hero Data
 
 on:
   schedule:
-    - cron: '0 6 */3 * *'
+    - cron: '0 6 * * 1,4'
   workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout from GitHub
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_TOKEN }}
         run: |
-          git clone "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" .
+          TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')
+          AUTH=$(printf '%s' "pkarpovich:${TOKEN}" | base64 | tr -d '\n')
+          git -c http.extraheader="Authorization: Basic ${AUTH}" \
+              -c credential.helper= \
+              clone https://github.com/pkarpovich/retribution.git .
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
-      - name: Bump lastUpdated (mock fetch)
+      - name: Setup pnpm via corepack
         run: |
-          node -e "
-            const fs = require('fs');
-            const p = 'src/data/heroes.json';
-            const d = JSON.parse(fs.readFileSync(p, 'utf8'));
-            d.lastUpdated = new Date().toISOString();
-            fs.writeFileSync(p, JSON.stringify(d, null, 2));
-          "
+          corepack enable
+          corepack prepare pnpm@10 --activate
+
+      - name: Cache pnpm store
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        continue-on-error: true
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch hero data
+        id: fetch
+        run: node scripts/fetch-heroes.js --allow-partial
 
       - name: Commit and push if changed
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_TOKEN }}
         run: |
           if git diff --quiet src/data/heroes.json; then
             echo "No changes"
             exit 0
           fi
+          TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')
           git add src/data/heroes.json
-          git commit -m "chore(data): bump lastUpdated $(date -u +%Y-%m-%d)"
-          git push "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" HEAD:master
+          git commit -m "chore(data): refresh hero data $(date -u +%Y-%m-%d)"
+          AUTH=$(printf '%s' "pkarpovich:${TOKEN}" | base64 | tr -d '\n')
+          git -c http.extraheader="Authorization: Basic ${AUTH}" \
+              -c credential.helper= \
+              pull --rebase https://github.com/pkarpovich/retribution.git master
+          git -c http.extraheader="Authorization: Basic ${AUTH}" \
+              -c credential.helper= \
+              push https://github.com/pkarpovich/retribution.git HEAD:master
+          echo "DATA_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DATA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Notify Telegram
+        if: always()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            <b>⚔️ Retribution — Hero Data Update</b>
+            —
+            ${{ job.status == 'success' && '✅ <b>Success</b>' || '❌ <b>Failed</b>' }}
+            ${{ steps.fetch.outputs.degraded == 'true' && format('⚠️ <b>Degraded:</b> {0}', steps.fetch.outputs.degradation_summary) || '' }}
+            —
+            <b>Commit:</b> <a href="https://github.com/pkarpovich/retribution/commit/${{ env.DATA_SHA || github.sha }}"><code>${{ env.DATA_SHORT || github.sha }}</code></a>
+            <b>Actor:</b> ${{ github.actor }}
