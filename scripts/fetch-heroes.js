@@ -385,11 +385,23 @@ async function main() {
     const ghOutput = process.env.GITHUB_OUTPUT;
     if (ghOutput) {
       const parts = [];
-      if (droppedHeroes.length > 0) parts.push(`${droppedHeroes.length} heroes dropped`);
-      if (missingSkills.length > 0) parts.push(`${missingSkills.length} missing skills`);
-      if (placeholderHeroes.length > 0) parts.push(`${placeholderHeroes.length} malformed skills`);
+      if (droppedHeroes.length > 0) {
+        const names = droppedHeroes.slice(0, 3).join(', ');
+        const more = droppedHeroes.length > 3 ? ` +${droppedHeroes.length - 3}` : '';
+        parts.push(`dropped ${droppedHeroes.length}: ${names}${more}`);
+      }
+      if (missingSkills.length > 0) {
+        const names = missingSkills.slice(0, 3).map(h => h.hero_name).join(', ');
+        const more = missingSkills.length > 3 ? ` +${missingSkills.length - 3}` : '';
+        parts.push(`missing skills ${missingSkills.length}: ${names}${more}`);
+      }
+      if (placeholderHeroes.length > 0) {
+        const names = placeholderHeroes.slice(0, 3).map(h => h.hero_name).join(', ');
+        const more = placeholderHeroes.length > 3 ? ` +${placeholderHeroes.length - 3}` : '';
+        parts.push(`placeholder ${placeholderHeroes.length}: ${names}${more}`);
+      }
       fs.appendFileSync(ghOutput, `degraded=true\n`);
-      fs.appendFileSync(ghOutput, `degradation_summary=${parts.join(', ')}\n`);
+      fs.appendFileSync(ghOutput, `degradation_summary=${parts.join('; ')}\n`);
     }
   }
 
