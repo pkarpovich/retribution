@@ -27,6 +27,12 @@ jobs:
           corepack enable
           corepack prepare pnpm@10 --activate
 
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

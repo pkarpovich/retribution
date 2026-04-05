@@ -78,9 +78,9 @@ After hardening, the workflow will:
 - [x] validate YAML parses
 
 ### Task 7: Add pnpm store caching
-- [ ] add `actions/cache@v4` step before `pnpm install`
-- [ ] cache path `~/.local/share/pnpm/store`, key `pnpm-${{ hashFiles('pnpm-lock.yaml') }}`
-- [ ] validate YAML parses
+- [x] add `actions/cache@v4` step before `pnpm install`
+- [x] cache path `~/.local/share/pnpm/store`, key `pnpm-${{ hashFiles('pnpm-lock.yaml') }}`
+- [x] validate YAML parses
 
 ## Technical Details
 
