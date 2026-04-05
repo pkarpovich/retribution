@@ -66,11 +66,11 @@ After hardening, the workflow will:
 - [x] validate YAML parses
 
 ### Task 5: Add Telegram notification step
-- [ ] add final step `Notify Telegram` using `appleboy/telegram-action@v1.0.1`
-- [ ] set `if: always()` so both success and failure fire
-- [ ] use secrets `TELEGRAM_CHAT_ID` and `TELEGRAM_BOT_TOKEN`
-- [ ] message: status emoji, commit SHA link, actor
-- [ ] validate YAML parses
+- [x] add final step `Notify Telegram` using `appleboy/telegram-action@v1.0.1`
+- [x] set `if: always()` so both success and failure fire
+- [x] use secrets `TELEGRAM_CHAT_ID` and `TELEGRAM_BOT_TOKEN`
+- [x] message: status emoji, commit SHA link, actor
+- [x] validate YAML parses
 
 ### Task 6: Fix schedule to avoid month-boundary gaps
 - [ ] change cron from `'0 6 */3 * *'` to `'0 6 * * 1,4'` (Mon/Thu 06:00 UTC)

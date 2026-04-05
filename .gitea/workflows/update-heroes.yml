@@ -53,3 +53,14 @@ jobs:
           git -c http.extraheader="Authorization: Basic ${AUTH}" \
               -c credential.helper= \
               push https://github.com/pkarpovich/retribution.git HEAD:master
+
+      - name: Notify Telegram
+        if: always()
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ job.status == 'success' && '✅' || '❌' }} *Update Hero Data* — ${{ job.status }}
+            Commit: https://github.com/pkarpovich/retribution/commit/${{ github.sha }}
+            Actor: ${{ github.actor }}
