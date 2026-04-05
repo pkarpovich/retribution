@@ -29,16 +29,16 @@ jobs:
 
       - name: Cache pnpm store
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: ~/.local/share/pnpm/store
           key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Fetch hero data
-        env:
-          MLBB_CSRF_TOKEN: ${{ secrets.MLBB_CSRF_TOKEN }}
         run: node scripts/fetch-heroes.js --allow-partial
 
       - name: Commit and push if changed
@@ -59,6 +59,7 @@ jobs:
           git -c http.extraheader="Authorization: Basic ${AUTH}" \
               -c credential.helper= \
               push https://github.com/pkarpovich/retribution.git HEAD:master
+          echo "DATA_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Notify Telegram
         if: always()
@@ -68,5 +69,5 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ${{ job.status == 'success' && '✅' || '❌' }} *Update Hero Data* — ${{ job.status }}
-            Commit: https://github.com/pkarpovich/retribution/commit/${{ github.sha }}
+            Commit: https://github.com/pkarpovich/retribution/commit/${{ env.DATA_SHA || github.sha }}
             Actor: ${{ github.actor }}

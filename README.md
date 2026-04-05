@@ -67,7 +67,7 @@ Weights scale by user rank (Epic through Mythical Glory+).
 - **Vite 8** with native Rolldown bundler
 - **CSS Modules** with Flexoki color palette (light/dark)
 - **vite-plugin-pwa** + Workbox for offline support
-- **GitHub Actions** for automated hero data updates
+- **Gitea Actions** for automated hero data updates
 
 ## Getting Started
 

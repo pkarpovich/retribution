@@ -93,3 +93,15 @@ All types defined in `src/types/hero.ts`:
 - Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
 - Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching
+
+## CI Workflow
+
+Automated hero data updates run via Gitea Actions (`.gitea/workflows/update-heroes.yml`) on a self-hosted runner:
+- Schedule: Mon/Thu 06:00 UTC (`0 6 * * 1,4`), plus manual `workflow_dispatch`
+- Clones from GitHub, runs `node scripts/fetch-heroes.js --allow-partial`, commits and pushes back
+- Uses corepack-managed pnpm with `actions/cache@v4` for pnpm store
+- Push auth: `http.extraheader` with base64-encoded basic auth (`pkarpovich:<GH_TOKEN>`)
+- Rebase guard: `pull --rebase` before push to handle concurrent master changes
+- Telegram notifications on success/failure via `appleboy/telegram-action`
+- Job timeout: 30 minutes (130 heroes x 2s sleep + overhead)
+- Required Gitea secrets: `GH_TOKEN` (GitHub PAT), `TELEGRAM_CHAT_ID`, `TELEGRAM_BOT_TOKEN`

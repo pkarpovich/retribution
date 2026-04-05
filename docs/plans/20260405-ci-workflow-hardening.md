@@ -15,7 +15,7 @@ After hardening, the workflow will:
 - Fetch script: `scripts/fetch-heroes.js` (mlbb.io proxy, 2s sleep per hero, 130+ heroes)
 - Data file: `src/data/heroes.json`
 - Current branch: `ci/fix-push-auth`
-- Current push target in workflow: `ci/test-auth` (temp for auth iteration)
+- Current push target in workflow: `master` (restored from temp `ci/test-auth`)
 - Working auth: `http.extraheader` with base64 basic auth, `pkarpovich:<GH_TOKEN>`
 - Gitea secret name: `GH_TOKEN` (fine-grained PAT, Contents: Read and write)
 
