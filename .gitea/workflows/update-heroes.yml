@@ -15,6 +15,7 @@ jobs:
           GH_PAT: ${{ secrets.GH_TOKEN }}
         run: |
           git clone "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" .
+          git remote set-url origin https://github.com/pkarpovich/retribution.git
           git config user.name "gitea-actions[bot]"
           git config user.email "gitea-actions[bot]@users.noreply.github.com"
 
@@ -51,7 +52,7 @@ jobs:
           fi
           TOKEN=$(printf '%s' "$GH_PAT" | tr -d '\r\n\t ')
           git add src/data/heroes.json
-          git commit -m "chore(data): bump lastUpdated $(date -u +%Y-%m-%d)"
+          git commit -m "chore(data): refresh hero data $(date -u +%Y-%m-%d)"
           AUTH=$(printf '%s' "pkarpovich:${TOKEN}" | base64 | tr -d '\n')
           git -c http.extraheader="Authorization: Basic ${AUTH}" \
               -c credential.helper= \
