@@ -73,9 +73,9 @@ After hardening, the workflow will:
 - [x] validate YAML parses
 
 ### Task 6: Fix schedule to avoid month-boundary gaps
-- [ ] change cron from `'0 6 */3 * *'` to `'0 6 * * 1,4'` (Mon/Thu 06:00 UTC)
-- [ ] update README.md line mentioning "Data updates automatically every 3 days via GitHub Actions" to "Data updates twice a week (Mon/Thu) via Gitea Actions"
-- [ ] validate YAML parses
+- [x] change cron from `'0 6 */3 * *'` to `'0 6 * * 1,4'` (Mon/Thu 06:00 UTC)
+- [x] update README.md line mentioning "Data updates automatically every 3 days via GitHub Actions" to "Data updates twice a week (Mon/Thu) via Gitea Actions"
+- [x] validate YAML parses
 
 ### Task 7: Add pnpm store caching
 - [ ] add `actions/cache@v4` step before `pnpm install`

@@ -2,7 +2,7 @@ name: Update Hero Data
 
 on:
   schedule:
-    - cron: '0 6 */3 * *'
+    - cron: '0 6 * * 1,4'
   workflow_dispatch:
 
 jobs:

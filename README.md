@@ -95,7 +95,7 @@ Hero data is fetched from the mlbb.io API and enriched with computed capabilitie
 node scripts/fetch-heroes.js --allow-partial
 ```
 
-Data updates automatically every 3 days via GitHub Actions.
+Data updates twice a week (Mon/Thu) via Gitea Actions.
 
 ## Build & Deploy
 
