@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout from GitHub
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_TOKEN }}
         run: |
           git clone "https://pkarpovich:${GH_PAT}@github.com/pkarpovich/retribution.git" .
           git config user.name "gitea-actions[bot]"
@@ -33,7 +33,7 @@ jobs:
 
       - name: Commit and push if changed
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_TOKEN }}
         run: |
           if git diff --quiet src/data/heroes.json; then
             echo "No changes"
