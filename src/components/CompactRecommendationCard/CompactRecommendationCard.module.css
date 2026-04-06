@@ -116,7 +116,11 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.topRowSpacer {
+  flex: 1;
 }
 
 .heroName {
@@ -263,16 +267,17 @@
 .bootRow {
   display: flex;
   gap: 0.25rem;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .bootTag {
-  padding: 0.125rem 0.375rem;
+  padding: 0.0625rem 0.3125rem;
   border: 1px solid;
-  border-radius: 0.25rem;
+  border-radius: 0.1875rem;
   font-size: 0.5625rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .matchups {
@@ -320,52 +325,29 @@
 
 .buildAdvice {
   display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
   margin-top: 0.25rem;
   padding-top: 0.375rem;
   border-top: 1px solid var(--border);
 }
 
-.buildAdviceLabel {
-  font-size: 0.5625rem;
-  font-weight: 700;
-  color: var(--tx-3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.buildCards {
-  display: flex;
-  gap: 0.375rem;
-}
-
-.buildCard {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1875rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.375rem;
-  min-width: 0;
-}
-
-.buildCardName {
-  font-size: 0.6875rem;
+.buildTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1875rem 0.4375rem;
+  border: 1px solid;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.buildCardReason {
-  font-size: 0.5625rem;
+.buildReason {
   font-weight: 500;
   color: var(--tx-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.5625rem;
 }
 
 .heroRadar {
@@ -568,10 +550,6 @@
   .scoreDot {
     width: 4px;
     height: 4px;
-  }
-
-  .buildCards {
-    flex-direction: column;
   }
 
   .breakdownItems {

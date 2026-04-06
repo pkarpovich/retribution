@@ -69,10 +69,32 @@ const BOOT_COLORS: Record<BootType, string> = {
   'Magic Shoes': 'var(--cyan)',
 };
 
+const BOOT_SHORT_NAMES: Record<BootType, string> = {
+  'Tough Boots': 'Tough',
+  'Warrior Boots': 'Warrior',
+  'Arcane Boots': 'Arcane',
+  'Swift Boots': 'Swift',
+  'Magic Shoes': 'CDR',
+};
+
+const BOOT_ICONS: Record<BootType, string> = {
+  'Tough Boots': '\u{1F6E1}\u{FE0F}',
+  'Warrior Boots': '\u{2694}\u{FE0F}',
+  'Arcane Boots': '\u{1F52E}',
+  'Swift Boots': '\u{26A1}',
+  'Magic Shoes': '\u{23F3}',
+};
+
 const BLESSING_COLORS: Record<RetributionBlessing, string> = {
   'Ice': 'var(--cyan)',
   'Flame': 'var(--red)',
   'Bloody': 'var(--magenta)',
+};
+
+const BLESSING_ICONS: Record<RetributionBlessing, string> = {
+  'Ice': '\u{2744}\u{FE0F}',
+  'Flame': '\u{1F525}',
+  'Bloody': '\u{1FA78}',
 };
 
 const HERO_RADAR_AXES = ['Burst', 'Mobility', 'CC', 'Sustain', 'AOE'] as const;
@@ -196,45 +218,26 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
           <div className={styles.info}>
             <div className={styles.topRow}>
               <h4 className={styles.heroName}>{hero.hero_name}</h4>
+              <div className={styles.topRowSpacer} />
               <TierBadge tier={hero.tier} />
+            </div>
+            <div className={styles.metaRow}>
               <div
                 className={styles.pickLevelBadge}
                 style={{ background: badge.gradient, color: badge.textColor }}
               >
                 {badge.label}
               </div>
-            </div>
-            <div className={styles.metaRow}>
               <span className={styles.typeLabel} style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}>
                 {jungler_type}
               </span>
-              <svg viewBox="0 0 120 120" className={styles.miniRadarInline}>
-                {[0.5, 1].map(level => {
-                  const pts = HERO_RADAR_AXES.map((_, i) => {
-                    const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 40 * level);
-                    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-                  }).join(' ');
-                  return <polygon key={level} points={pts} className={styles.heroRadarGrid} />;
-                })}
-                <path
-                  d={miniRadarPath(heroRadar, 60, 60, 40)}
-                  className={styles.heroRadarArea}
-                  style={{ stroke: badge.border }}
-                />
-              </svg>
             </div>
             <div className={styles.bootRow}>
-              <span
-                className={styles.bootTag}
-                style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
-              >
-                {result.bootRecommendation.boots}
+              <span className={styles.bootTag} style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}>
+                {BOOT_ICONS[result.bootRecommendation.boots]} {BOOT_SHORT_NAMES[result.bootRecommendation.boots]}
               </span>
-              <span
-                className={styles.bootTag}
-                style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
-              >
-                {result.bootRecommendation.blessing}
+              <span className={styles.bootTag} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
+                {BLESSING_ICONS[result.bootRecommendation.blessing]} {result.bootRecommendation.blessing}
               </span>
             </div>
           </div>
@@ -325,27 +328,20 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
           </div>
 
           <div className={styles.buildAdvice}>
-            <span className={styles.buildAdviceLabel}>BUILD ADVICE</span>
-            <div className={styles.buildCards}>
-              <div
-                className={styles.buildCard}
-                style={{ background: `color-mix(in srgb, ${BOOT_COLORS[result.bootRecommendation.boots]} 12%, var(--bg-1))` }}
-              >
-                <span className={styles.buildCardName} style={{ color: BOOT_COLORS[result.bootRecommendation.boots] }}>
-                  {result.bootRecommendation.boots}
-                </span>
-                <span className={styles.buildCardReason}>{result.bootRecommendation.bootsReason}</span>
-              </div>
-              <div
-                className={styles.buildCard}
-                style={{ background: `color-mix(in srgb, ${BLESSING_COLORS[result.bootRecommendation.blessing]} 12%, var(--bg-1))` }}
-              >
-                <span className={styles.buildCardName} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
-                  {result.bootRecommendation.blessing}
-                </span>
-                <span className={styles.buildCardReason}>{result.bootRecommendation.blessingReason}</span>
-              </div>
-            </div>
+            <span
+              className={styles.buildTag}
+              style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
+            >
+              {BOOT_ICONS[result.bootRecommendation.boots]} {result.bootRecommendation.boots}
+              <span className={styles.buildReason}>{result.bootRecommendation.bootsReason}</span>
+            </span>
+            <span
+              className={styles.buildTag}
+              style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
+            >
+              {BLESSING_ICONS[result.bootRecommendation.blessing]} {result.bootRecommendation.blessing}
+              <span className={styles.buildReason}>{result.bootRecommendation.blessingReason}</span>
+            </span>
           </div>
 
           <div className={styles.barChart}>
