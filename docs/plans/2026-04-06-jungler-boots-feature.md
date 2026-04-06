@@ -63,11 +63,11 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 ## Implementation Steps
 
 ### Task 1: Setup vitest
-- [ ] install vitest as dev dependency (add to package.json)
-- [ ] create `vitest.config.ts` with basic TypeScript config
-- [ ] add `"test": "vitest run"` script to package.json
-- [ ] create `src/utils/__tests__/heroUtils.test.ts` with a trivial passing test
-- [ ] run `pnpm test` + `pnpm lint` - must pass
+- [x] install vitest as dev dependency (add to package.json)
+- [x] create `vitest.config.ts` with basic TypeScript config
+- [x] add `"test": "vitest run"` script to package.json
+- [x] create `src/utils/__tests__/heroUtils.test.ts` with a trivial passing test
+- [x] run `pnpm test` + `pnpm lint` - must pass
 
 ### Task 2: Add BootRecommendation types
 - [ ] add `BootType` type: `'Tough Boots' | 'Warrior Boots' | 'Arcane Boots' | 'Swift Boots' | 'Magic Shoes' | 'Rapid Boots'`
