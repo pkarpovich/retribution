@@ -112,12 +112,12 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm build` + `pnpm lint` - must pass
 
 ### Task 6: Verify acceptance criteria
-- [ ] verify boot recommendation appears on compact cards
-- [ ] verify boot recommendation details appear on expanded cards
-- [ ] verify recommendation changes when enemy team changes
-- [ ] verify recommendation changes based on hero type (mage vs fighter vs marksman)
-- [ ] run full test suite (`pnpm test`)
-- [ ] run `pnpm build` + `pnpm lint` - all must pass
+- [x] verify boot recommendation appears on compact cards
+- [x] verify boot recommendation details appear on expanded cards
+- [x] verify recommendation changes when enemy team changes
+- [x] verify recommendation changes based on hero type (mage vs fighter vs marksman)
+- [x] run full test suite (`pnpm test`)
+- [x] run `pnpm build` + `pnpm lint` - all must pass
 
 ### Task 7: [Final] Update documentation
 - [ ] update CLAUDE.md Architecture section to mention boot recommendation
