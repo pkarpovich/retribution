@@ -7,7 +7,8 @@ import type {
   RecommendationWeights,
   RecommendationResult,
   ScoreBreakdown,
-  RecommendationWarning
+  RecommendationWarning,
+  BootRecommendation
 } from '../types/hero';
 
 // ---------------------------------------------------------------------------
@@ -715,6 +716,56 @@ function generateStrengths(
 }
 
 // ---------------------------------------------------------------------------
+// Boot & blessing recommendation
+// ---------------------------------------------------------------------------
+
+export function recommendBoots(hero: Hero, enemyTeam: Hero[]): BootRecommendation {
+  const boots = selectBoots(hero, enemyTeam);
+  const blessing = selectBlessing(hero);
+  return { ...boots, ...blessing };
+}
+
+function selectBoots(hero: Hero, enemyTeam: Hero[]): Pick<BootRecommendation, 'boots' | 'bootsReason'> {
+  const totalEnemyCC = enemyTeam.reduce((sum, e) => sum + getCCScore(e), 0);
+  const ccHeroCount = enemyTeam.filter(e => getCCScore(e) >= 1).length;
+
+  if (totalEnemyCC >= 4 || ccHeroCount >= 3) {
+    return { boots: 'Tough Boots', bootsReason: 'High enemy CC' };
+  }
+
+  const physicalDealerCount = enemyTeam.filter(e => isPrimarilyPhysical(e)).length;
+  if (physicalDealerCount >= 3) {
+    return { boots: 'Warrior Boots', bootsReason: 'Enemy phys. heavy' };
+  }
+
+  if (hero.role.includes('Mage') || isPrimarilyMagic(hero)) {
+    return { boots: 'Arcane Boots', bootsReason: 'Magic penetration' };
+  }
+
+  const isAutoAttackBased = hero.role.includes('Marksman') ||
+    (hero.role.includes('Fighter') && hero.speciality.some(s => s === 'Push' || s === 'Damage'));
+  if (isAutoAttackBased) {
+    return { boots: 'Swift Boots', bootsReason: 'Attack speed scaling' };
+  }
+
+  return { boots: 'Magic Shoes', bootsReason: 'Cooldown reduction' };
+}
+
+function selectBlessing(hero: Hero): Pick<BootRecommendation, 'blessing' | 'blessingReason'> {
+  if (hero.role.includes('Tank') || (classifyJunglerType(hero) === 'UTILITY' && hasSustainCapability(hero))) {
+    return { blessing: 'Bloody', blessingReason: 'HP sustain in fights' };
+  }
+
+  const hasBurstDamage = (hero.capabilities?.maxBurstDamage ?? 0) > 400;
+  const hasBurstSpec = hero.speciality.some(s => s === 'Burst' || s === 'Finisher');
+  if (hasBurstDamage || hasBurstSpec) {
+    return { blessing: 'Flame', blessingReason: 'Burst stat steal' };
+  }
+
+  return { blessing: 'Ice', blessingReason: 'Chase & escape' };
+}
+
+// ---------------------------------------------------------------------------
 // Public API: calculateJunglerRecommendation, recommendJunglers
 // ---------------------------------------------------------------------------
 
@@ -771,6 +822,8 @@ export function calculateJunglerRecommendation(
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
   const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
 
+  const bootRecommendation = recommendBoots(hero, enemyTeam);
+
   return {
     hero,
     total_score: totalScore,
@@ -778,7 +831,8 @@ export function calculateJunglerRecommendation(
     jungler_type: junglerType,
     recommendation_level: recommendationLevel,
     warnings,
-    strengths
+    strengths,
+    bootRecommendation
   };
 }
 

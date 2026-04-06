@@ -79,21 +79,21 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm test` + `pnpm lint` - must pass
 
 ### Task 3: Implement recommendBoots() logic
-- [ ] add `recommendBoots(hero: Hero, enemyTeam: Hero[]): BootRecommendation` function in `heroUtils.ts`
-- [ ] implement boot selection logic (enemy CC -> Tough, enemy phys -> Warrior, mage hero -> Arcane, AA hero -> Swift, default -> Magic Shoes)
-- [ ] implement blessing selection logic (tank/sustain -> Bloody, burst -> Flame, default -> Ice)
-- [ ] generate short reason strings for each choice
-- [ ] call `recommendBoots()` from `calculateJunglerRecommendation()` and attach to result
-- [ ] write tests for boot selection: mage hero gets Arcane Boots
-- [ ] write tests for boot selection: high enemy CC gives Tough Boots
-- [ ] write tests for boot selection: enemy phys-heavy gives Warrior Boots
-- [ ] write tests for boot selection: marksman hero gets Swift Boots
-- [ ] write tests for boot selection: default case gives Magic Shoes
-- [ ] write tests for blessing selection: tank hero gets Bloody
-- [ ] write tests for blessing selection: burst hero gets Flame
-- [ ] write tests for blessing selection: default gives Ice
-- [ ] write tests for edge case: enemy team empty (should still return valid recommendation)
-- [ ] run `pnpm build` + `pnpm test` + `pnpm lint` - must pass
+- [x] add `recommendBoots(hero: Hero, enemyTeam: Hero[]): BootRecommendation` function in `heroUtils.ts`
+- [x] implement boot selection logic (enemy CC -> Tough, enemy phys -> Warrior, mage hero -> Arcane, AA hero -> Swift, default -> Magic Shoes)
+- [x] implement blessing selection logic (tank/sustain -> Bloody, burst -> Flame, default -> Ice)
+- [x] generate short reason strings for each choice
+- [x] call `recommendBoots()` from `calculateJunglerRecommendation()` and attach to result
+- [x] write tests for boot selection: mage hero gets Arcane Boots
+- [x] write tests for boot selection: high enemy CC gives Tough Boots
+- [x] write tests for boot selection: enemy phys-heavy gives Warrior Boots
+- [x] write tests for boot selection: marksman hero gets Swift Boots
+- [x] write tests for boot selection: default case gives Magic Shoes
+- [x] write tests for blessing selection: tank hero gets Bloody
+- [x] write tests for blessing selection: burst hero gets Flame
+- [x] write tests for blessing selection: default gives Ice
+- [x] write tests for edge case: enemy team empty (should still return valid recommendation)
+- [x] run `pnpm build` + `pnpm test` + `pnpm lint` - must pass
 
 ### Task 4: Render boot tags on compact card
 - [ ] add boot pill tags row below jungler type label in compact view
