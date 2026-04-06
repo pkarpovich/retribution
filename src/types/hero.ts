@@ -3,6 +3,15 @@ export type HeroLane = 'Jungle' | 'Exp Lane' | 'Mid Lane' | 'Gold Lane' | 'Roam'
 export type HeroTier = 'SS' | 'S' | 'A' | 'B' | 'C' | 'D';
 export type UserRank = 'Epic' | 'Legend' | 'Mythic' | 'Mythical Honor' | 'Mythical Glory+';
 export type JunglerType = 'DAMAGE' | 'UTILITY' | 'HYBRID';
+export type BootType = 'Tough Boots' | 'Warrior Boots' | 'Arcane Boots' | 'Swift Boots' | 'Magic Shoes' | 'Rapid Boots';
+export type RetributionBlessing = 'Ice' | 'Flame' | 'Bloody';
+
+export interface BootRecommendation {
+  boots: BootType;
+  bootsReason: string;
+  blessing: RetributionBlessing;
+  blessingReason: string;
+}
 export type RecommendationLevel = 'BEST_PICK' | 'STRONG_PICK' | 'GOOD_PICK' | 'SAFE_PICK' | 'RISKY_PICK';
 
 export interface HeroStatistic {
@@ -114,4 +123,5 @@ export interface RecommendationResult {
   recommendation_level: RecommendationLevel;
   warnings: RecommendationWarning[];
   strengths: string[];
+  bootRecommendation?: BootRecommendation;
 }

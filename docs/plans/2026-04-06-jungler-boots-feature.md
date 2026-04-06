@@ -70,13 +70,13 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm test` + `pnpm lint` - must pass
 
 ### Task 2: Add BootRecommendation types
-- [ ] add `BootType` type: `'Tough Boots' | 'Warrior Boots' | 'Arcane Boots' | 'Swift Boots' | 'Magic Shoes' | 'Rapid Boots'`
-- [ ] add `RetributionBlessing` type: `'Ice' | 'Flame' | 'Bloody'`
-- [ ] add `BootRecommendation` interface: `{ boots: BootType; bootsReason: string; blessing: RetributionBlessing; blessingReason: string }`
-- [ ] add `bootRecommendation` optional field to `RecommendationResult`
-- [ ] run `pnpm build` + `pnpm lint` - must pass (no consumers yet, backward compatible)
-- [ ] write test: verify type imports work (smoke test)
-- [ ] run `pnpm test` + `pnpm lint` - must pass
+- [x] add `BootType` type: `'Tough Boots' | 'Warrior Boots' | 'Arcane Boots' | 'Swift Boots' | 'Magic Shoes' | 'Rapid Boots'`
+- [x] add `RetributionBlessing` type: `'Ice' | 'Flame' | 'Bloody'`
+- [x] add `BootRecommendation` interface: `{ boots: BootType; bootsReason: string; blessing: RetributionBlessing; blessingReason: string }`
+- [x] add `bootRecommendation` optional field to `RecommendationResult`
+- [x] run `pnpm build` + `pnpm lint` - must pass (no consumers yet, backward compatible)
+- [x] write test: verify type imports work (smoke test)
+- [x] run `pnpm test` + `pnpm lint` - must pass
 
 ### Task 3: Implement recommendBoots() logic
 - [ ] add `recommendBoots(hero: Hero, enemyTeam: Hero[]): BootRecommendation` function in `heroUtils.ts`
