@@ -743,7 +743,10 @@ function selectBoots(hero: Hero, enemyTeam: Hero[]): Pick<BootRecommendation, 'b
   }
 
   const isAutoAttackBased = hero.role.includes('Marksman') ||
-    (hero.role.includes('Fighter') && hero.speciality.some(s => s === 'Push' || s === 'Damage'));
+    (hero.role.includes('Fighter') && (
+      hero.speciality.some(s => s === 'Push') ||
+      (hero.speciality.some(s => s === 'Damage') && hero.capabilities?.hasAOE === false)
+    ));
   if (isAutoAttackBased) {
     return { boots: 'Swift Boots', bootsReason: 'Attack speed scaling' };
   }

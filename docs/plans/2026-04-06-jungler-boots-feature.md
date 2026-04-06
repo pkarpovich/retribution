@@ -45,7 +45,7 @@ Priority order:
 1. **Enemy CC score high** (sum of `getCCScore()` across enemies >= 4, or >= 3 CC heroes) -> `Tough Boots`
 2. **Enemy predominantly physical** (>= 3 physical damage dealers) -> `Warrior Boots`
 3. **Hero is Mage** (`role` includes Mage, or `isPrimarilyMagic()`) -> `Arcane Boots`
-4. **Hero is auto-attack based** (`role` includes Marksman, or speciality includes "Push"/"Damage" with Fighter role) -> `Swift Boots`
+4. **Hero is auto-attack based** (`role` includes Marksman, or Fighter with `Push` speciality, or Fighter with `Damage` speciality and `hasAOE: false`) -> `Swift Boots`
 5. **Default** -> `Magic Shoes` (CDR is universally useful)
 
 ### Retribution Blessing Selection (based on hero type + capabilities)

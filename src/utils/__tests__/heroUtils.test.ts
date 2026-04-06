@@ -100,8 +100,22 @@ describe('recommendBoots - boot selection', () => {
     expect(result.boots).toBe('Swift Boots')
   })
 
-  it('fighter with Damage speciality gets Swift Boots', () => {
-    const fighter = makeHero({ role: ['Fighter'], speciality: ['Damage'] })
+  it('AOE fighter with Damage speciality gets Magic Shoes (ability-based)', () => {
+    const fighter = makeHero({
+      role: ['Fighter'],
+      speciality: ['Damage'],
+      capabilities: { mobilityScore: 1, ccScore: 1, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 8, skillsSummary: [] },
+    })
+    const result = recommendBoots(fighter, [])
+    expect(result.boots).toBe('Magic Shoes')
+  })
+
+  it('single-target fighter with Damage speciality gets Swift Boots (auto-attack based)', () => {
+    const fighter = makeHero({
+      role: ['Fighter'],
+      speciality: ['Damage'],
+      capabilities: { mobilityScore: 3, ccScore: 0, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 24, skillsSummary: [] },
+    })
     const result = recommendBoots(fighter, [])
     expect(result.boots).toBe('Swift Boots')
   })
