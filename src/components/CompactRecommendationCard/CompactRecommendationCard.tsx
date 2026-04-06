@@ -67,7 +67,6 @@ const BOOT_COLORS: Record<BootType, string> = {
   'Arcane Boots': 'var(--purple)',
   'Swift Boots': 'var(--yellow)',
   'Magic Shoes': 'var(--cyan)',
-  'Rapid Boots': 'var(--green)',
 };
 
 const BLESSING_COLORS: Record<RetributionBlessing, string> = {
@@ -224,22 +223,20 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                 />
               </svg>
             </div>
-            {result.bootRecommendation && (
-              <div className={styles.bootRow}>
-                <span
-                  className={styles.bootTag}
-                  style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
-                >
-                  {result.bootRecommendation.boots}
-                </span>
-                <span
-                  className={styles.bootTag}
-                  style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
-                >
-                  {result.bootRecommendation.blessing}
-                </span>
-              </div>
-            )}
+            <div className={styles.bootRow}>
+              <span
+                className={styles.bootTag}
+                style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
+              >
+                {result.bootRecommendation.boots}
+              </span>
+              <span
+                className={styles.bootTag}
+                style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
+              >
+                {result.bootRecommendation.blessing}
+              </span>
+            </div>
           </div>
         </>
       ) : (
@@ -327,31 +324,29 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
             </div>
           </div>
 
-          {result.bootRecommendation && (
-            <div className={styles.buildAdvice}>
-              <span className={styles.buildAdviceLabel}>BUILD ADVICE</span>
-              <div className={styles.buildCards}>
-                <div
-                  className={styles.buildCard}
-                  style={{ background: `color-mix(in srgb, ${BOOT_COLORS[result.bootRecommendation.boots]} 12%, var(--bg-1))` }}
-                >
-                  <span className={styles.buildCardName} style={{ color: BOOT_COLORS[result.bootRecommendation.boots] }}>
-                    {result.bootRecommendation.boots}
-                  </span>
-                  <span className={styles.buildCardReason}>{result.bootRecommendation.bootsReason}</span>
-                </div>
-                <div
-                  className={styles.buildCard}
-                  style={{ background: `color-mix(in srgb, ${BLESSING_COLORS[result.bootRecommendation.blessing]} 12%, var(--bg-1))` }}
-                >
-                  <span className={styles.buildCardName} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
-                    {result.bootRecommendation.blessing}
-                  </span>
-                  <span className={styles.buildCardReason}>{result.bootRecommendation.blessingReason}</span>
-                </div>
+          <div className={styles.buildAdvice}>
+            <span className={styles.buildAdviceLabel}>BUILD ADVICE</span>
+            <div className={styles.buildCards}>
+              <div
+                className={styles.buildCard}
+                style={{ background: `color-mix(in srgb, ${BOOT_COLORS[result.bootRecommendation.boots]} 12%, var(--bg-1))` }}
+              >
+                <span className={styles.buildCardName} style={{ color: BOOT_COLORS[result.bootRecommendation.boots] }}>
+                  {result.bootRecommendation.boots}
+                </span>
+                <span className={styles.buildCardReason}>{result.bootRecommendation.bootsReason}</span>
+              </div>
+              <div
+                className={styles.buildCard}
+                style={{ background: `color-mix(in srgb, ${BLESSING_COLORS[result.bootRecommendation.blessing]} 12%, var(--bg-1))` }}
+              >
+                <span className={styles.buildCardName} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
+                  {result.bootRecommendation.blessing}
+                </span>
+                <span className={styles.buildCardReason}>{result.bootRecommendation.blessingReason}</span>
               </div>
             </div>
-          )}
+          </div>
 
           <div className={styles.barChart}>
             {bars.map(bar => {

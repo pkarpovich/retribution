@@ -12,6 +12,7 @@ Retribution is a Mobile Legends: Bang Bang (MLBB) jungler recommendation app bui
 pnpm dev              # Start dev server on port 50200
 pnpm build            # TypeScript compilation + Vite build
 pnpm lint             # Run ESLint
+pnpm test             # Run unit tests (vitest)
 pnpm preview          # Preview production build
 ```
 
@@ -73,7 +74,7 @@ Components follow a co-located pattern (component + CSS in same directory):
    - Team composition (balance, damage type balance, CC chain synergy)
    - Situational (enemy vulnerability, invade resistance, early/late game tempo)
    - Meta relevance (ban rate and pick rate signals)
-3. Top 8 recommendations displayed with score breakdowns, warnings, and strengths
+3. Top 8 recommendations displayed with score breakdowns, warnings, strengths, and boot/blessing recommendations
 
 ## Type System
 
@@ -83,7 +84,7 @@ All types defined in `src/types/hero.ts`:
 - `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
 - `HeroRelation`: Counter/synergy/strongAgainst relationship with weighted_score
 - `ScoreBreakdown`: Individual score for each of the 11 scoring components
-- `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes` | `Rapid Boots`)
+- `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes`)
 - `RetributionBlessing`: Blessing options (`Ice` | `Flame` | `Bloody`)
 - `BootRecommendation`: Boot + blessing recommendation with reason strings
 - `RecommendationResult`: Full recommendation output with hero, scores, breakdown, warnings, strengths, bootRecommendation
@@ -97,6 +98,7 @@ All types defined in `src/types/hero.ts`:
 - Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
 - Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching
+- Unit tests use vitest (`vitest.config.ts`), test files in `src/utils/__tests__/`
 
 ## CI Workflow
 

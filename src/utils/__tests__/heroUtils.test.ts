@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getJunglers, recommendBoots, calculateJunglerRecommendation } from '../heroUtils'
-import type { Hero, BootType, RetributionBlessing, BootRecommendation, RecommendationResult } from '../../types/hero'
+import type { Hero } from '../../types/hero'
 
 function makeHero(overrides: Partial<Hero> = {}): Hero {
   return {
@@ -32,34 +32,6 @@ function makeHero(overrides: Partial<Hero> = {}): Hero {
 describe('heroUtils', () => {
   it('returns empty array when no heroes have Jungle lane', () => {
     expect(getJunglers([])).toEqual([])
-  })
-})
-
-describe('BootRecommendation types', () => {
-  it('allows constructing a valid BootRecommendation', () => {
-    const rec: BootRecommendation = {
-      boots: 'Tough Boots',
-      bootsReason: 'High enemy CC',
-      blessing: 'Ice',
-      blessingReason: 'Chase & escape',
-    }
-    expect(rec.boots).toBe('Tough Boots')
-    expect(rec.blessing).toBe('Ice')
-  })
-
-  it('allows all BootType values', () => {
-    const boots: BootType[] = ['Tough Boots', 'Warrior Boots', 'Arcane Boots', 'Swift Boots', 'Magic Shoes', 'Rapid Boots']
-    expect(boots).toHaveLength(6)
-  })
-
-  it('allows all RetributionBlessing values', () => {
-    const blessings: RetributionBlessing[] = ['Ice', 'Flame', 'Bloody']
-    expect(blessings).toHaveLength(3)
-  })
-
-  it('bootRecommendation is optional on RecommendationResult', () => {
-    const partial = {} as Partial<RecommendationResult>
-    expect(partial.bootRecommendation).toBeUndefined()
   })
 })
 
@@ -234,8 +206,7 @@ describe('calculateJunglerRecommendation - boot integration', () => {
     const hero = makeHero({ role: ['Mage'], lane: ['Jungle'], speciality: ['Burst'] })
     const enemy = makeHero({ id: 10 })
     const result = calculateJunglerRecommendation(hero, [], [enemy])
-    expect(result.bootRecommendation).toBeDefined()
-    expect(result.bootRecommendation!.boots).toBe('Arcane Boots')
-    expect(result.bootRecommendation!.blessing).toBe('Flame')
+    expect(result.bootRecommendation.boots).toBe('Arcane Boots')
+    expect(result.bootRecommendation.blessing).toBe('Flame')
   })
 })
