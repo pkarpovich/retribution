@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Hero, RecommendationResult, RecommendationLevel, ScoreBreakdown } from '../../types/hero';
+import type { Hero, RecommendationResult, RecommendationLevel, ScoreBreakdown, BootType, RetributionBlessing } from '../../types/hero';
 import { getLatestStats, getMobilityScore, getCCScore, hasSustainCapability, hasImmunityCapability } from '../../utils/heroUtils';
 import TierBadge from '../TierBadge/TierBadge';
 import styles from './CompactRecommendationCard.module.css';
@@ -59,6 +59,42 @@ const JUNGLER_TYPE_COLORS: Record<string, string> = {
   'DAMAGE': 'var(--red)',
   'UTILITY': 'var(--blue)',
   'HYBRID': 'var(--purple)'
+};
+
+const BOOT_COLORS: Record<BootType, string> = {
+  'Tough Boots': 'var(--blue)',
+  'Warrior Boots': 'var(--orange)',
+  'Arcane Boots': 'var(--purple)',
+  'Swift Boots': 'var(--yellow)',
+  'Magic Shoes': 'var(--cyan)',
+};
+
+const BOOT_SHORT_NAMES: Record<BootType, string> = {
+  'Tough Boots': 'Tough',
+  'Warrior Boots': 'Warrior',
+  'Arcane Boots': 'Arcane',
+  'Swift Boots': 'Swift',
+  'Magic Shoes': 'CDR',
+};
+
+const BOOT_ICONS: Record<BootType, string> = {
+  'Tough Boots': '\u{1F6E1}\u{FE0F}',
+  'Warrior Boots': '\u{2694}\u{FE0F}',
+  'Arcane Boots': '\u{1F52E}',
+  'Swift Boots': '\u{26A1}',
+  'Magic Shoes': '\u{23F3}',
+};
+
+const BLESSING_COLORS: Record<RetributionBlessing, string> = {
+  'Ice': 'var(--cyan)',
+  'Flame': 'var(--red)',
+  'Bloody': 'var(--magenta)',
+};
+
+const BLESSING_ICONS: Record<RetributionBlessing, string> = {
+  'Ice': '\u{2744}\u{FE0F}',
+  'Flame': '\u{1F525}',
+  'Bloody': '\u{1FA78}',
 };
 
 const HERO_RADAR_AXES = ['Burst', 'Mobility', 'CC', 'Sustain', 'AOE'] as const;
@@ -182,32 +218,27 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
           <div className={styles.info}>
             <div className={styles.topRow}>
               <h4 className={styles.heroName}>{hero.hero_name}</h4>
+              <div className={styles.topRowSpacer} />
               <TierBadge tier={hero.tier} />
+            </div>
+            <div className={styles.metaRow}>
               <div
                 className={styles.pickLevelBadge}
                 style={{ background: badge.gradient, color: badge.textColor }}
               >
                 {badge.label}
               </div>
-            </div>
-            <div className={styles.metaRow}>
               <span className={styles.typeLabel} style={{ color: JUNGLER_TYPE_COLORS[jungler_type] }}>
                 {jungler_type}
               </span>
-              <svg viewBox="0 0 120 120" className={styles.miniRadarInline}>
-                {[0.5, 1].map(level => {
-                  const pts = HERO_RADAR_AXES.map((_, i) => {
-                    const p = miniRadarLabelPos(i, HERO_RADAR_AXES.length, 60, 60, 40 * level);
-                    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-                  }).join(' ');
-                  return <polygon key={level} points={pts} className={styles.heroRadarGrid} />;
-                })}
-                <path
-                  d={miniRadarPath(heroRadar, 60, 60, 40)}
-                  className={styles.heroRadarArea}
-                  style={{ stroke: badge.border }}
-                />
-              </svg>
+            </div>
+            <div className={styles.bootRow}>
+              <span className={styles.bootTag} style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}>
+                {BOOT_ICONS[result.bootRecommendation.boots]} {BOOT_SHORT_NAMES[result.bootRecommendation.boots]}
+              </span>
+              <span className={styles.bootTag} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
+                {BLESSING_ICONS[result.bootRecommendation.blessing]} {result.bootRecommendation.blessing}
+              </span>
             </div>
           </div>
         </>
@@ -294,6 +325,23 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                 })}
               </svg>
             </div>
+          </div>
+
+          <div className={styles.buildAdvice}>
+            <span
+              className={styles.buildTag}
+              style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
+            >
+              {BOOT_ICONS[result.bootRecommendation.boots]} {result.bootRecommendation.boots}
+              <span className={styles.buildReason}>{result.bootRecommendation.bootsReason}</span>
+            </span>
+            <span
+              className={styles.buildTag}
+              style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
+            >
+              {BLESSING_ICONS[result.bootRecommendation.blessing]} {result.bootRecommendation.blessing}
+              <span className={styles.buildReason}>{result.bootRecommendation.blessingReason}</span>
+            </span>
           </div>
 
           <div className={styles.barChart}>

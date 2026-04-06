@@ -12,6 +12,7 @@ Retribution is a Mobile Legends: Bang Bang (MLBB) jungler recommendation app bui
 pnpm dev              # Start dev server on port 50200
 pnpm build            # TypeScript compilation + Vite build
 pnpm lint             # Run ESLint
+pnpm test             # Run unit tests (vitest)
 pnpm preview          # Preview production build
 ```
 
@@ -53,6 +54,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
   - meta_bonus (ban rate and pick rate signals)
   - early_late_game (tempo mismatch bonuses)
 - Capability helpers: `getMobilityScore()`, `getCCScore()`, `hasSustainCapability()`, `hasImmunityCapability()` read from `hero.capabilities`
+- `recommendBoots()`: Selects optimal boots and Retribution blessing based on hero type + enemy team composition (CC threats, physical-heavy teams, hero role). Called from `calculateJunglerRecommendation()` and attached to each `RecommendationResult`
 
 ### Component Structure
 Components follow a co-located pattern (component + CSS in same directory):
@@ -72,7 +74,7 @@ Components follow a co-located pattern (component + CSS in same directory):
    - Team composition (balance, damage type balance, CC chain synergy)
    - Situational (enemy vulnerability, invade resistance, early/late game tempo)
    - Meta relevance (ban rate and pick rate signals)
-3. Top 8 recommendations displayed with score breakdowns, warnings, and strengths
+3. Top 8 recommendations displayed with score breakdowns, warnings, strengths, and boot/blessing recommendations
 
 ## Type System
 
@@ -82,7 +84,10 @@ All types defined in `src/types/hero.ts`:
 - `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
 - `HeroRelation`: Counter/synergy/strongAgainst relationship with weighted_score
 - `ScoreBreakdown`: Individual score for each of the 11 scoring components
-- `RecommendationResult`: Full recommendation output with hero, scores, breakdown, warnings, strengths
+- `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes`)
+- `RetributionBlessing`: Blessing options (`Ice` | `Flame` | `Bloody`)
+- `BootRecommendation`: Boot + blessing recommendation with reason strings
+- `RecommendationResult`: Full recommendation output with hero, scores, breakdown, warnings, strengths, bootRecommendation
 - `UserRank`: Epic | Legend | Mythic | Mythical Honor | Mythical Glory+
 
 ## Key Implementation Details
@@ -93,6 +98,7 @@ All types defined in `src/types/hero.ts`:
 - Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
 - Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching
+- Unit tests use vitest (`vitest.config.ts`), test files in `src/utils/__tests__/`
 
 ## CI Workflow
 
