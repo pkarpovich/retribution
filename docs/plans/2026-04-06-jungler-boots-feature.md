@@ -120,8 +120,8 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm build` + `pnpm lint` - all must pass
 
 ### Task 7: [Final] Update documentation
-- [ ] update CLAUDE.md Architecture section to mention boot recommendation
-- [ ] update `RecommendationResult` description in CLAUDE.md Type System section
+- [x] update CLAUDE.md Architecture section to mention boot recommendation
+- [x] update `RecommendationResult` description in CLAUDE.md Type System section
 
 ## Technical Details
 
