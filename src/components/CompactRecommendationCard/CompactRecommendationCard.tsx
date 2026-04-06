@@ -327,6 +327,32 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
             </div>
           </div>
 
+          {result.bootRecommendation && (
+            <div className={styles.buildAdvice}>
+              <span className={styles.buildAdviceLabel}>BUILD ADVICE</span>
+              <div className={styles.buildCards}>
+                <div
+                  className={styles.buildCard}
+                  style={{ background: `color-mix(in srgb, ${BOOT_COLORS[result.bootRecommendation.boots]} 12%, var(--bg-1))` }}
+                >
+                  <span className={styles.buildCardName} style={{ color: BOOT_COLORS[result.bootRecommendation.boots] }}>
+                    {result.bootRecommendation.boots}
+                  </span>
+                  <span className={styles.buildCardReason}>{result.bootRecommendation.bootsReason}</span>
+                </div>
+                <div
+                  className={styles.buildCard}
+                  style={{ background: `color-mix(in srgb, ${BLESSING_COLORS[result.bootRecommendation.blessing]} 12%, var(--bg-1))` }}
+                >
+                  <span className={styles.buildCardName} style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing] }}>
+                    {result.bootRecommendation.blessing}
+                  </span>
+                  <span className={styles.buildCardReason}>{result.bootRecommendation.blessingReason}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.barChart}>
             {bars.map(bar => {
               const pct = (Math.abs(bar.value) / maxBar) * 100;

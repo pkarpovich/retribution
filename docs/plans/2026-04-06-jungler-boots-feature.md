@@ -104,12 +104,12 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm build` + `pnpm lint` - must pass
 
 ### Task 5: Render boot details on expanded card
-- [ ] add "BUILD ADVICE" section between matchups and bar chart in expanded view
-- [ ] render two side-by-side mini-cards: boots (name + reason) and blessing (name + reason)
-- [ ] style with `color-mix()` backgrounds matching existing `strengthTag`/`warningTag` pattern
-- [ ] add `.buildAdvice`, `.buildCard`, `.buildCardLabel`, `.buildCardReason` CSS styles
-- [ ] ensure responsive layout (stack vertically on small screens)
-- [ ] run `pnpm build` + `pnpm lint` - must pass
+- [x] add "BUILD ADVICE" section between matchups and bar chart in expanded view
+- [x] render two side-by-side mini-cards: boots (name + reason) and blessing (name + reason)
+- [x] style with `color-mix()` backgrounds matching existing `strengthTag`/`warningTag` pattern
+- [x] add `.buildAdvice`, `.buildCard`, `.buildCardLabel`, `.buildCardReason` CSS styles
+- [x] ensure responsive layout (stack vertically on small screens)
+- [x] run `pnpm build` + `pnpm lint` - must pass
 
 ### Task 6: Verify acceptance criteria
 - [ ] verify boot recommendation appears on compact cards
