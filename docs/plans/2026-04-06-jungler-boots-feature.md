@@ -96,12 +96,12 @@ Each recommendation includes a short reason string (max ~25 chars) explaining wh
 - [x] run `pnpm build` + `pnpm test` + `pnpm lint` - must pass
 
 ### Task 4: Render boot tags on compact card
-- [ ] add boot pill tags row below jungler type label in compact view
-- [ ] display boot name with color-coded styling (Tough=blue, Warrior=orange, Arcane=purple, Swift=yellow, Magic=cyan)
-- [ ] display blessing name with color-coded styling (Ice=cyan, Flame=red, Bloody=magenta)
-- [ ] add `.bootRow` and `.bootTag` CSS styles following existing `capTag` pattern
-- [ ] only render when `bootRecommendation` is present (backward compatible)
-- [ ] run `pnpm build` + `pnpm lint` - must pass
+- [x] add boot pill tags row below jungler type label in compact view
+- [x] display boot name with color-coded styling (Tough=blue, Warrior=orange, Arcane=purple, Swift=yellow, Magic=cyan)
+- [x] display blessing name with color-coded styling (Ice=cyan, Flame=red, Bloody=magenta)
+- [x] add `.bootRow` and `.bootTag` CSS styles following existing `capTag` pattern
+- [x] only render when `bootRecommendation` is present (backward compatible)
+- [x] run `pnpm build` + `pnpm lint` - must pass
 
 ### Task 5: Render boot details on expanded card
 - [ ] add "BUILD ADVICE" section between matchups and bar chart in expanded view

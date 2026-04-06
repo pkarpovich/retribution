@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Hero, RecommendationResult, RecommendationLevel, ScoreBreakdown } from '../../types/hero';
+import type { Hero, RecommendationResult, RecommendationLevel, ScoreBreakdown, BootType, RetributionBlessing } from '../../types/hero';
 import { getLatestStats, getMobilityScore, getCCScore, hasSustainCapability, hasImmunityCapability } from '../../utils/heroUtils';
 import TierBadge from '../TierBadge/TierBadge';
 import styles from './CompactRecommendationCard.module.css';
@@ -59,6 +59,21 @@ const JUNGLER_TYPE_COLORS: Record<string, string> = {
   'DAMAGE': 'var(--red)',
   'UTILITY': 'var(--blue)',
   'HYBRID': 'var(--purple)'
+};
+
+const BOOT_COLORS: Record<BootType, string> = {
+  'Tough Boots': 'var(--blue)',
+  'Warrior Boots': 'var(--orange)',
+  'Arcane Boots': 'var(--purple)',
+  'Swift Boots': 'var(--yellow)',
+  'Magic Shoes': 'var(--cyan)',
+  'Rapid Boots': 'var(--green)',
+};
+
+const BLESSING_COLORS: Record<RetributionBlessing, string> = {
+  'Ice': 'var(--cyan)',
+  'Flame': 'var(--red)',
+  'Bloody': 'var(--magenta)',
 };
 
 const HERO_RADAR_AXES = ['Burst', 'Mobility', 'CC', 'Sustain', 'AOE'] as const;
@@ -209,6 +224,22 @@ export default function CompactRecommendationCard({ result, rank, expanded = fal
                 />
               </svg>
             </div>
+            {result.bootRecommendation && (
+              <div className={styles.bootRow}>
+                <span
+                  className={styles.bootTag}
+                  style={{ color: BOOT_COLORS[result.bootRecommendation.boots], borderColor: BOOT_COLORS[result.bootRecommendation.boots] }}
+                >
+                  {result.bootRecommendation.boots}
+                </span>
+                <span
+                  className={styles.bootTag}
+                  style={{ color: BLESSING_COLORS[result.bootRecommendation.blessing], borderColor: BLESSING_COLORS[result.bootRecommendation.blessing] }}
+                >
+                  {result.bootRecommendation.blessing}
+                </span>
+              </div>
+            )}
           </div>
         </>
       ) : (
