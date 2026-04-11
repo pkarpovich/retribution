@@ -88,7 +88,7 @@ The app will be available at `http://localhost:50200`
 
 ### Updating Hero Data
 
-Hero data is fetched from the mlbb.io API and enriched with computed capabilities (mobility, CC, sustain, AOE, immunity) and strongAgainst matchup data.
+Hero data is fetched from the mlbb.io API and enriched with computed capabilities (mobility, CC, sustain, AOE, immunity).
 
 ```bash
 # Uses proxy endpoint, no auth required
@@ -115,7 +115,6 @@ The fetch script parses raw hero skill data to compute:
 - **hasAOE** from AOE skill tags
 - **hasImmunity** from Immunity tags and description keywords (immune, untargetable)
 - **maxBurstDamage** from skill scaling data
-- **strongAgainst** reverse index built from all heroes' weakAgainst data
 
 ## Credits
 

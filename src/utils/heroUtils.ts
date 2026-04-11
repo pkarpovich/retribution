@@ -801,7 +801,7 @@ export function calculateJunglerRecommendation(
     strong_against: strongAgainstBonus,
     cc_chain_synergy: ccChainSynergyScore,
     invade_resistance: invadeResistanceScore,
-    counter_penalty: -counterPenalty,
+    counter_penalty: counterPenalty === 0 ? 0 : -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
     early_late_game: earlyLateGameScore
