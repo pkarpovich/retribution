@@ -78,15 +78,15 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 4: Remove strongAgainst from types and drop dead reverse index
-- [ ] In `src/types/hero.ts`, remove `strongAgainst?: HeroRelation[];` from the `Hero` interface
-- [ ] Verify via TypeScript that no other code references `hero.strongAgainst` after Tasks 1-3 (compile errors should point to any stragglers)
-- [ ] In `scripts/fetch-heroes.js`, delete the `buildStrongAgainst` function (ln 216-250)
-- [ ] In `enrichHeroes` (ln 252-268), stop calling `buildStrongAgainst` and remove the `strongAgainst` property from the returned object
-- [ ] Remove `withStrongAgainst` from the `capsStats` log (ln 340)
-- [ ] Remove the `strongVs=${j.strongAgainst.length}` fragments from the sample-jungler console logs (ln 378, 381)
-- [ ] Rewrite the error message at ln 310 to drop the mention of `strongAgainst matchup data`
-- [ ] Write unit tests for the now-ex-strongAgainst call sites if any - not applicable since the script is integration code; covered by running the script in Task 5
-- [ ] Run `pnpm test` - must pass before next task
+- [x] In `src/types/hero.ts`, remove `strongAgainst?: HeroRelation[];` from the `Hero` interface
+- [x] Verify via TypeScript that no other code references `hero.strongAgainst` after Tasks 1-3 (compile errors should point to any stragglers)
+- [x] In `scripts/fetch-heroes.js`, delete the `buildStrongAgainst` function (ln 216-250)
+- [x] In `enrichHeroes` (ln 252-268), stop calling `buildStrongAgainst` and remove the `strongAgainst` property from the returned object
+- [x] Remove `withStrongAgainst` from the `capsStats` log (ln 340)
+- [x] Remove the `strongVs=${j.strongAgainst.length}` fragments from the sample-jungler console logs (ln 378, 381)
+- [x] Rewrite the error message at ln 310 to drop the mention of `strongAgainst matchup data`
+- [x] Write unit tests for the now-ex-strongAgainst call sites if any - not applicable since the script is integration code; covered by running the script in Task 5
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 5: Regenerate heroes.json from mlbb.io API
 - [ ] Run `node scripts/fetch-heroes.js --allow-partial` from the repo root to re-fetch and rewrite `src/data/heroes.json` without the `strongAgainst` field

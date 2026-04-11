@@ -213,56 +213,16 @@ function computeCapabilities(hero) {
   };
 }
 
-function buildStrongAgainst(heroes) {
-  const strongAgainstMap = {};
-
-  for (const hero of heroes) {
-    strongAgainstMap[hero.id] = [];
-  }
-
-  for (const hero of heroes) {
-    if (!hero.weakAgainst) continue;
-
-    for (const weak of hero.weakAgainst) {
-      if (!strongAgainstMap[weak.id]) {
-        strongAgainstMap[weak.id] = [];
-      }
-
-      strongAgainstMap[weak.id].push({
-        id: hero.id,
-        hero_name: hero.hero_name,
-        img_src: hero.img_src,
-        role: hero.role,
-        lane: hero.lane,
-        speciality: hero.speciality,
-        weighted_score: weak.weighted_score,
-        tier: hero.tier,
-      });
-    }
-  }
-
-  for (const id of Object.keys(strongAgainstMap)) {
-    strongAgainstMap[id].sort((a, b) => b.weighted_score - a.weighted_score);
-    strongAgainstMap[id] = strongAgainstMap[id].slice(0, 10);
-  }
-
-  return strongAgainstMap;
-}
-
 function enrichHeroes(heroes) {
-  const strongAgainstMap = buildStrongAgainst(heroes);
-
   return heroes.map(hero => {
     const hasSkillData = hero.skills && Array.isArray(hero.skills) && hero.skills.length > 0;
     const capabilities = hasSkillData ? computeCapabilities(hero) : null;
-    const strongAgainst = strongAgainstMap[hero.id] || [];
 
     const { skills, ...heroWithoutSkills } = hero;
 
     return {
       ...heroWithoutSkills,
       capabilities,
-      strongAgainst,
     };
   });
 }
@@ -307,7 +267,7 @@ async function main() {
     for (const name of droppedHeroes) {
       console.error(`  - ${name}`);
     }
-    console.error('Dropped heroes will be missing from output and will corrupt strongAgainst matchup data.');
+    console.error('Dropped heroes will be missing from output and may corrupt matchup data.');
 
     const dropRate = droppedHeroes.length / heroes.length;
     if (dropRate > 0.05) {
@@ -337,7 +297,6 @@ async function main() {
     withAOE: enrichedHeroes.filter(h => h.capabilities?.hasAOE).length,
     withImmunity: enrichedHeroes.filter(h => h.capabilities?.hasImmunity).length,
     withSkillData: enrichedHeroes.filter(h => h.capabilities !== null).length,
-    withStrongAgainst: enrichedHeroes.filter(h => h.strongAgainst.length > 0).length,
   };
   console.log('Capabilities breakdown:', capsStats);
 
@@ -375,10 +334,10 @@ async function main() {
   console.log('\nSample jungler capabilities:');
   for (const j of junglers.slice(0, 3)) {
     if (!j.capabilities) {
-      console.log(`  ${j.hero_name}: capabilities=null (malformed skill data) strongVs=${j.strongAgainst.length}`);
+      console.log(`  ${j.hero_name}: capabilities=null (malformed skill data)`);
       continue;
     }
-    console.log(`  ${j.hero_name}: mob=${j.capabilities.mobilityScore} cc=${j.capabilities.ccScore} sustain=${j.capabilities.hasSustain} aoe=${j.capabilities.hasAOE} immune=${j.capabilities.hasImmunity} burst=${j.capabilities.maxBurstDamage} strongVs=${j.strongAgainst.length}`);
+    console.log(`  ${j.hero_name}: mob=${j.capabilities.mobilityScore} cc=${j.capabilities.ccScore} sustain=${j.capabilities.hasSustain} aoe=${j.capabilities.hasAOE} immune=${j.capabilities.hasImmunity} burst=${j.capabilities.maxBurstDamage}`);
   }
 
   if (dataDegraded) {
