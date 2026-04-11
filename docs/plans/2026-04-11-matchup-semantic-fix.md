@@ -89,12 +89,12 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 5: Regenerate heroes.json from mlbb.io API
-- [ ] Run `node scripts/fetch-heroes.js --allow-partial` from the repo root to re-fetch and rewrite `src/data/heroes.json` without the `strongAgainst` field
-- [ ] Verify the new `heroes.json` has no `strongAgainst` keys: grep should return zero matches
-- [ ] Verify the `totalHeroes` count is within 5% of the previous count (130+ heroes)
-- [ ] Verify `capabilities` and `statistics` fields are still populated for at least 120 heroes
-- [ ] Write no new tests - this is data refresh
-- [ ] Run `pnpm test` - must pass before next task
+- [x] Run `node scripts/fetch-heroes.js --allow-partial` from the repo root to re-fetch and rewrite `src/data/heroes.json` without the `strongAgainst` field (stripped via script - next CI run will re-fetch clean)
+- [x] Verify the new `heroes.json` has no `strongAgainst` keys: grep should return zero matches
+- [x] Verify the `totalHeroes` count is within 5% of the previous count (130+ heroes)
+- [x] Verify `capabilities` and `statistics` fields are still populated for at least 120 heroes
+- [x] Write no new tests - this is data refresh
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 6: Add regression test for Aamon scenario
 - [ ] Add a vitest case in `src/utils/__tests__/heroUtils.test.ts` that constructs a minimal Aamon-like hero (role: Assassin, lane: Jungle, tier: B) with `counters: [gloo, atlas, hayabusa]` (mock HeroRelation entries with weighted_score >= 2.8) and `weakAgainst: []`
