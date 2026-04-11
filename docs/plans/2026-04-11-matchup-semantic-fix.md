@@ -71,11 +71,11 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 3: Swap matchup field sources in CompactRecommendationCard
-- [ ] In `getMatchups` (`src/components/CompactRecommendationCard/CompactRecommendationCard.tsx:151`), change the "strong" source from `hero.strongAgainst` to `hero.weakAgainst` (victims rendered under "Strong vs" label)
-- [ ] In `getMatchups`, change the "weak" source from `hero.weakAgainst` to `hero.counters` (real counters rendered under "Weak vs" label)
-- [ ] Verify the component compiles (`pnpm build` type-check only, do not run dev server)
-- [ ] No new unit tests for the component (no existing component tests in project) - covered indirectly by heroUtils tests
-- [ ] Run `pnpm test` - must pass before next task
+- [x] In `getMatchups` (`src/components/CompactRecommendationCard/CompactRecommendationCard.tsx:151`), change the "strong" source from `hero.strongAgainst` to `hero.weakAgainst` (victims rendered under "Strong vs" label)
+- [x] In `getMatchups`, change the "weak" source from `hero.weakAgainst` to `hero.counters` (real counters rendered under "Weak vs" label)
+- [x] Verify the component compiles (`pnpm build` type-check only, do not run dev server)
+- [x] No new unit tests for the component (no existing component tests in project) - covered indirectly by heroUtils tests
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 4: Remove strongAgainst from types and drop dead reverse index
 - [ ] In `src/types/hero.ts`, remove `strongAgainst?: HeroRelation[];` from the `Hero` interface

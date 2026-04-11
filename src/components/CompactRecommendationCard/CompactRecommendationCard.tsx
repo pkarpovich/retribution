@@ -153,8 +153,8 @@ function getMatchups(hero: Hero, enemyTeam: Hero[]): { strong: Hero[]; weak: Her
   const strong: Hero[] = [];
   const weak: Hero[] = [];
 
-  if (hero.strongAgainst) {
-    for (const sa of hero.strongAgainst) {
+  if (hero.weakAgainst) {
+    for (const sa of hero.weakAgainst) {
       if (enemyIds.has(sa.id)) {
         const match = enemyTeam.find(e => e.id === sa.id);
         if (match) strong.push(match);
@@ -162,8 +162,8 @@ function getMatchups(hero: Hero, enemyTeam: Hero[]): { strong: Hero[]; weak: Her
     }
   }
 
-  if (hero.weakAgainst) {
-    for (const wa of hero.weakAgainst) {
+  if (hero.counters) {
+    for (const wa of hero.counters) {
       if (enemyIds.has(wa.id)) {
         const match = enemyTeam.find(e => e.id === wa.id);
         if (match) weak.push(match);
