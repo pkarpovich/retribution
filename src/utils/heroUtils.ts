@@ -595,17 +595,17 @@ function generateWarnings(
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   const weakScale = weights.weak_penalty / 10;
 
-  if (hero.weakAgainst) {
-    for (const weak of hero.weakAgainst) {
-      if (enemyIds.has(weak.id)) {
-        const scaledScore = weak.weighted_score * weakScale;
+  if (hero.counters) {
+    for (const counter of hero.counters) {
+      if (enemyIds.has(counter.id)) {
+        const scaledScore = counter.weighted_score * weakScale;
         const severity = scaledScore > 5 ? 'HIGH' :
                         scaledScore > 2 ? 'MEDIUM' : 'LOW';
         warnings.push({
           type: 'WEAK_AGAINST',
-          hero: weak.hero_name,
+          hero: counter.hero_name,
           severity,
-          message: `${hero.hero_name} is weak against ${weak.hero_name}`
+          message: `${hero.hero_name} is weak against ${counter.hero_name}`
         });
       }
     }
@@ -678,9 +678,9 @@ function generateStrengths(
 
   if (breakdown.strong_against > 20) {
     const enemyIds = new Set(enemyTeam.map(e => e.id));
-    const countered = (hero.strongAgainst || [])
-      .filter(sa => enemyIds.has(sa.id))
-      .map(sa => sa.hero_name);
+    const countered = (hero.weakAgainst || [])
+      .filter(wa => enemyIds.has(wa.id))
+      .map(wa => wa.hero_name);
     if (countered.length > 0) {
       strengths.push(`Counters ${countered.join(', ')}`);
     }

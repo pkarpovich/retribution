@@ -225,6 +225,82 @@ describe('calculateJunglerRecommendation - boot integration', () => {
   })
 })
 
+describe('generateWarnings - WEAK_AGAINST from hero.counters', () => {
+  const makeRelation = (id: number, name: string, score: number) => ({
+    id,
+    hero_name: name,
+    img_src: '',
+    role: ['Fighter' as const],
+    lane: ['Jungle' as const],
+    speciality: [],
+    weighted_score: score,
+    tier: 'A' as const,
+  })
+
+  it('produces WEAK_AGAINST warning when enemy is in hero.counters', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'CounterHero' })
+    const hero = makeHero({
+      counters: [makeRelation(10, 'CounterHero', 3.5)],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA])
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBeGreaterThan(0)
+    expect(weakWarnings[0].hero).toBe('CounterHero')
+  })
+
+  it('does not produce WEAK_AGAINST warning when no counters in enemy team', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      counters: [makeRelation(10, 'CounterHero', 3.5)],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBe(0)
+  })
+})
+
+describe('generateStrengths - Counters from hero.weakAgainst', () => {
+  const makeRelation = (id: number, name: string, score: number) => ({
+    id,
+    hero_name: name,
+    img_src: '',
+    role: ['Fighter' as const],
+    lane: ['Jungle' as const],
+    speciality: [],
+    weighted_score: score,
+    tier: 'A' as const,
+  })
+
+  it('produces Counters strength when victim (weakAgainst) is on enemy team', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'VictimHero' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimHero', 4.0)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA])
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBeGreaterThan(0)
+    expect(counterStrengths[0]).toContain('VictimHero')
+  })
+
+  it('does not produce Counters strength when no victims in enemy team', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimHero', 4.0)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBe(0)
+  })
+})
+
 describe('calculateJunglerRecommendation - matchup scoring semantics', () => {
   const makeRelation = (id: number, name: string, score: number) => ({
     id,

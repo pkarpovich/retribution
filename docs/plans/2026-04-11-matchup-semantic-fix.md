@@ -64,11 +64,11 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 2: Swap matchup field sources in warnings and strengths
-- [ ] In `generateWarnings` (`src/utils/heroUtils.ts:598`), WEAK_AGAINST branch: replace `hero.weakAgainst` with `hero.counters` (warn when real counter is in enemy team)
-- [ ] In `generateStrengths` (`src/utils/heroUtils.ts:679`), "Counters" branch: replace `hero.strongAgainst` with `hero.weakAgainst` (strength when victim is in enemy team); update the gating condition to check `breakdown.strong_against > 20` (unchanged) and source the list from `hero.weakAgainst`
-- [ ] Write unit tests: hero with `counters: [enemyA]` and enemyA in enemy team produces `WEAK_AGAINST` warning mentioning enemyA; hero with no counters in enemy team produces no warning
-- [ ] Write unit tests: hero with `weakAgainst: [enemyA]` and enemyA in enemy team produces a strength string starting with `Counters `; hero with no victims in enemy team does not
-- [ ] Run `pnpm test` - must pass before next task
+- [x] In `generateWarnings` (`src/utils/heroUtils.ts:598`), WEAK_AGAINST branch: replace `hero.weakAgainst` with `hero.counters` (warn when real counter is in enemy team)
+- [x] In `generateStrengths` (`src/utils/heroUtils.ts:679`), "Counters" branch: replace `hero.strongAgainst` with `hero.weakAgainst` (strength when victim is in enemy team); update the gating condition to check `breakdown.strong_against > 20` (unchanged) and source the list from `hero.weakAgainst`
+- [x] Write unit tests: hero with `counters: [enemyA]` and enemyA in enemy team produces `WEAK_AGAINST` warning mentioning enemyA; hero with no counters in enemy team produces no warning
+- [x] Write unit tests: hero with `weakAgainst: [enemyA]` and enemyA in enemy team produces a strength string starting with `Counters `; hero with no victims in enemy team does not
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 3: Swap matchup field sources in CompactRecommendationCard
 - [ ] In `getMatchups` (`src/components/CompactRecommendationCard/CompactRecommendationCard.tsx:151`), change the "strong" source from `hero.strongAgainst` to `hero.weakAgainst` (victims rendered under "Strong vs" label)
