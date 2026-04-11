@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { Hero } from './types/hero';
 import heroData from './data/heroes.json';
-import { getJunglers, recommendJunglers } from './utils/heroUtils';
+import { getJunglers, recommendJunglers, getLatestStats } from './utils/heroUtils';
 import EnemyPicker from './components/EnemyPicker/EnemyPicker';
 import CompactEnemyTeam from './components/CompactEnemyTeam/CompactEnemyTeam';
 import TeamRadar from './components/TeamRadar/TeamRadar';
@@ -22,9 +22,17 @@ function App() {
   const junglers = useMemo(() => getJunglers(allHeroes), []);
 
   const filteredHeroes = useMemo(
-    () => allHeroes.filter(hero =>
-      hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
+    () => allHeroes
+      .filter(hero =>
+        hero.hero_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .slice()
+      .sort((a, b) => {
+        const pa = getLatestStats(a)?.pick_rate ?? 0;
+        const pb = getLatestStats(b)?.pick_rate ?? 0;
+        if (pb !== pa) return pb - pa;
+        return a.hero_name.localeCompare(b.hero_name);
+      }),
     [searchQuery]
   );
 
