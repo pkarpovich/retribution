@@ -117,9 +117,9 @@ Verified facts:
 - [x] Run `pnpm build` - successful TypeScript compile + Vite build
 
 ### Task 8: Update CLAUDE.md documentation
-- [ ] Update `CLAUDE.md` "Core Logic" section to reflect the corrected semantics: `calculateStrongAgainstBonus` reads from `hero.weakAgainst` (victims), `calculateCounterPenalty` reads from `hero.counters` (real counters)
-- [ ] Remove any mention of computed `strongAgainst` reverse index in CLAUDE.md
-- [ ] No tests needed - documentation only
+- [x] Update `CLAUDE.md` "Core Logic" section to reflect the corrected semantics: `calculateStrongAgainstBonus` reads from `hero.weakAgainst` (victims), `calculateCounterPenalty` reads from `hero.counters` (real counters)
+- [x] Remove any mention of computed `strongAgainst` reverse index in CLAUDE.md
+- [x] No tests needed - documentation only
 
 ## Technical Details
 
