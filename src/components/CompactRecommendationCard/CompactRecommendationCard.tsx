@@ -149,25 +149,20 @@ function getSignificantBars(breakdown: ScoreBreakdown) {
 }
 
 function getMatchups(hero: Hero, enemyTeam: Hero[]): { strong: Hero[]; weak: Hero[] } {
-  const enemyIds = new Set(enemyTeam.map(e => e.id));
   const strong: Hero[] = [];
   const weak: Hero[] = [];
 
-  if (hero.strongAgainst) {
-    for (const sa of hero.strongAgainst) {
-      if (enemyIds.has(sa.id)) {
-        const match = enemyTeam.find(e => e.id === sa.id);
-        if (match) strong.push(match);
-      }
+  if (hero.weakAgainst) {
+    for (const sa of hero.weakAgainst) {
+      const match = enemyTeam.find(e => e.id === sa.id);
+      if (match) strong.push(match);
     }
   }
 
-  if (hero.weakAgainst) {
-    for (const wa of hero.weakAgainst) {
-      if (enemyIds.has(wa.id)) {
-        const match = enemyTeam.find(e => e.id === wa.id);
-        if (match) weak.push(match);
-      }
+  if (hero.counters) {
+    for (const wa of hero.counters) {
+      const match = enemyTeam.find(e => e.id === wa.id);
+      if (match) weak.push(match);
     }
   }
 

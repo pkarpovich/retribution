@@ -162,8 +162,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.3,
       team_balance: 0.8,
       enemy_comp: 0.6,
-      counter_penalty: 5,
-      weak_penalty: 7,
+      counter_penalty: 7,
       strong_against: 4,
       synergy_bonus: 3,
       meta: 0.4,
@@ -175,8 +174,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.4,
       team_balance: 1.0,
       enemy_comp: 0.8,
-      counter_penalty: 8,
-      weak_penalty: 10,
+      counter_penalty: 10,
       strong_against: 6,
       synergy_bonus: 5,
       meta: 0.6,
@@ -188,8 +186,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.5,
       team_balance: 1.2,
       enemy_comp: 1.0,
-      counter_penalty: 10,
-      weak_penalty: 15,
+      counter_penalty: 15,
       strong_against: 8,
       synergy_bonus: 5,
       meta: 0.8,
@@ -201,8 +198,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.6,
       team_balance: 1.5,
       enemy_comp: 1.2,
-      counter_penalty: 12,
-      weak_penalty: 18,
+      counter_penalty: 18,
       strong_against: 10,
       synergy_bonus: 6,
       meta: 1.0,
@@ -214,8 +210,7 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       stats: 0.7,
       team_balance: 1.8,
       enemy_comp: 1.5,
-      counter_penalty: 15,
-      weak_penalty: 20,
+      counter_penalty: 20,
       strong_against: 12,
       synergy_bonus: 8,
       meta: 1.2,
@@ -402,12 +397,12 @@ function calculateStrongAgainstBonus(
   enemyTeam: Hero[],
   weights: RecommendationWeights
 ): number {
-  if (!hero.strongAgainst) return 0;
+  if (!hero.weakAgainst) return 0;
 
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   let rawScore = 0;
 
-  for (const target of hero.strongAgainst) {
+  for (const target of hero.weakAgainst) {
     if (enemyIds.has(target.id)) {
       rawScore += target.weighted_score;
     }
@@ -464,15 +459,15 @@ function calculateCounterPenalty(
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   let weakScore = 0;
 
-  if (hero.weakAgainst) {
-    for (const weak of hero.weakAgainst) {
-      if (enemyIds.has(weak.id)) {
-        weakScore += weak.weighted_score;
+  if (hero.counters) {
+    for (const counter of hero.counters) {
+      if (enemyIds.has(counter.id)) {
+        weakScore += counter.weighted_score;
       }
     }
   }
 
-  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.weak_penalty / 10);
+  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.counter_penalty / 10);
 
   return Math.min(weakPenalty, 120);
 }
@@ -593,19 +588,19 @@ function generateWarnings(
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  const weakScale = weights.weak_penalty / 10;
+  const weakScale = weights.counter_penalty / 10;
 
-  if (hero.weakAgainst) {
-    for (const weak of hero.weakAgainst) {
-      if (enemyIds.has(weak.id)) {
-        const scaledScore = weak.weighted_score * weakScale;
+  if (hero.counters) {
+    for (const counter of hero.counters) {
+      if (enemyIds.has(counter.id)) {
+        const scaledScore = counter.weighted_score * weakScale;
         const severity = scaledScore > 5 ? 'HIGH' :
                         scaledScore > 2 ? 'MEDIUM' : 'LOW';
         warnings.push({
           type: 'WEAK_AGAINST',
-          hero: weak.hero_name,
+          hero: counter.hero_name,
           severity,
-          message: `${hero.hero_name} is weak against ${weak.hero_name}`
+          message: `${hero.hero_name} is weak against ${counter.hero_name}`
         });
       }
     }
@@ -678,9 +673,9 @@ function generateStrengths(
 
   if (breakdown.strong_against > 20) {
     const enemyIds = new Set(enemyTeam.map(e => e.id));
-    const countered = (hero.strongAgainst || [])
-      .filter(sa => enemyIds.has(sa.id))
-      .map(sa => sa.hero_name);
+    const countered = (hero.weakAgainst || [])
+      .filter(wa => enemyIds.has(wa.id))
+      .map(wa => wa.hero_name);
     if (countered.length > 0) {
       strengths.push(`Counters ${countered.join(', ')}`);
     }
@@ -801,7 +796,7 @@ export function calculateJunglerRecommendation(
     strong_against: strongAgainstBonus,
     cc_chain_synergy: ccChainSynergyScore,
     invade_resistance: invadeResistanceScore,
-    counter_penalty: -counterPenalty,
+    counter_penalty: counterPenalty === 0 ? 0 : -counterPenalty,
     synergy_bonus: synergyBonus,
     meta_bonus: metaBonus,
     early_late_game: earlyLateGameScore

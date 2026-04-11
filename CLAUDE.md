@@ -30,7 +30,7 @@ MLBB_API_SECRET=your_secret node scripts/fetch-heroes.js
 MLBB_CSRF_TOKEN=your_token node scripts/fetch-heroes.js
 ```
 
-The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst relationships, and computes `capabilities` (mobilityScore, ccScore, hasSustain, hasImmunity) and `strongAgainst` matchups from skill data. The frontend filters for jungle heroes only.
+The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst relationships, and computes `capabilities` (mobilityScore, ccScore, hasSustain, hasImmunity) from skill data. The frontend filters for jungle heroes only.
 
 ## Architecture
 
@@ -43,13 +43,13 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 - `getJunglers()`: Filters heroes by Jungle lane
 - `recommendJunglers()`: Scores junglers using an 11-component pipeline:
   - base_score (tier + win rate + pick rate reliability)
-  - strong_against_bonus (hero's strongAgainst matchup data)
+  - strong_against_bonus (hero.weakAgainst = victims this hero beats)
   - team_balance (damage/utility/tank composition needs)
   - damage_type_balance (physical vs magic diversity)
   - enemy_vulnerability (squishy targets weighted by mobility, immunity vs CC)
   - cc_chain_synergy (team CC followup or CC gap filling)
   - invade_resistance (sustain/mobility vs early-game enemies)
-  - counter_penalty (weakAgainst matchup data)
+  - counter_penalty (hero.counters = heroes that beat this hero)
   - synergy_bonus (synergy data with teammates)
   - meta_bonus (ban rate and pick rate signals)
   - early_late_game (tempo mismatch bonuses)
@@ -70,7 +70,7 @@ Components follow a co-located pattern (component + CSS in same directory):
 1. User selects enemy heroes (max 5) and optionally ally heroes (max 4)
 2. `recommendJunglers()` calculates scores combining 11 components:
    - Base score (tier: SS=100..D=10, quadratic win rate bonus, pick rate reliability)
-   - Matchup data (strongAgainst bonus, counter penalty, synergy bonus)
+   - Matchup data (strong-against bonus from weakAgainst victims, counter penalty from counters, synergy bonus)
    - Team composition (balance, damage type balance, CC chain synergy)
    - Situational (enemy vulnerability, invade resistance, early/late game tempo)
    - Meta relevance (ban rate and pick rate signals)
@@ -79,10 +79,10 @@ Components follow a co-located pattern (component + CSS in same directory):
 ## Type System
 
 All types defined in `src/types/hero.ts`:
-- `Hero`: Complete hero data including role, lane, tier, specialties, statistics, capabilities, counters/weakAgainst/synergies/strongAgainst
+- `Hero`: Complete hero data including role, lane, tier, specialties, statistics, capabilities, counters/weakAgainst/synergies
 - `HeroStatistic`: Pick/win/ban rates by rank and timeframe
 - `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
-- `HeroRelation`: Counter/synergy/strongAgainst relationship with weighted_score
+- `HeroRelation`: Counter/synergy/weakAgainst relationship with weighted_score
 - `ScoreBreakdown`: Individual score for each of the 11 scoring components
 - `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes`)
 - `RetributionBlessing`: Blessing options (`Ice` | `Flame` | `Bloody`)

@@ -29,6 +29,19 @@ function makeHero(overrides: Partial<Hero> = {}): Hero {
   }
 }
 
+function makeRelation(id: number, name: string, score: number) {
+  return {
+    id,
+    hero_name: name,
+    img_src: '',
+    role: ['Fighter' as const],
+    lane: ['Jungle' as const],
+    speciality: [],
+    weighted_score: score,
+    tier: 'A' as const,
+  }
+}
+
 describe('heroUtils', () => {
   it('returns empty array when no heroes have Jungle lane', () => {
     expect(getJunglers([])).toEqual([])
@@ -222,5 +235,146 @@ describe('calculateJunglerRecommendation - boot integration', () => {
     const result = calculateJunglerRecommendation(hero, [], [enemy])
     expect(result.bootRecommendation.boots).toBe('Arcane Boots')
     expect(result.bootRecommendation.blessing).toBe('Flame')
+  })
+})
+
+describe('generateWarnings - WEAK_AGAINST from hero.counters', () => {
+  it('produces WEAK_AGAINST warning when enemy is in hero.counters', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'CounterHero' })
+    const hero = makeHero({
+      counters: [makeRelation(10, 'CounterHero', 3.5)],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA])
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBeGreaterThan(0)
+    expect(weakWarnings[0].hero).toBe('CounterHero')
+  })
+
+  it('does not produce WEAK_AGAINST warning when no counters in enemy team', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      counters: [makeRelation(10, 'CounterHero', 3.5)],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBe(0)
+  })
+})
+
+describe('generateStrengths - Counters from hero.weakAgainst', () => {
+  it('produces Counters strength when victim (weakAgainst) is on enemy team', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'VictimHero' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimHero', 4.0)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA])
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBeGreaterThan(0)
+    expect(counterStrengths[0]).toContain('VictimHero')
+  })
+
+  it('does not produce Counters strength when no victims in enemy team', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimHero', 4.0)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBe(0)
+  })
+})
+
+describe('calculateJunglerRecommendation - matchup scoring semantics', () => {
+  it('gives strong_against bonus when victim (weakAgainst) is on enemy team', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'VictimA' })
+    const enemyB = makeHero({ id: 11, hero_name: 'CounterB' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimA', 3.0)],
+      counters: [makeRelation(11, 'CounterB', 3.0)],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA, enemyB])
+    expect(result.breakdown.strong_against).toBeGreaterThan(0)
+    expect(result.breakdown.counter_penalty).toBeLessThan(0)
+  })
+
+  it('gives zero for both components when no matchup overlap with enemies', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimA', 3.0)],
+      counters: [makeRelation(11, 'CounterB', 3.0)],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    expect(result.breakdown.strong_against).toBe(0)
+    expect(result.breakdown.counter_penalty).toBe(0)
+  })
+})
+
+describe('regression: Aamon-vs-counters scenario', () => {
+  it('hero facing 3 real counters gets heavy penalty, not a strong pick', () => {
+    const gloo = makeHero({ id: 20, hero_name: 'Gloo' })
+    const atlas = makeHero({ id: 21, hero_name: 'Atlas' })
+    const hayabusa = makeHero({ id: 22, hero_name: 'Hayabusa' })
+
+    const aamon = makeHero({
+      id: 50,
+      hero_name: 'Aamon',
+      role: ['Assassin'],
+      lane: ['Jungle'],
+      tier: 'B',
+      counters: [
+        makeRelation(20, 'Gloo', 3.0),
+        makeRelation(21, 'Atlas', 2.8),
+        makeRelation(22, 'Hayabusa', 3.2),
+      ],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(aamon, [], [gloo, atlas, hayabusa])
+
+    expect(result.breakdown.counter_penalty).toBeLessThan(0)
+    expect(Math.abs(result.breakdown.counter_penalty)).toBeGreaterThan(30)
+    expect(result.breakdown.strong_against).toBe(0)
+    expect(result.recommendation_level).not.toBe('BEST_PICK')
+    expect(result.recommendation_level).not.toBe('STRONG_PICK')
+
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBe(3)
+    const warnedNames = weakWarnings.map(w => w.hero)
+    expect(warnedNames).toContain('Gloo')
+    expect(warnedNames).toContain('Atlas')
+    expect(warnedNames).toContain('Hayabusa')
+  })
+
+  it('hero facing victims gets bonus and Counters strength, no penalty', () => {
+    const victim = makeHero({ id: 30, hero_name: 'Lolita' })
+
+    const hero = makeHero({
+      id: 51,
+      hero_name: 'TestJungler',
+      role: ['Assassin'],
+      lane: ['Jungle'],
+      tier: 'A',
+      weakAgainst: [makeRelation(30, 'Lolita', 3.5)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [victim])
+
+    expect(result.breakdown.strong_against).toBeGreaterThan(0)
+    expect(result.breakdown.counter_penalty).toBe(0)
+
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBeGreaterThan(0)
+    expect(counterStrengths[0]).toContain('Lolita')
   })
 })
