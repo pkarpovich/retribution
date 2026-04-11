@@ -338,3 +338,76 @@ describe('calculateJunglerRecommendation - matchup scoring semantics', () => {
     expect(result.breakdown.counter_penalty).toEqual(-0)
   })
 })
+
+describe('regression: Aamon-vs-counters scenario', () => {
+  const makeRelation = (id: number, name: string, score: number) => ({
+    id,
+    hero_name: name,
+    img_src: '',
+    role: ['Fighter' as const],
+    lane: ['Jungle' as const],
+    speciality: [],
+    weighted_score: score,
+    tier: 'A' as const,
+  })
+
+  it('hero facing 3 real counters gets heavy penalty, not a strong pick', () => {
+    const gloo = makeHero({ id: 20, hero_name: 'Gloo' })
+    const atlas = makeHero({ id: 21, hero_name: 'Atlas' })
+    const hayabusa = makeHero({ id: 22, hero_name: 'Hayabusa' })
+
+    const aamon = makeHero({
+      id: 50,
+      hero_name: 'Aamon',
+      role: ['Assassin'],
+      lane: ['Jungle'],
+      tier: 'B',
+      counters: [
+        makeRelation(20, 'Gloo', 3.0),
+        makeRelation(21, 'Atlas', 2.8),
+        makeRelation(22, 'Hayabusa', 3.2),
+      ],
+      weakAgainst: [],
+    })
+
+    const result = calculateJunglerRecommendation(aamon, [], [gloo, atlas, hayabusa])
+
+    expect(result.breakdown.counter_penalty).toBeLessThan(0)
+    expect(Math.abs(result.breakdown.counter_penalty)).toBeGreaterThan(30)
+    expect(result.breakdown.strong_against).toBe(0)
+    expect(result.recommendation_level).not.toBe('BEST_PICK')
+    expect(result.recommendation_level).not.toBe('STRONG_PICK')
+
+    const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
+    expect(weakWarnings.length).toBeGreaterThanOrEqual(1)
+    const warnedNames = weakWarnings.map(w => w.hero)
+    expect(
+      warnedNames.includes('Gloo') ||
+      warnedNames.includes('Atlas') ||
+      warnedNames.includes('Hayabusa')
+    ).toBe(true)
+  })
+
+  it('hero facing victims gets bonus and Counters strength, no penalty', () => {
+    const victim = makeHero({ id: 30, hero_name: 'Lolita' })
+
+    const hero = makeHero({
+      id: 51,
+      hero_name: 'TestJungler',
+      role: ['Assassin'],
+      lane: ['Jungle'],
+      tier: 'A',
+      weakAgainst: [makeRelation(30, 'Lolita', 3.5)],
+      counters: [],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [victim])
+
+    expect(result.breakdown.strong_against).toBeGreaterThan(0)
+    expect(result.breakdown.counter_penalty).toEqual(-0)
+
+    const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
+    expect(counterStrengths.length).toBeGreaterThan(0)
+    expect(counterStrengths[0]).toContain('Lolita')
+  })
+})

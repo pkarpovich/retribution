@@ -97,14 +97,14 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 6: Add regression test for Aamon scenario
-- [ ] Add a vitest case in `src/utils/__tests__/heroUtils.test.ts` that constructs a minimal Aamon-like hero (role: Assassin, lane: Jungle, tier: B) with `counters: [gloo, atlas, hayabusa]` (mock HeroRelation entries with weighted_score >= 2.8) and `weakAgainst: []`
-- [ ] Call `calculateJunglerRecommendation(hero, [], [gloo, atlas, hayabusa])` and assert:
+- [x] Add a vitest case in `src/utils/__tests__/heroUtils.test.ts` that constructs a minimal Aamon-like hero (role: Assassin, lane: Jungle, tier: B) with `counters: [gloo, atlas, hayabusa]` (mock HeroRelation entries with weighted_score >= 2.8) and `weakAgainst: []`
+- [x] Call `calculateJunglerRecommendation(hero, [], [gloo, atlas, hayabusa])` and assert:
   - `breakdown.counter_penalty` is negative and its absolute value > 30 (substantial penalty)
   - `breakdown.strong_against` is 0 (no victims in enemy team)
   - `recommendation_level` is not `BEST_PICK` or `STRONG_PICK`
   - `warnings` includes at least one `WEAK_AGAINST` entry for one of the three enemies
-- [ ] Add inverse scenario: hero with `weakAgainst: [enemy]` and no counters - assert `breakdown.strong_against > 0`, `breakdown.counter_penalty == 0`, strengths list includes a `Counters ` string
-- [ ] Run `pnpm test` - must pass before next task
+- [x] Add inverse scenario: hero with `weakAgainst: [enemy]` and no counters - assert `breakdown.strong_against > 0`, `breakdown.counter_penalty == 0`, strengths list includes a `Counters ` string
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 7: Verify acceptance criteria
 - [ ] Verify Task 1 changes: grep `hero.strongAgainst` in `src/utils/heroUtils.ts` returns zero; grep `hero.weakAgainst` in `calculateCounterPenalty` returns zero
