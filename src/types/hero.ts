@@ -85,7 +85,6 @@ export interface RecommendationWeights {
   team_balance: number;
   enemy_comp: number;
   counter_penalty: number;
-  weak_penalty: number;
   strong_against: number;
   synergy_bonus: number;
   meta: number;

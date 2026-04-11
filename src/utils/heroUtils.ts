@@ -163,7 +163,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       team_balance: 0.8,
       enemy_comp: 0.6,
       counter_penalty: 5,
-      weak_penalty: 7,
       strong_against: 4,
       synergy_bonus: 3,
       meta: 0.4,
@@ -176,7 +175,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       team_balance: 1.0,
       enemy_comp: 0.8,
       counter_penalty: 8,
-      weak_penalty: 10,
       strong_against: 6,
       synergy_bonus: 5,
       meta: 0.6,
@@ -189,7 +187,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       team_balance: 1.2,
       enemy_comp: 1.0,
       counter_penalty: 10,
-      weak_penalty: 15,
       strong_against: 8,
       synergy_bonus: 5,
       meta: 0.8,
@@ -202,7 +199,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       team_balance: 1.5,
       enemy_comp: 1.2,
       counter_penalty: 12,
-      weak_penalty: 18,
       strong_against: 10,
       synergy_bonus: 6,
       meta: 1.0,
@@ -215,7 +211,6 @@ export function getDefaultWeights(userRank: UserRank): RecommendationWeights {
       team_balance: 1.8,
       enemy_comp: 1.5,
       counter_penalty: 15,
-      weak_penalty: 20,
       strong_against: 12,
       synergy_bonus: 8,
       meta: 1.2,
@@ -472,7 +467,7 @@ function calculateCounterPenalty(
     }
   }
 
-  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.weak_penalty / 10);
+  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.counter_penalty / 10);
 
   return Math.min(weakPenalty, 120);
 }
@@ -593,7 +588,7 @@ function generateWarnings(
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  const weakScale = weights.weak_penalty / 10;
+  const weakScale = weights.counter_penalty / 10;
 
   if (hero.counters) {
     for (const counter of hero.counters) {
