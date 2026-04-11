@@ -107,14 +107,14 @@ Verified facts:
 - [x] Run `pnpm test` - must pass before next task
 
 ### Task 7: Verify acceptance criteria
-- [ ] Verify Task 1 changes: grep `hero.strongAgainst` in `src/utils/heroUtils.ts` returns zero; grep `hero.weakAgainst` in `calculateCounterPenalty` returns zero
-- [ ] Verify Task 2 changes: `generateWarnings` WEAK_AGAINST branch sources from `hero.counters`; `generateStrengths` countered branch sources from `hero.weakAgainst`
-- [ ] Verify Task 3 changes: `CompactRecommendationCard.tsx` `getMatchups` sources strong from `hero.weakAgainst` and weak from `hero.counters`
-- [ ] Verify Task 4 changes: `src/types/hero.ts` does not declare `strongAgainst`; `scripts/fetch-heroes.js` does not define `buildStrongAgainst`
-- [ ] Verify Task 5 changes: `src/data/heroes.json` has no `strongAgainst` substrings
-- [ ] Run `pnpm test` - full suite green
-- [ ] Run `pnpm lint` - zero errors
-- [ ] Run `pnpm build` - successful TypeScript compile + Vite build
+- [x] Verify Task 1 changes: grep `hero.strongAgainst` in `src/utils/heroUtils.ts` returns zero; grep `hero.weakAgainst` in `calculateCounterPenalty` returns zero
+- [x] Verify Task 2 changes: `generateWarnings` WEAK_AGAINST branch sources from `hero.counters`; `generateStrengths` countered branch sources from `hero.weakAgainst`
+- [x] Verify Task 3 changes: `CompactRecommendationCard.tsx` `getMatchups` sources strong from `hero.weakAgainst` and weak from `hero.counters`
+- [x] Verify Task 4 changes: `src/types/hero.ts` does not declare `strongAgainst`; `scripts/fetch-heroes.js` does not define `buildStrongAgainst`
+- [x] Verify Task 5 changes: `src/data/heroes.json` has no `strongAgainst` substrings
+- [x] Run `pnpm test` - full suite green
+- [x] Run `pnpm lint` - zero errors
+- [x] Run `pnpm build` - successful TypeScript compile + Vite build
 
 ### Task 8: Update CLAUDE.md documentation
 - [ ] Update `CLAUDE.md` "Core Logic" section to reflect the corrected semantics: `calculateStrongAgainstBonus` reads from `hero.weakAgainst` (victims), `calculateCounterPenalty` reads from `hero.counters` (real counters)
