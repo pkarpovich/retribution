@@ -402,12 +402,12 @@ function calculateStrongAgainstBonus(
   enemyTeam: Hero[],
   weights: RecommendationWeights
 ): number {
-  if (!hero.strongAgainst) return 0;
+  if (!hero.weakAgainst) return 0;
 
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   let rawScore = 0;
 
-  for (const target of hero.strongAgainst) {
+  for (const target of hero.weakAgainst) {
     if (enemyIds.has(target.id)) {
       rawScore += target.weighted_score;
     }
@@ -464,10 +464,10 @@ function calculateCounterPenalty(
   const enemyIds = new Set(enemyTeam.map(e => e.id));
   let weakScore = 0;
 
-  if (hero.weakAgainst) {
-    for (const weak of hero.weakAgainst) {
-      if (enemyIds.has(weak.id)) {
-        weakScore += weak.weighted_score;
+  if (hero.counters) {
+    for (const counter of hero.counters) {
+      if (enemyIds.has(counter.id)) {
+        weakScore += counter.weighted_score;
       }
     }
   }

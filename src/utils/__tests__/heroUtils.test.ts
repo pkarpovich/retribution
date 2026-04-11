@@ -224,3 +224,41 @@ describe('calculateJunglerRecommendation - boot integration', () => {
     expect(result.bootRecommendation.blessing).toBe('Flame')
   })
 })
+
+describe('calculateJunglerRecommendation - matchup scoring semantics', () => {
+  const makeRelation = (id: number, name: string, score: number) => ({
+    id,
+    hero_name: name,
+    img_src: '',
+    role: ['Fighter' as const],
+    lane: ['Jungle' as const],
+    speciality: [],
+    weighted_score: score,
+    tier: 'A' as const,
+  })
+
+  it('gives strong_against bonus when victim (weakAgainst) is on enemy team', () => {
+    const enemyA = makeHero({ id: 10, hero_name: 'VictimA' })
+    const enemyB = makeHero({ id: 11, hero_name: 'CounterB' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimA', 3.0)],
+      counters: [makeRelation(11, 'CounterB', 3.0)],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemyA, enemyB])
+    expect(result.breakdown.strong_against).toBeGreaterThan(0)
+    expect(result.breakdown.counter_penalty).toBeLessThan(0)
+  })
+
+  it('gives zero for both components when no matchup overlap with enemies', () => {
+    const enemy = makeHero({ id: 99, hero_name: 'Unrelated' })
+    const hero = makeHero({
+      weakAgainst: [makeRelation(10, 'VictimA', 3.0)],
+      counters: [makeRelation(11, 'CounterB', 3.0)],
+    })
+
+    const result = calculateJunglerRecommendation(hero, [], [enemy])
+    expect(result.breakdown.strong_against).toBe(0)
+    expect(result.breakdown.counter_penalty).toEqual(-0)
+  })
+})

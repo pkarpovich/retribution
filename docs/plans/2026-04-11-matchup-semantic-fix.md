@@ -57,11 +57,11 @@ Verified facts:
 ## Implementation Steps
 
 ### Task 1: Swap matchup field sources in heroUtils scoring components
-- [ ] In `calculateStrongAgainstBonus` (`src/utils/heroUtils.ts:400`), replace `hero.strongAgainst` with `hero.weakAgainst` (victims = heroes hero beats, bonus if in enemy team)
-- [ ] In `calculateCounterPenalty` (`src/utils/heroUtils.ts:459`), replace `hero.weakAgainst` with `hero.counters` (real counters = heroes that beat hero, penalty if in enemy team)
-- [ ] Write unit tests: construct a jungler hero with `weakAgainst: [enemyA]` and `counters: [enemyB]`, call `calculateJunglerRecommendation(hero, [], [enemyA, enemyB])`, assert `breakdown.strong_against > 0` and `breakdown.counter_penalty < 0`
-- [ ] Write inverse test: with no overlap between matchup lists and enemy team, both components are 0
-- [ ] Run `pnpm test` - must pass before next task
+- [x] In `calculateStrongAgainstBonus` (`src/utils/heroUtils.ts:400`), replace `hero.strongAgainst` with `hero.weakAgainst` (victims = heroes hero beats, bonus if in enemy team)
+- [x] In `calculateCounterPenalty` (`src/utils/heroUtils.ts:459`), replace `hero.weakAgainst` with `hero.counters` (real counters = heroes that beat hero, penalty if in enemy team)
+- [x] Write unit tests: construct a jungler hero with `weakAgainst: [enemyA]` and `counters: [enemyB]`, call `calculateJunglerRecommendation(hero, [], [enemyA, enemyB])`, assert `breakdown.strong_against > 0` and `breakdown.counter_penalty < 0`
+- [x] Write inverse test: with no overlap between matchup lists and enemy team, both components are 0
+- [x] Run `pnpm test` - must pass before next task
 
 ### Task 2: Swap matchup field sources in warnings and strengths
 - [ ] In `generateWarnings` (`src/utils/heroUtils.ts:598`), WEAK_AGAINST branch: replace `hero.weakAgainst` with `hero.counters` (warn when real counter is in enemy team)
