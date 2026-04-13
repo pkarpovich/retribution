@@ -88,7 +88,7 @@ function parseSkillTypes(skills) {
     const scaling = skill.skill_scaling || {};
 
     return {
-      name: skill.skill_name,
+      name: skill.skill_name || '',
       tags,
       cooldown: scaling.cooldown ? parseFloat(scaling.cooldown) : null,
       maxBaseDamage: Array.isArray(scaling.base_damage)
