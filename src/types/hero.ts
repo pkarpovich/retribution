@@ -70,7 +70,7 @@ export interface Hero {
   counters?: HeroRelation[];
   weakAgainst?: HeroRelation[];
   synergies?: HeroRelation[];
-  capabilities?: HeroCapabilities;
+  capabilities?: HeroCapabilities | null;
 }
 
 export interface HeroData {

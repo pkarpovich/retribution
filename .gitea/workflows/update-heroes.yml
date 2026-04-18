@@ -46,6 +46,9 @@ jobs:
         id: fetch
         run: node scripts/fetch-heroes.js --allow-partial
 
+      - name: Verify build passes with refreshed data
+        run: pnpm build
+
       - name: Commit and push if changed
         env:
           GH_PAT: ${{ secrets.GH_TOKEN }}

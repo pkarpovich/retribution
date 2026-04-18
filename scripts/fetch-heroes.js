@@ -83,12 +83,12 @@ function parseSkillTypes(skills) {
   if (!skills || !Array.isArray(skills)) return [];
 
   return skills.map(skill => {
-    const rawType = skill.skill_type || '';
+    const rawType = skill.type || '';
     const tags = rawType.split('|').map(t => t.trim()).filter(Boolean);
-    const scaling = skill.skill_scaling || {};
+    const scaling = skill.scaling || {};
 
     return {
-      name: skill.skill_name || '',
+      name: skill.name || '',
       tags,
       cooldown: scaling.cooldown ? parseFloat(scaling.cooldown) : null,
       maxBaseDamage: Array.isArray(scaling.base_damage)
@@ -111,7 +111,7 @@ function computeCapabilities(hero) {
 
   const skillsWithTags = parsed.filter(s => s.tags.length > 0).length;
   const hasDescriptions = (hero.skills || []).some(
-    s => s.skill_description && s.skill_description.trim().length > 20
+    s => s.description && s.description.trim().length > 20
   );
   if (skillsWithTags <= 1 && !hasDescriptions && parsed.length >= 3) {
     return null;
@@ -143,7 +143,7 @@ function computeCapabilities(hero) {
   }
 
   const description = hero.skills
-    ?.map(s => (s.skill_description || '').toLowerCase())
+    ?.map(s => (s.description || '').toLowerCase())
     .join(' ') || '';
 
   if (description.includes('immun') || description.includes('untargetable') || description.includes('invincib')) {
@@ -151,7 +151,7 @@ function computeCapabilities(hero) {
   }
   if (!hasSustain) {
     for (const s of hero.skills || []) {
-      const desc = (s.skill_description || '').toLowerCase();
+      const desc = (s.description || '').toLowerCase();
       if (!desc) continue;
       if (desc.includes('heal')) {
         hasSustain = true;
@@ -168,7 +168,7 @@ function computeCapabilities(hero) {
   if (mobilityScore === 0) {
     let descMobility = 0;
     for (const s of hero.skills || []) {
-      const desc = (s.skill_description || '').toLowerCase();
+      const desc = (s.description || '').toLowerCase();
       if (!desc) continue;
       if (desc.includes('dash') || desc.includes('blink') || desc.includes('leap') ||
           desc.includes('teleport') || desc.includes('lunge') || desc.includes('jump') ||
