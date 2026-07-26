@@ -33,12 +33,27 @@
   const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
   const NEEDS_SHOWN = 3
 
+  type SortKey = 'total' | 'fit' | 'comfort'
+
   let focusIndex = $state(0)
   let listView = $state<'auto' | 'axis' | 'rows'>('auto')
-  let sortBy = $state<'total' | 'fit'>('total')
+  let sortBy = $state<SortKey>('total')
+
+  // The third option only exists when the player has named something, so the
+  // control never offers an ordering that would come out arbitrary.
+  const anyComfort = $derived(suggestions.some(suggestion => suggestion.comfort > 0))
+  const sorts = $derived<{ key: SortKey; label: string }[]>([
+    { key: 'total', label: 'TOTAL' },
+    { key: 'fit', label: 'FIT' },
+    ...(anyComfort ? [{ key: 'comfort' as SortKey, label: 'YOURS' }] : []),
+  ])
 
   $effect(() => {
     if (focusIndex >= suggestions.length) focusIndex = 0
+  })
+
+  $effect(() => {
+    if (sortBy === 'comfort' && !anyComfort) sortBy = 'total'
   })
 
   const focus = $derived(suggestions[Math.min(focusIndex, suggestions.length - 1)] ?? null)
@@ -111,9 +126,17 @@
   // Rank labels always come from the engine's own ordering, so re-sorting the
   // list never hides where a hero actually stands. Tie brackets are a property
   // of that ordering too, so they are only drawn when it is the one on screen.
-  const ordered = $derived(sortBy === 'fit'
-    ? suggestions.map((suggestion, index) => ({ suggestion, index })).sort((a, b) => b.suggestion.fit - a.suggestion.fit)
-    : suggestions.map((suggestion, index) => ({ suggestion, index })))
+  const RANK_BY: Record<SortKey, (suggestion: Suggestion) => number> = {
+    total: () => 0,
+    fit: suggestion => suggestion.fit,
+    comfort: suggestion => suggestion.comfort,
+  }
+
+  const ordered = $derived(
+    suggestions
+      .map((suggestion, index) => ({ suggestion, index }))
+      .sort((a, b) => RANK_BY[sortBy](b.suggestion) - RANK_BY[sortBy](a.suggestion))
+  )
 
   const rows = $derived(ordered.reduce<Row[]>((groups, entry) => {
     const tie = sortBy === 'total' ? tieOf(entry.suggestion.hero.hero_name) : null
@@ -295,18 +318,14 @@
         <div class="rows-head">
           <span class="kicker">ALL {suggestions.length}</span>
           <div class="sort" role="group" aria-label="Sort suggestions">
-            <button
-              class="sort-option"
-              class:on={sortBy === 'total'}
-              aria-pressed={sortBy === 'total'}
-              onclick={() => (sortBy = 'total')}
-            >TOTAL</button>
-            <button
-              class="sort-option"
-              class:on={sortBy === 'fit'}
-              aria-pressed={sortBy === 'fit'}
-              onclick={() => (sortBy = 'fit')}
-            >FIT</button>
+            {#each sorts as option (option.key)}
+              <button
+                class="sort-option"
+                class:on={sortBy === option.key}
+                aria-pressed={sortBy === option.key}
+                onclick={() => (sortBy = option.key)}
+              >{option.label}</button>
+            {/each}
           </div>
           <button class="toggle" onclick={() => (listView = 'axis')}>COLLAPSE ˄</button>
         </div>

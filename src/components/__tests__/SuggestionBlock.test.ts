@@ -303,6 +303,49 @@ describe('SuggestionBlock list', () => {
     expect(container.querySelectorAll('.tie-note')).toHaveLength(1)
   })
 
+  it('offers no sort by comfort until the player has named a hero', () => {
+    render(SuggestionBlock, props)
+    expect(screen.queryByRole('button', { name: 'YOURS' })).toBeNull()
+  })
+
+  it('sorts by what the heroes are worth to the player', async () => {
+    const mine = (suggestion: ReturnType<typeof suggestionFor>, comfort: number) => ({
+      ...suggestion,
+      comfort,
+      result: { ...suggestion.result, total_score: suggestion.result.total_score + comfort },
+    })
+
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      suggestions: [
+        suggestionFor(a, 130, 0),
+        mine(suggestionFor(b, 100, 0), 8),
+        suggestionFor(c, 90, 0),
+        mine(suggestionFor(d, 60, 0), 8),
+      ],
+    })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'YOURS' }))
+
+    expect(names(container).slice(0, 2)).toEqual([b.hero_name, d.hero_name])
+    // Engine ranks stay the engine's, exactly as they do under the fit sort.
+    expect(ranks(container)).toEqual(['#2', '#4', '#1', '#3'])
+  })
+
+  it('falls back to the engine order when the last main leaves the list', async () => {
+    const mine = { ...suggestionFor(b, 100, 0), comfort: 8 }
+    const { rerender } = render(SuggestionBlock, {
+      ...props,
+      suggestions: [suggestionFor(a, 130, 0), mine],
+    })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'YOURS' }))
+    await rerender({ ...props, suggestions: [suggestionFor(a, 130, 0)] })
+
+    expect(screen.queryByRole('button', { name: 'YOURS' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'TOTAL' }).getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('moves focus to a row that is clicked', async () => {
     const { container } = render(SuggestionBlock, props)
 
