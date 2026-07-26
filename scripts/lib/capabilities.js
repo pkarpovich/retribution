@@ -16,6 +16,16 @@ const HEAL_HP_TEXT = new RegExp(
 const LIFESTEAL_TEXT = /\b(lifesteal|life steal|spell vamp|physical vamp|hybrid lifesteal)\b/i;
 const SELF_TEXT = /\b(himself|herself|itself|his own|her own|its own|for himself|for herself)\b/i;
 
+const PERCENT_HP_TEXT = new RegExp(
+  `\\d+(\\.\\d+)?%\\s+of\\s+(the\\s+)?(target|enemy|their|its)('s)?\\s*${NEAR}{0,20}\\b(hp|health)\\b`,
+  'i',
+);
+const TRUE_DAMAGE_TEXT = /\btrue damage\b/i;
+const DEFENSE_BREAK_TEXT = new RegExp(
+  `\\b(reduc\\w*|ignor\\w*|penetrat\\w*|shred\\w*|strip\\w*)\\b${NEAR}{0,50}\\b(physical defense|magic defense|defense|armor|resistance)\\b`,
+  'i',
+);
+
 const ANTI_HEAL_TEXT = new RegExp(
   `\\b(reduc\\w*|lower\\w*|weaken\\w*|decreas\\w*)\\b${NEAR}{0,60}\\b(shield|hp regen|healing|heal effect|health regen|restoration)\\b`
   + `|\\b(healing|shield)\\b${NEAR}{0,40}\\b(reduc\\w*|decreas\\w*)\\b`,
@@ -100,6 +110,7 @@ export function computeCapabilities(hero) {
   let immunity = false;
   let damageReduction = false;
   let hasShield = false;
+  let armorAgnostic = 0;
   let hasAOE = false;
   let maxBurstDamage = 0;
   const cooldowns = [];
@@ -112,6 +123,11 @@ export function computeCapabilities(hero) {
     if (healsAllies(skill)) allySustain = true;
     if (grantsImmunity(skill)) immunity = true;
     if (grantsShield(skill)) hasShield = true;
+    if (PERCENT_HP_TEXT.test(skill.description) || TRUE_DAMAGE_TEXT.test(skill.description)) {
+      armorAgnostic = 2;
+    } else if (armorAgnostic === 0 && DEFENSE_BREAK_TEXT.test(skill.description)) {
+      armorAgnostic = 1;
+    }
     if (hasAny(skill.effects, AOE_EFFECTS)) hasAOE = true;
     if (ANTI_HEAL_TEXT.test(skill.description)) antiHeal = true;
     if (hasAny(skill.effects, DAMAGE_REDUCTION_EFFECTS) || DAMAGE_REDUCTION_TEXT.test(skill.description)) {
@@ -142,6 +158,7 @@ export function computeCapabilities(hero) {
     hasImmunity: immunity,
     damageReduction,
     hasShield,
+    armorAgnostic,
     hasAOE,
     maxBurstDamage,
     avgCooldown,

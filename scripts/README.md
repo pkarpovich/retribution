@@ -79,6 +79,7 @@ Exits with code 2 when data is degraded (dropped heroes, missing Liquipedia entr
 | `allySustain` | HP restoration or shielding aimed at allies |
 | `hasImmunity` | `Invincible`/`CC Immune`/`Death Immunity`/`Remove CC` effects, or control-immunity and untargetable wording. Deliberately excludes "Slow Immunity" |
 | `antiHeal` | wording that reduces enemy healing, shields or HP regen |
+| `armorAgnostic` | 2 for percent-max-HP or true damage, 1 for defense shred, 0 otherwise |
 | `hasShield`, `damageReduction`, `hasAOE` | effects plus supporting wording |
 | `baseStats`, `statProfile` | Liquipedia infobox, normalised across the roster |
 

@@ -75,6 +75,7 @@ export interface HeroCapabilities {
   hasAOE: boolean;
   hasImmunity: boolean;
   hasShield: boolean;
+  armorAgnostic: number;
   damageReduction: boolean;
   maxBurstDamage: number;
   avgCooldown: number | null;

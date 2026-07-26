@@ -14,6 +14,7 @@ function makeCapabilities(overrides: Partial<HeroCapabilities> = {}): HeroCapabi
     hasAOE: false,
     hasImmunity: false,
     hasShield: false,
+    armorAgnostic: 0,
     damageReduction: false,
     maxBurstDamage: 0,
     avgCooldown: null,
@@ -253,6 +254,48 @@ describe('capability counter-play', () => {
     const gapVsGrounded = scoreOf(locker, grounded) - scoreOf(noControl, grounded)
 
     expect(gapVsMobile).toBeGreaterThan(gapVsGrounded)
+  })
+
+  const bulky = () => makeHero({
+    role: ['Tank'],
+    capabilities: makeCapabilities({
+      hasShield: true,
+      damageReduction: true,
+      statProfile: { durability: 0.95, regen: 0.5, attack: 0.3, speed: 0.3 },
+    }),
+  })
+  const frail = () => makeHero({
+    role: ['Marksman'],
+    capabilities: makeCapabilities({ statProfile: { durability: 0.05, regen: 0.1, attack: 0.7, speed: 0.5 } }),
+  })
+
+  it('damage that ignores armour gains value against a durable enemy team', () => {
+    const shredder = makeHero({ capabilities: makeCapabilities({ armorAgnostic: 2 }) })
+    const plain = makeHero({ capabilities: makeCapabilities({ armorAgnostic: 0 }) })
+
+    const durable = [bulky(), bulky(), bulky()]
+    const squishy = [frail(), frail(), frail()]
+
+    const gapVsDurable = scoreOf(shredder, durable) - scoreOf(plain, durable)
+    const gapVsSquishy = scoreOf(shredder, squishy) - scoreOf(plain, squishy)
+
+    expect(gapVsDurable).toBeGreaterThan(gapVsSquishy)
+  })
+
+  it('enemy immunity blunts the value of crowd control', () => {
+    const locker = makeHero({ capabilities: makeCapabilities({ ccScore: 5 }) })
+    const noControl = makeHero({ capabilities: makeCapabilities({ ccScore: 0 }) })
+
+    const catchable = [evasive(), evasive(), evasive()]
+    const slippery = Array.from({ length: 3 }, () => makeHero({
+      role: ['Assassin'],
+      capabilities: makeCapabilities({ mobilityScore: 5, hasImmunity: true }),
+    }))
+
+    const gapVsCatchable = scoreOf(locker, catchable) - scoreOf(noControl, catchable)
+    const gapVsSlippery = scoreOf(locker, slippery) - scoreOf(noControl, slippery)
+
+    expect(gapVsSlippery).toBeLessThan(gapVsCatchable)
   })
 
   it('anti-heal gains value against a sustaining enemy team', () => {

@@ -7,6 +7,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -18,6 +19,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": true,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -29,6 +31,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": true,
     "hasAOE": true
   },
@@ -40,6 +43,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -51,6 +55,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 1,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -62,6 +67,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": true,
     "hasAOE": true
   },
@@ -73,6 +79,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -84,6 +91,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -95,6 +103,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -106,6 +115,7 @@
     "antiHeal": true,
     "hasImmunity": false,
     "hasShield": true,
+    "armorAgnostic": 2,
     "damageReduction": true,
     "hasAOE": true
   },
@@ -117,6 +127,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -128,6 +139,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -139,6 +151,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -150,6 +163,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": true,
+    "armorAgnostic": 0,
     "damageReduction": true,
     "hasAOE": false
   },
@@ -161,6 +175,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -172,6 +187,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -183,6 +199,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 1,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -194,6 +211,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": true,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -205,6 +223,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 1,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -216,6 +235,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": true,
     "hasAOE": false
   },
@@ -227,6 +247,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -238,6 +259,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -249,6 +271,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": true,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -260,6 +283,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -271,6 +295,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -282,6 +307,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -293,6 +319,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -304,6 +331,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -315,6 +343,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -326,6 +355,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": true,
     "hasAOE": true
   },
@@ -337,6 +367,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -348,6 +379,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -359,6 +391,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": true,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -370,6 +403,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": true,
+    "armorAgnostic": 2,
     "damageReduction": false,
     "hasAOE": false
   },
@@ -381,6 +415,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 1,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -392,6 +427,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -403,6 +439,7 @@
     "antiHeal": false,
     "hasImmunity": false,
     "hasShield": false,
+    "armorAgnostic": 2,
     "damageReduction": true,
     "hasAOE": true
   },
@@ -414,6 +451,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": false,
     "hasAOE": true
   },
@@ -425,6 +463,7 @@
     "antiHeal": false,
     "hasImmunity": true,
     "hasShield": false,
+    "armorAgnostic": 0,
     "damageReduction": true,
     "hasAOE": false
   }

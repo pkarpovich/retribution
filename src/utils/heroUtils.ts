@@ -341,6 +341,9 @@ const DURABLE_PROFILE = 0.7;
 const CC_SATURATES_AT = 4;
 const CATCH_BONUS = 25;
 const ANTI_HEAL_BONUS = 25;
+const ARMOR_BREAK_BONUS = 30;
+const ARMOR_AGNOSTIC_MAX = 2;
+const IMMUNITY_DAMPING = 0.5;
 const FOUNDATION_SCALE = 3;
 const SITUATIONAL_BUDGET = 0.5;
 const SITUATIONAL_REFERENCE = 150;
@@ -366,7 +369,9 @@ function calculateEnemyVulnerability(
     squishyTargetValue: 0,
     ccCount: 0,
     mobilityValue: 0,
-    sustainCount: 0
+    sustainCount: 0,
+    immunityCount: 0,
+    mitigationValue: 0
   };
 
   for (const enemy of enemyTeam) {
@@ -379,6 +384,14 @@ function calculateEnemyVulnerability(
     if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) {
       enemyStats.sustainCount += 1;
     }
+
+    if (hasImmunityCapability(enemy)) {
+      enemyStats.immunityCount += 1;
+    }
+
+    enemyStats.mitigationValue += (enemy.capabilities?.statProfile?.durability ?? 0.5) * 0.6
+      + (enemy.capabilities?.damageReduction ? 0.2 : 0)
+      + (enemy.capabilities?.hasShield ? 0.2 : 0);
 
     const isSquishyRole =
       !enemy.role.includes('Tank') && (
@@ -426,11 +439,15 @@ function calculateEnemyVulnerability(
   }
 
   const lockdown = Math.min(getCCScore(hero) / CC_SATURATES_AT, 1);
-  score += CATCH_BONUS * (enemyStats.mobilityValue / revealed) * lockdown * weights.enemy_comp;
+  const slippery = 1 - IMMUNITY_DAMPING * (enemyStats.immunityCount / revealed);
+  score += CATCH_BONUS * (enemyStats.mobilityValue / revealed) * lockdown * slippery * weights.enemy_comp;
 
   if (hero.capabilities?.antiHeal) {
     score += ANTI_HEAL_BONUS * (enemyStats.sustainCount / revealed) * weights.enemy_comp;
   }
+
+  const armorBreak = Math.min((hero.capabilities?.armorAgnostic ?? 0) / ARMOR_AGNOSTIC_MAX, 1);
+  score += ARMOR_BREAK_BONUS * armorBreak * (enemyStats.mitigationValue / revealed) * weights.enemy_comp;
 
   return score;
 }

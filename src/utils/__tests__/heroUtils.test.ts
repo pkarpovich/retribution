@@ -13,6 +13,7 @@ function makeCapabilities(overrides: Partial<HeroCapabilities> = {}): HeroCapabi
     hasAOE: false,
     hasImmunity: false,
     hasShield: false,
+    armorAgnostic: 0,
     damageReduction: false,
     maxBurstDamage: 0,
     avgCooldown: null,

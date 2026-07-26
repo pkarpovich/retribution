@@ -70,6 +70,7 @@ describe('jungler capabilities golden set', () => {
         antiHeal: capabilities.antiHeal,
         hasImmunity: capabilities.hasImmunity,
         hasShield: capabilities.hasShield,
+        armorAgnostic: capabilities.armorAgnostic,
         damageReduction: capabilities.damageReduction,
         hasAOE: capabilities.hasAOE,
       }).toEqual(values)
