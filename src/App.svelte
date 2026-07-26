@@ -1,25 +1,61 @@
 <script lang="ts">
   import heroData from './data/heroes.json'
   import type { Hero } from './types/hero'
-  import { getJunglers } from './utils/heroUtils'
+  import { bans } from './lib/bans.svelte'
+  import BansScreen from './components/BansScreen.svelte'
 
-  const allHeroes = heroData.heroes as unknown as Hero[]
-  const junglers = getJunglers(allHeroes)
+  const heroes = heroData.heroes as unknown as Hero[]
+
+  let bansOpen = $state(false)
 </script>
 
-<main class="shell">
-  <h1 class="logo">Retribution</h1>
-  <p class="status">
-    <span class="count">{allHeroes.length}</span> heroes ·
-    <span class="count">{junglers.length}</span> junglers
-  </p>
-</main>
+<div class="app">
+  <header class="bar">
+    <h1 class="logo">Retribution</h1>
+    <button
+      class="bans"
+      onclick={() => (bansOpen = true)}
+      aria-label="Banned heroes{bans.size > 0 ? `, ${bans.size} banned` : ''}"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5" /><path d="m6 6 12 12" />
+      </svg>
+      {#if bans.size > 0}
+        <span class="badge">{bans.size}</span>
+      {/if}
+    </button>
+  </header>
+
+  <main class="body">
+    <p class="placeholder">Draft screens land next.</p>
+  </main>
+
+  {#if bansOpen}
+    <BansScreen {heroes} onClose={() => (bansOpen = false)} />
+  {/if}
+</div>
 
 <style>
-  .shell {
+  .app {
+    position: relative;
     display: grid;
-    gap: var(--space-sm);
-    padding: var(--space-2xl);
+    grid-template-rows: auto minmax(0, 1fr);
+    block-size: 100dvb;
+    inline-size: min(100%, var(--app-inline-size));
+    margin-inline: auto;
+    overflow: hidden;
+    background: var(--color-bg);
+
+    @media (width > 30rem) {
+      border-inline: 1px solid var(--color-border);
+    }
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-xl);
     background: var(--color-panel);
     border-block-end: 1px solid var(--color-border);
   }
@@ -28,17 +64,42 @@
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--font-size-xl);
+    font-weight: 400;
     letter-spacing: var(--tracking-tight);
   }
 
-  .status {
-    margin: 0;
-    font-size: var(--font-size-sm);
+  .bans {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
     color: var(--color-ink-mute);
   }
 
-  .count {
+  .bans:has(.badge) {
+    color: var(--color-neg);
+  }
+
+  .badge {
     font-family: var(--font-mono);
-    color: var(--color-accent);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+  }
+
+  .body {
+    display: grid;
+    place-items: center;
+    padding: var(--space-2xl);
+  }
+
+  .placeholder {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--font-size-md);
+    color: var(--color-ink-faint);
   }
 </style>
