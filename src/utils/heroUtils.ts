@@ -361,6 +361,13 @@ function hasSurvivability(hero: Hero): boolean {
   return (capabilities.statProfile?.durability ?? 0) >= DURABLE_PROFILE;
 }
 
+// The ceiling the situational half can reach at this rank. Exported so the
+// screen can scale against the engine's own limit rather than against whatever
+// spread the current candidate set happens to have.
+export function situationalBudget(userRank: UserRank = 'Mythic'): number {
+  return SITUATIONAL_BUDGET * getTierScore('SS') * getDefaultWeights(userRank).tier * FOUNDATION_SCALE;
+}
+
 export interface EnemyRuleReadout {
   revealed: number;
   squishy: number;

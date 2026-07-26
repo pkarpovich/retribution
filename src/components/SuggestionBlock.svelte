@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
   import type { Suggestion } from '../utils/presentation'
+  import { situationalBudget } from '../utils/heroUtils'
   import { capabilitiesFor, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
   import TierBadge from './TierBadge.svelte'
@@ -27,10 +28,25 @@
   const scale = $derived(suggestions[0]?.result.total_score ?? 1)
   const ties = $derived(tieGroups(suggestions))
   const bestFit = $derived([...suggestions].sort((a, b) => b.fit - a.fit)[0]?.hero.hero_name)
-  const fitRange = $derived<[number, number]>([
-    Math.floor(Math.min(...suggestions.map(s => s.fit))),
-    Math.ceil(Math.max(...suggestions.map(s => s.fit))),
-  ])
+  // Scaled against the engine's own ceiling, not the spread of this candidate
+  // set — auto-ranging made a ten-point gap look like opposite ends of the
+  // world. Fit is never negative in practice (min 4.8 across 592 measured
+  // suggestions), so the axis starts at zero.
+  const budget = situationalBudget()
+  const axisAt = (value: number) => Math.max(0, Math.min(100, (value / budget) * 100))
+
+  // Left and right step through the dots as drawn, which is fit order, not
+  // list order.
+  const byFit = $derived(suggestions
+    .map((suggestion, index) => ({ suggestion, index }))
+    .sort((a, b) => a.suggestion.fit - b.suggestion.fit))
+  const axisPosition = $derived(byFit.findIndex(entry => entry.index === focusIndex))
+
+  function step(direction: -1 | 1) {
+    const next = axisPosition + direction
+    if (next < 0 || next >= byFit.length) return
+    focusIndex = byFit[next].index
+  }
 
   const facts = $derived(focus ? capabilitiesFor(focus.hero, enemies) : [])
   const paying = $derived(facts.filter(fact => fact.stance === 'wanted' || fact.stance === 'off'))
@@ -53,11 +69,6 @@
     if (!group) return { label: `#${index + 1}`, tied: false }
     const positions = group.map(member => suggestions.findIndex(s => s.hero.hero_name === member)).sort((a, b) => a - b)
     return { label: `#${positions[0] + 1}–${positions[positions.length - 1] + 1}`, tied: true }
-  }
-
-  const axisAt = (value: number) => {
-    const [lo, hi] = fitRange
-    return hi === lo ? 50 : ((value - lo) / (hi - lo)) * 100
   }
 
   interface Row {
@@ -155,21 +166,39 @@
           <span class="kicker">FIT · ALL {suggestions.length}</span>
           <button class="toggle" onclick={() => (listView = 'rows')}>{suggestions.length} BARS ›</button>
         </div>
-        <div class="axis-line">
-          {#each suggestions as suggestion, index (suggestion.hero.id)}
-            <span
-              class="dot"
-              class:on={index === focusIndex}
-              class:best={suggestion.hero.hero_name === bestFit}
-              style="inset-inline-start: {axisAt(suggestion.fit)}%"
-              title="{suggestion.hero.hero_name} {suggestion.fit.toFixed(1)}"
-            ></span>
-          {/each}
+        <div class="axis-body">
+          <button
+            class="step"
+            onclick={() => step(-1)}
+            disabled={axisPosition <= 0}
+            aria-label="Previous by fit"
+          >‹</button>
+
+          <div class="axis-line">
+            {#each suggestions as suggestion, index (suggestion.hero.id)}
+              <button
+                class="dot"
+                class:on={index === focusIndex}
+                class:best={suggestion.hero.hero_name === bestFit}
+                style="inset-inline-start: {axisAt(suggestion.fit)}%"
+                onclick={() => (focusIndex = index)}
+                aria-label="{suggestion.hero.hero_name}, fit {Math.round(suggestion.fit)}"
+                aria-pressed={index === focusIndex}
+              ></button>
+            {/each}
+          </div>
+
+          <button
+            class="step"
+            onclick={() => step(1)}
+            disabled={axisPosition >= suggestions.length - 1}
+            aria-label="Next by fit"
+          >›</button>
         </div>
         <div class="axis-foot">
-          <span>{fitRange[0]}</span>
-          <span class="axis-focus">{focus.hero.hero_name} {focus.fit.toFixed(1)} · best {bestFit}</span>
-          <span>{fitRange[1]}</span>
+          <span>0</span>
+          <span class="axis-focus">{focus.hero.hero_name} {Math.round(focus.fit)} · best {bestFit}</span>
+          <span>{budget}</span>
         </div>
       </div>
 
@@ -527,6 +556,32 @@
     color: var(--color-accent);
   }
 
+  .axis-body {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2xs);
+  }
+
+  .step {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    color: var(--color-ink-mute);
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
   .axis-line {
     position: relative;
     block-size: 22px;
@@ -547,9 +602,18 @@
     inline-size: 7px;
     block-size: 7px;
     margin-inline-start: -3.5px;
+    padding: 0;
     border-radius: var(--radius-full);
     background: var(--color-panel);
     border: 1.5px solid var(--color-border-strong);
+    cursor: pointer;
+  }
+
+  /* The hit target is the tap area, not the drawn dot. */
+  .dot::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
   }
 
   .dot.best {
