@@ -94,9 +94,15 @@
       {@const stance = stanceOf(hero.id)}
       {@const banned = stance === 'banned'}
       <div class="row" hidden={!visible.has(hero.id)} data-stance={stance}>
-        <HeroAvatar {hero} size={34} dimmed={banned} struck={banned} />
+        <HeroAvatar
+          {hero}
+          size={34}
+          dimmed={banned}
+          struck={banned}
+          selected={stance === 'signature'}
+        />
         <span class="meta">
-          <span class="name" class:banned>{hero.hero_name}</span>
+          <span class="name" class:banned class:main={stance === 'signature'}>{hero.hero_name}</span>
           <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
         </span>
         <span class="stances">
@@ -317,11 +323,24 @@
     color: var(--color-ink-faint);
   }
 
+  /* Both states earn a rail so either can be found while scrolling thirty-nine
+     rows. Ban de-emphasises what it marks, main emphasises it. */
   .row {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding: var(--space-sm) var(--space-3xs);
+    padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-xs);
+    border-inline-start: 2px solid transparent;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .row[data-stance='signature'] {
+    border-inline-start-color: var(--color-accent);
+    background: color-mix(in oklch, var(--color-accent) 4%, transparent);
+  }
+
+  .row[data-stance='banned'] {
+    border-inline-start-color: color-mix(in oklch, var(--color-neg) 45%, transparent);
   }
 
   /* Author styles beat the UA rule for [hidden], and the divider has to skip
@@ -351,6 +370,11 @@
     color: var(--color-ink-faint);
     text-decoration: line-through;
     text-decoration-color: color-mix(in oklch, var(--color-neg) 55%, transparent);
+  }
+
+  .name.main {
+    color: var(--color-accent);
+    font-weight: 600;
   }
 
   .facts {
@@ -391,9 +415,11 @@
     color: var(--color-neg);
   }
 
+  /* Filled rather than tinted: the ban carries a struck portrait and a struck
+     name, so the main needs weight of its own to balance it. */
   .pill.main.on {
-    background: color-mix(in oklch, var(--color-accent) 9%, transparent);
-    border-color: color-mix(in oklch, var(--color-accent) 32%, transparent);
-    color: var(--color-accent);
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-on-accent);
   }
 </style>

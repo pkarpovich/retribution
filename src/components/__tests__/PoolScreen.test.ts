@@ -93,6 +93,25 @@ describe('PoolScreen', () => {
     expect(bans.has(target.id)).toBe(false)
   })
 
+  // The ban treatment strikes the portrait and the name. Without something of
+  // its own, a main was only a slightly tinted pill on an otherwise plain row.
+  it('marks a main as plainly as it marks a ban', async () => {
+    const [main, banned] = junglers
+    const { container } = render(PoolScreen, props)
+
+    await fireEvent.click(pill(container, main.hero_name, 'main'))
+    await fireEvent.click(pill(container, banned.hero_name, 'ban'))
+
+    const rowOf = (name: string) => rowFor(container, name)
+    expect(rowOf(main.hero_name).getAttribute('data-stance')).toBe('signature')
+    expect(rowOf(main.hero_name).querySelector('.name')?.className).toContain('main')
+    expect(rowOf(main.hero_name).querySelector('.avatar')?.className).toContain('selected')
+
+    expect(rowOf(banned.hero_name).getAttribute('data-stance')).toBe('banned')
+    expect(rowOf(banned.hero_name).querySelector('.strike')).toBeTruthy()
+    expect(rowOf(banned.hero_name).querySelector('.avatar')?.className).not.toContain('selected')
+  })
+
   it('counts both lists and clears both', async () => {
     const { container } = render(PoolScreen, props)
     const counts = () => textOf(container, '.tally-count')

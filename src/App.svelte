@@ -46,6 +46,16 @@
 
   const bannedList = $derived(heroes.filter(hero => bans.has(hero.id)))
 
+  // The icon used to be a ban symbol carrying the sum of both lists, which read
+  // as "three bans" when it was two mains and one ban. Neutral mark, two counts,
+  // each in the colour its pill uses on the pool screen.
+  const poolLabel = $derived(
+    bans.size + signatures.size === 0
+      ? 'Your pool'
+      : `Your pool, ${signatures.size} main${signatures.size === 1 ? '' : 's'}`
+        + ` and ${bans.size} banned`
+  )
+
   const suggestions = $derived(
     toSuggestions(
       recommendJunglers(junglers, myTeam, enemies, bannedList, 'Mythic', matchBans, signatures.ids),
@@ -143,15 +153,12 @@
         {#if matches.pending}<span class="dot" aria-hidden="true"></span>{/if}
       </button>
 
-      <button
-        class="icon bans"
-        onclick={() => (bansOpen = !bansOpen)}
-        aria-label="Your pool{bans.size + signatures.size > 0 ? `, ${signatures.size} mains and ${bans.size} banned` : ''}"
-      >
+      <button class="icon pool" onclick={() => (bansOpen = !bansOpen)} aria-label={poolLabel}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-          <circle cx="12" cy="12" r="8.5" /><path d="m6 6 12 12" />
+          <path d="M6 3h12v18l-6-4.5L6 21z" />
         </svg>
-        {#if bans.size + signatures.size > 0}<span class="badge">{bans.size + signatures.size}</span>{/if}
+        {#if signatures.size > 0}<span class="badge main">{signatures.size}</span>{/if}
+        {#if bans.size > 0}<span class="badge banned">{bans.size}</span>{/if}
       </button>
     </div>
   </header>
@@ -305,7 +312,11 @@
     color: var(--color-ink-mute);
   }
 
-  .bans:has(.badge) {
+  .badge.main {
+    color: var(--color-accent);
+  }
+
+  .badge.banned {
     color: var(--color-neg);
   }
 

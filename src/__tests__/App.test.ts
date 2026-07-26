@@ -258,6 +258,31 @@ describe('App pool', () => {
     expect(screen.getByRole('button', { name: '2 heroes hidden by bans' })).toBeTruthy()
   })
 
+  // A ban symbol carrying the sum said "3 banned" when it was two mains and
+  // one ban. The counts are separate, and so are their colours.
+  it('never lets the header add mains and bans into one number', async () => {
+    const { container } = render(App)
+
+    signatures.toggle(heroes[0].id)
+    signatures.toggle(heroes[1].id)
+    bans.toggle(heroes[2].id)
+    await tick()
+
+    expect(container.querySelector('.pool .badge.main')?.textContent).toBe('2')
+    expect(container.querySelector('.pool .badge.banned')?.textContent).toBe('1')
+    expect(textOf(container, '.pool .badge')).not.toContain('3')
+  })
+
+  it('shows only the count that exists', async () => {
+    const { container } = render(App)
+
+    signatures.toggle(heroes[0].id)
+    await tick()
+
+    expect(container.querySelector('.pool .badge.main')).toBeTruthy()
+    expect(container.querySelector('.pool .badge.banned')).toBeNull()
+  })
+
   it('reads both lists out on the header button instead of leaving a bare badge', async () => {
     render(App)
     expect(screen.getByRole('button', { name: 'Your pool' })).toBeTruthy()
@@ -265,7 +290,7 @@ describe('App pool', () => {
     bans.toggle(heroes[0].id)
     signatures.toggle(heroes[1].id)
     await tick()
-    expect(screen.getByRole('button', { name: 'Your pool, 1 mains and 1 banned' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Your pool, 1 main and 1 banned' })).toBeTruthy()
   })
 
   it('opens the ban list from the roster note and closes it again', async () => {
