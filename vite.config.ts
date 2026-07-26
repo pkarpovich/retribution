@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    svelte(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -19,8 +19,8 @@ export default defineConfig({
         name: 'Retribution',
         short_name: 'Retribution',
         description: 'MLBB jungler recommendation app',
-        theme_color: '#1C1B1A',
-        background_color: '#1C1B1A',
+        theme_color: '#faf8f4',
+        background_color: '#faf8f4',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
@@ -37,7 +37,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024
       }
     })

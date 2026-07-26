@@ -6,6 +6,7 @@ import type {
   RecommendationLevel,
   RecommendationWeights,
   RecommendationResult,
+  JunglerEvaluation,
   ScoreBreakdown,
   RecommendationWarning,
   BootRecommendation
@@ -244,7 +245,7 @@ function calculateBaseScore(
     statBonus = winRateModifier + pickRateReliability;
   }
 
-  return (tierScore * weights.tier) + (statBonus * weights.stats);
+  return ((tierScore * weights.tier) + (statBonus * weights.stats)) * FOUNDATION_SCALE;
 }
 
 function calculateTeamBalance(
@@ -252,6 +253,9 @@ function calculateTeamBalance(
   yourTeam: Hero[],
   weights: RecommendationWeights
 ): number {
+  if (yourTeam.length === 0) return 0;
+
+  const confidence = Math.min(yourTeam.length / MAX_ALLIES, 1);
   const heroType = classifyJunglerType(hero);
 
   const teamStats = {
@@ -301,7 +305,7 @@ function calculateTeamBalance(
     score += 20 * weights.team_balance;
   }
 
-  return score;
+  return score * confidence;
 }
 
 function calculateDamageTypeBalance(
@@ -332,23 +336,144 @@ function calculateDamageTypeBalance(
   return score;
 }
 
+const FULL_SHARE_AT = 0.4;
+const SPECIALIST_STEP = 15;
+const SPECIALIST_CAP = 3;
+const HIGH_CC_SHARE = 0.6;
+const HEAVY_CC_AT = 4;
+const DURABLE_PROFILE = 0.7;
+const CC_SATURATES_AT = 4;
+const CATCH_BONUS = 25;
+const ANTI_HEAL_BONUS = 25;
+const ARMOR_BREAK_BONUS = 30;
+const ARMOR_AGNOSTIC_MAX = 2;
+const IMMUNITY_DAMPING = 0.5;
+const MAX_ALLIES = 4;
+const BAN_RATE_SATURATES_AT = 50;
+const PICK_RATE_SATURATES_AT = 3;
+const FOUNDATION_SCALE = 3;
+const SITUATIONAL_BUDGET = 0.75;
+const SITUATIONAL_REFERENCE = 150;
+
+function hasSurvivability(hero: Hero): boolean {
+  const capabilities = hero.capabilities;
+  if (!capabilities) return hasSustainCapability(hero);
+  if (capabilities.selfSustain || capabilities.hasShield || capabilities.damageReduction) return true;
+  return (capabilities.statProfile?.durability ?? 0) >= DURABLE_PROFILE;
+}
+
+// The ceiling the situational half can reach at this rank. Exported so the
+// screen can scale against the engine's own limit rather than against whatever
+// spread the current candidate set happens to have.
+export function situationalBudget(userRank: UserRank = 'Mythic'): number {
+  return SITUATIONAL_BUDGET * getTierScore('SS') * getDefaultWeights(userRank).tier * FOUNDATION_SCALE;
+}
+
+export interface EnemyRuleReadout {
+  revealed: number;
+  squishy: number;
+  tanks: number;
+  ccCount: number;
+  heavyCcCount: number;
+  sustainCount: number;
+  immunityCount: number;
+  mobilityShare: number;
+  mitigation: number;
+  antiHealPoints: number;
+  armourBreakPoints: number;
+  catchPoints: number;
+}
+
+export function enemyRuleReadout(
+  enemyTeam: Hero[],
+  userRank: UserRank = 'Mythic'
+): EnemyRuleReadout | null {
+  if (enemyTeam.length === 0) return null;
+
+  const weights = getDefaultWeights(userRank);
+  const revealed = enemyTeam.length;
+
+  let squishy = 0;
+  let tanks = 0;
+  let ccCount = 0;
+  let heavyCcCount = 0;
+  let sustainCount = 0;
+  let immunityCount = 0;
+  let mobilityValue = 0;
+  let mitigationValue = 0;
+
+  for (const enemy of enemyTeam) {
+    if (enemy.role.includes('Tank')) tanks += 1;
+    if (!enemy.role.includes('Tank') && enemy.role.some(r => ['Mage', 'Marksman', 'Assassin'].includes(r))) {
+      squishy += 1;
+    }
+    if (getCCScore(enemy) >= 1) ccCount += 1;
+    if (getCCScore(enemy) >= HEAVY_CC_AT) heavyCcCount += 1;
+    if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) sustainCount += 1;
+    if (hasImmunityCapability(enemy)) immunityCount += 1;
+
+    mobilityValue += Math.min(getMobilityScore(enemy), 3) / 3;
+    mitigationValue += (enemy.capabilities?.statProfile?.durability ?? 0.5) * 0.6
+      + (enemy.capabilities?.damageReduction ? 0.2 : 0)
+      + (enemy.capabilities?.hasShield ? 0.2 : 0);
+  }
+
+  const mobilityShare = mobilityValue / revealed;
+  const damping = 1 - IMMUNITY_DAMPING * (immunityCount / revealed);
+
+  return {
+    revealed,
+    squishy,
+    tanks,
+    ccCount,
+    heavyCcCount,
+    sustainCount,
+    immunityCount,
+    mobilityShare,
+    mitigation: mitigationValue / revealed,
+    antiHealPoints: ANTI_HEAL_BONUS * (sustainCount / revealed) * weights.enemy_comp,
+    armourBreakPoints: ARMOR_BREAK_BONUS * (mitigationValue / revealed) * weights.enemy_comp,
+    catchPoints: CATCH_BONUS * mobilityShare * damping * weights.enemy_comp,
+  };
+}
+
 function calculateEnemyVulnerability(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
 ): number {
+  if (enemyTeam.length === 0) return 0;
+
   const heroType = classifyJunglerType(hero);
 
   const enemyStats = {
     tanks: 0,
     squishyTargetValue: 0,
-    ccCount: 0
+    ccCount: 0,
+    mobilityValue: 0,
+    sustainCount: 0,
+    immunityCount: 0,
+    mitigationValue: 0
   };
 
   for (const enemy of enemyTeam) {
     if (enemy.role.includes('Tank')) {
       enemyStats.tanks += 1;
     }
+
+    enemyStats.mobilityValue += Math.min(getMobilityScore(enemy), 3) / 3;
+
+    if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) {
+      enemyStats.sustainCount += 1;
+    }
+
+    if (hasImmunityCapability(enemy)) {
+      enemyStats.immunityCount += 1;
+    }
+
+    enemyStats.mitigationValue += (enemy.capabilities?.statProfile?.durability ?? 0.5) * 0.6
+      + (enemy.capabilities?.damageReduction ? 0.2 : 0)
+      + (enemy.capabilities?.hasShield ? 0.2 : 0);
 
     const isSquishyRole =
       !enemy.role.includes('Tank') && (
@@ -363,15 +488,17 @@ function calculateEnemyVulnerability(
       enemyStats.squishyTargetValue += mobilityFactor;
     }
 
-    if (getCCScore(enemy) >= 1) {
+    if (getCCScore(enemy) >= HEAVY_CC_AT) {
       enemyStats.ccCount += 1;
     }
   }
 
   let score = 0;
 
-  const tankBonus = enemyStats.tanks >= 2 ? 50 : 0;
-  const squishyBonus = enemyStats.squishyTargetValue >= 2 ? 50 : 0;
+  const revealed = enemyTeam.length;
+  const ramp = (share: number) => 50 * Math.min(share / FULL_SHARE_AT, 1);
+  const tankBonus = ramp(enemyStats.tanks / revealed);
+  const squishyBonus = ramp(enemyStats.squishyTargetValue / revealed);
 
   if (heroType === 'DAMAGE') {
     score += squishyBonus * weights.enemy_comp;
@@ -381,13 +508,28 @@ function calculateEnemyVulnerability(
     score += Math.max(tankBonus, squishyBonus) * 0.6 * weights.enemy_comp;
   }
 
-  if (hero.role.includes('Assassin') && enemyStats.squishyTargetValue >= 1) {
-    score += enemyStats.squishyTargetValue * 15 * weights.enemy_comp;
+  if (hero.role.includes('Assassin')) {
+    score += Math.min(enemyStats.squishyTargetValue, SPECIALIST_CAP) * SPECIALIST_STEP * weights.enemy_comp;
   }
 
-  if (enemyStats.ccCount >= 3 && hasImmunityCapability(hero)) {
+  if (hero.role.includes('Tank')) {
+    score += Math.min(enemyStats.tanks, SPECIALIST_CAP) * SPECIALIST_STEP * weights.enemy_comp;
+  }
+
+  if (enemyStats.ccCount / revealed >= HIGH_CC_SHARE && hasImmunityCapability(hero)) {
     score += 20 * weights.enemy_comp;
   }
+
+  const lockdown = Math.min(getCCScore(hero) / CC_SATURATES_AT, 1);
+  const slippery = 1 - IMMUNITY_DAMPING * (enemyStats.immunityCount / revealed);
+  score += CATCH_BONUS * (enemyStats.mobilityValue / revealed) * lockdown * slippery * weights.enemy_comp;
+
+  if (hero.capabilities?.antiHeal) {
+    score += ANTI_HEAL_BONUS * (enemyStats.sustainCount / revealed) * weights.enemy_comp;
+  }
+
+  const armorBreak = Math.min((hero.capabilities?.armorAgnostic ?? 0) / ARMOR_AGNOSTIC_MAX, 1);
+  score += ARMOR_BREAK_BONUS * armorBreak * (enemyStats.mitigationValue / revealed) * weights.enemy_comp;
 
   return score;
 }
@@ -443,9 +585,10 @@ function calculateInvadeResistance(
 
   if (enemyEarlyCount < 2) return 0;
 
-  const sustainBonus = hasSustainCapability(hero) ? 15 : 0;
+  const survivable = hasSurvivability(hero);
+  const sustainBonus = survivable ? 15 : 0;
   const mobilityBonus = getMobilityScore(hero) >= 2 ? 10 : 0;
-  const fragile = !hasSustainCapability(hero) && getMobilityScore(hero) <= 1;
+  const fragile = !survivable && getMobilityScore(hero) <= 1;
   const fragilePenalty = fragile ? -20 : 0;
 
   return (sustainBonus + mobilityBonus + fragilePenalty) * weights.invade_resistance;
@@ -500,19 +643,10 @@ function calculateMetaBonus(
   const stats = getLatestStats(hero, userRank);
   if (!stats) return 0;
 
-  let bonus = 0;
+  const banSignal = Math.min(stats.ban_rate / BAN_RATE_SATURATES_AT, 1);
+  const pickSignal = Math.min(stats.pick_rate / PICK_RATE_SATURATES_AT, 1);
 
-  if (stats.ban_rate > 50) {
-    bonus += 20 * weights.meta;
-  } else if (stats.ban_rate > 30) {
-    bonus += 10 * weights.meta;
-  }
-
-  if (stats.pick_rate >= 1.0 && stats.pick_rate <= 3.0) {
-    bonus += 10 * weights.meta;
-  }
-
-  return bonus;
+  return (banSignal * 20 + pickSignal * 10) * weights.meta;
 }
 
 function calculateEarlyLateGameFactor(
@@ -569,11 +703,19 @@ function calculateEarlyLateGameFactor(
 // Recommendation level
 // ---------------------------------------------------------------------------
 
-function getRecommendationLevel(totalScore: number): RecommendationLevel {
-  if (totalScore >= 180) return 'BEST_PICK';
-  if (totalScore >= 140) return 'STRONG_PICK';
-  if (totalScore >= 100) return 'GOOD_PICK';
-  if (totalScore >= 60) return 'SAFE_PICK';
+const LEVEL_BANDS: [number, RecommendationLevel][] = [
+  [0.97, 'BEST_PICK'],
+  [0.92, 'STRONG_PICK'],
+  [0.85, 'GOOD_PICK'],
+  [0.75, 'SAFE_PICK']
+];
+
+function getRelativeLevel(totalScore: number, bestScore: number): RecommendationLevel {
+  if (bestScore <= 0) return 'RISKY_PICK';
+  const ratio = totalScore / bestScore;
+  for (const [threshold, level] of LEVEL_BANDS) {
+    if (ratio >= threshold) return level;
+  }
   return 'RISKY_PICK';
 }
 
@@ -773,7 +915,7 @@ export function calculateJunglerRecommendation(
   enemyTeam: Hero[],
   userRank: UserRank = 'Mythic',
   weights?: RecommendationWeights
-): RecommendationResult {
+): JunglerEvaluation {
   const finalWeights = weights || getDefaultWeights(userRank);
 
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
@@ -788,8 +930,9 @@ export function calculateJunglerRecommendation(
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
   const earlyLateGameScore = calculateEarlyLateGameFactor(hero, yourTeam, enemyTeam, finalWeights);
 
-  const breakdown: ScoreBreakdown = {
-    base: baseScore,
+  const foundation = baseScore + metaBonus;
+
+  const situational = {
     team_balance: teamBalanceScore,
     damage_type_balance: damageTypeBalanceScore,
     enemy_analysis: enemyAnalysisScore,
@@ -798,27 +941,35 @@ export function calculateJunglerRecommendation(
     invade_resistance: invadeResistanceScore,
     counter_penalty: counterPenalty === 0 ? 0 : -counterPenalty,
     synergy_bonus: synergyBonus,
-    meta_bonus: metaBonus,
     early_late_game: earlyLateGameScore
   };
 
-  const totalScore =
-    baseScore +
-    teamBalanceScore +
-    damageTypeBalanceScore +
-    enemyAnalysisScore +
-    strongAgainstBonus +
-    ccChainSynergyScore +
-    invadeResistanceScore -
-    counterPenalty +
-    synergyBonus +
-    metaBonus +
-    earlyLateGameScore;
+  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, ...situational };
+
+  const rawSituational = Object.values(situational).reduce((sum, value) => sum + value, 0);
+  const budget = SITUATIONAL_BUDGET * getTierScore('SS') * finalWeights.tier * FOUNDATION_SCALE;
+  const squashed = budget > 0 ? budget * Math.tanh(rawSituational / SITUATIONAL_REFERENCE) : 0;
+  const scale = rawSituational === 0 ? 1 : squashed / rawSituational;
+
+  const breakdown: ScoreBreakdown = {
+    base: baseScore,
+    meta_bonus: metaBonus,
+    team_balance: situational.team_balance * scale,
+    damage_type_balance: situational.damage_type_balance * scale,
+    enemy_analysis: situational.enemy_analysis * scale,
+    strong_against: situational.strong_against * scale,
+    cc_chain_synergy: situational.cc_chain_synergy * scale,
+    invade_resistance: situational.invade_resistance * scale,
+    counter_penalty: situational.counter_penalty * scale,
+    synergy_bonus: situational.synergy_bonus * scale,
+    early_late_game: situational.early_late_game * scale
+  };
+
+  const totalScore = foundation + squashed;
 
   const junglerType = classifyJunglerType(hero);
-  const recommendationLevel = getRecommendationLevel(totalScore);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
-  const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
+  const strengths = generateStrengths(hero, enemyTeam, rawBreakdown, userRank);
 
   const bootRecommendation = recommendBoots(hero, enemyTeam);
 
@@ -827,7 +978,6 @@ export function calculateJunglerRecommendation(
     total_score: totalScore,
     breakdown,
     jungler_type: junglerType,
-    recommendation_level: recommendationLevel,
     warnings,
     strengths,
     bootRecommendation
@@ -856,5 +1006,10 @@ export function recommendJunglers(
 
   recommendations.sort((a, b) => b.total_score - a.total_score);
 
-  return recommendations.slice(0, 8);
+  const bestScore = recommendations[0]?.total_score ?? 0;
+
+  return recommendations.slice(0, 8).map(recommendation => ({
+    ...recommendation,
+    recommendation_level: getRelativeLevel(recommendation.total_score, bestScore)
+  }));
 }

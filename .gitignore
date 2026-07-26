@@ -29,3 +29,6 @@ dist-ssr
 
 # ralphex progress logs
 .ralphex/progress/
+
+# Local Claude Code settings
+.claude/settings.local.json
