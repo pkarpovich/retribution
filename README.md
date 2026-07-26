@@ -10,12 +10,11 @@ The interesting part is not the recommendation. It is that the recommendation is
 checked against 74 professional drafts on every commit, and that most of the work so
 far has been finding out that earlier versions were wrong.
 
-<p align="center">
+<div align="center">
   <img src="docs/screenshots/draft.png" width="380" alt="Two enemies revealed, one ally down, eight junglers scored" />
-</p>
-<p align="center">
-  <em>Two enemies in, one ally down&nbsp;&nbsp;·&nbsp;&nbsp;Yi Sun-shin at 83 strength and +28 fit&nbsp;&nbsp;·&nbsp;&nbsp;the axis says Saber answers this draft better</em>
-</p>
+  <br />
+  <sub><em>Two enemies in, one ally down&nbsp;&nbsp;·&nbsp;&nbsp;Yi Sun-shin at 83 strength and +28 fit&nbsp;&nbsp;·&nbsp;&nbsp;the axis says Saber answers this draft better</em></sub>
+</div>
 
 ## How good is it, actually
 
@@ -56,12 +55,11 @@ anti-heal is worth +18 here, nothing in your list carries it — this is an item
 pick". Every number on screen comes from the same constants the score does, so the
 explanation cannot drift from the calculation.
 
-<p align="center">
+<div align="center">
   <img src="docs/screenshots/read.png" width="380" alt="The enemy read-out priced in points of fit" />
-</p>
-<p align="center">
-  <em>What their draft is worth, rule by rule&nbsp;&nbsp;·&nbsp;&nbsp;a rule nothing can price yet reads <code>+?</code> rather than zero</em>
-</p>
+  <br />
+  <sub><em>What their draft is worth, rule by rule&nbsp;&nbsp;·&nbsp;&nbsp;a rule nothing can price yet reads <code>+?</code> rather than zero</em></sub>
+</div>
 
 **Prices what the enemy can still do to you.** While they hold open slots, a hero
 whose counters are all still available is a riskier pick than one whose counters are
@@ -74,23 +72,21 @@ this enemy composition.
 still missing, phrased to be said out loud — "Lockdown: their mobility is 71%, nothing
 on your side holds anyone still."
 
-<p align="center">
+<div align="center">
   <img src="docs/screenshots/locked.png" width="380" alt="A locked pick with its build and what the team still needs" />
-</p>
-<p align="center">
-  <em>Board full, pick locked&nbsp;&nbsp;·&nbsp;&nbsp;boots and blessing for this enemy team&nbsp;&nbsp;·&nbsp;&nbsp;with no picks left, the gaps are items now</em>
-</p>
+  <br />
+  <sub><em>Board full, pick locked&nbsp;&nbsp;·&nbsp;&nbsp;boots and blessing for this enemy team&nbsp;&nbsp;·&nbsp;&nbsp;with no picks left, the gaps are items now</em></sub>
+</div>
 
 **Remembers your pool.** Heroes you main are scored a little higher — enough to move
 one a few places, never to the front on its own. Heroes you never want are never
 suggested.
 
-<p align="center">
+<div align="center">
   <img src="docs/screenshots/pool.png" width="380" alt="The hero pool with mains and bans" />
-</p>
-<p align="center">
-  <em>One list, two opposite marks&nbsp;&nbsp;·&nbsp;&nbsp;a hero can be one or the other, never both</em>
-</p>
+  <br />
+  <sub><em>One list, two opposite marks&nbsp;&nbsp;·&nbsp;&nbsp;a hero can be one or the other, never both</em></sub>
+</div>
 
 **Keeps a log.** Every locked pick is written down with the whole draft and everything
 the engine said about it, including where your pick ranked and whether you took the
