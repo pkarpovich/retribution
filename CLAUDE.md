@@ -41,7 +41,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 
 ### Core Logic (`src/utils/heroUtils.ts`)
 - `getJunglers()`: Filters heroes by Jungle lane
-- `recommendJunglers()`: Scores junglers using an 11-component pipeline:
+- `recommendJunglers()`: Scores junglers using a 12-component pipeline:
   - base_score (tier + win rate + pick rate reliability)
   - strong_against_bonus (hero.weakAgainst = victims this hero beats)
   - team_balance (damage/utility/tank composition needs)
@@ -49,7 +49,8 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
   - enemy_vulnerability (squishy targets weighted by mobility, immunity vs CC)
   - cc_chain_synergy (team CC followup or CC gap filling)
   - invade_resistance (sustain/mobility vs early-game enemies)
-  - counter_penalty (hero.counters = heroes that beat this hero)
+  - counter_penalty (hero.counters = heroes that beat this hero, already picked)
+  - counter_threat (hero.counters still available while the enemy holds open slots)
   - synergy_bonus (synergy data with teammates)
   - meta_bonus (ban rate and pick rate signals)
   - early_late_game (tempo mismatch bonuses)
@@ -67,10 +68,10 @@ Components follow a co-located pattern (component + CSS in same directory):
 - `TierBadge`: Hero tier display (SS/S/A/B/C/D)
 
 ### Data Flow
-1. User selects enemy heroes (max 5) and optionally ally heroes (max 4)
-2. `recommendJunglers()` calculates scores combining 11 components:
+1. User selects enemy heroes (max 5) and optionally ally heroes (max 4). Two separate ban lists: personal bans (`src/lib/bans.svelte.ts`, localStorage, "never suggest this to me") only shrink the candidate pool; match bans (App state, cleared on reset) also take the hero off the board for the enemy and so feed `counter_threat`
+2. `recommendJunglers()` calculates scores combining 12 components:
    - Base score (tier: SS=100..D=10, quadratic win rate bonus, pick rate reliability)
-   - Matchup data (strong-against bonus from weakAgainst victims, counter penalty from counters, synergy bonus)
+   - Matchup data (strong-against bonus from weakAgainst victims, counter penalty from counters, counter threat from counters the enemy can still take, synergy bonus)
    - Team composition (balance, damage type balance, CC chain synergy)
    - Situational (enemy vulnerability, invade resistance, early/late game tempo)
    - Meta relevance (ban rate and pick rate signals)
@@ -83,7 +84,7 @@ All types defined in `src/types/hero.ts`:
 - `HeroStatistic`: Pick/win/ban rates by rank and timeframe
 - `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
 - `HeroRelation`: Counter/synergy/weakAgainst relationship with weighted_score
-- `ScoreBreakdown`: Individual score for each of the 11 scoring components
+- `ScoreBreakdown`: Individual score for each of the 12 scoring components
 - `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes`)
 - `RetributionBlessing`: Blessing options (`Ice` | `Flame` | `Bloody`)
 - `BootRecommendation`: Boot + blessing recommendation with reason strings

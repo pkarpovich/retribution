@@ -263,6 +263,95 @@ describe('banned and picked heroes never appear', () => {
   })
 })
 
+describe('counter threat', () => {
+  const pool = getJunglers(heroData.heroes as unknown as Hero[])
+
+  const evaluate = (hero: Hero, enemies: Hero[], matchBans: Hero[] = []) =>
+    calculateJunglerRecommendation(hero, [], enemies, 'Mythic', { matchBans })
+
+  const filler = (count: number) => Array.from({ length: count }, () => makeHero())
+
+  it('is switched off once the enemy has no picks left', () => {
+    const bully = makeHero()
+    const hero = makeHero({ counters: [relation(bully, 9)] })
+
+    expect(evaluate(hero, filler(5)).breakdown.counter_threat).toBe(0)
+    expect(evaluate(hero, filler(4)).breakdown.counter_threat).toBeLessThan(0)
+  })
+
+  it('costs more the heavier the counter still on the board', () => {
+    const bully = makeHero()
+    const enemies = filler(3)
+    const light = makeHero({ counters: [relation(bully, 1)] })
+    const heavy = makeHero({ counters: [relation(bully, 9)] })
+
+    expect(evaluate(heavy, enemies).total_score).toBeLessThan(evaluate(light, enemies).total_score)
+  })
+
+  it('stops charging for a counter the match has banned', () => {
+    const bully = makeHero()
+    const hero = makeHero({ counters: [relation(bully, 9)] })
+    const enemies = filler(3)
+
+    const open = evaluate(hero, enemies)
+    const banned = evaluate(hero, enemies, [bully])
+
+    expect(banned.breakdown.counter_threat).toBe(0)
+    expect(banned.total_score).toBeGreaterThan(open.total_score)
+  })
+
+  it('ignores a match ban that was never a threat to this hero', () => {
+    const bully = makeHero()
+    const stranger = makeHero()
+    const hero = makeHero({ counters: [relation(bully, 9)] })
+    const enemies = filler(3)
+
+    expect(evaluate(hero, enemies, [stranger]).total_score)
+      .toBe(evaluate(hero, enemies).total_score)
+  })
+
+  it('does not charge twice for a counter already on the enemy team', () => {
+    const bully = makeHero()
+    const hero = makeHero({ counters: [relation(bully, 9)] })
+    const breakdown = evaluate(hero, [bully, ...filler(3)]).breakdown
+
+    expect(breakdown.counter_penalty).toBeLessThan(0)
+    expect(breakdown.counter_threat).toBe(0)
+  })
+
+  // Refusing to play a hero says nothing about what the other team can pick.
+  // Only a match ban takes it off the board for both sides.
+  it('leaves every score alone when heroes are only on the personal ban list', () => {
+    const enemies = pool.slice(0, 3)
+    const shelved = pool.slice(10, 14)
+
+    const scores = new Map(
+      recommendJunglers(pool, [], enemies, [], 'Mythic').map(r => [r.hero.id, r.total_score])
+    )
+
+    const shared = recommendJunglers(pool, [], enemies, shelved, 'Mythic')
+      .filter(result => scores.has(result.hero.id))
+
+    expect(shared.length).toBeGreaterThan(0)
+    for (const result of shared) {
+      expect(result.total_score, result.hero.hero_name).toBe(scores.get(result.hero.id))
+    }
+  })
+
+  it('moves scores when the same heroes are banned in the match instead', () => {
+    const enemies = pool.slice(0, 3)
+    const shelved = pool.slice(10, 14)
+
+    const scores = new Map(
+      recommendJunglers(pool, [], enemies, [], 'Mythic').map(r => [r.hero.id, r.total_score])
+    )
+    const moved = recommendJunglers(pool, [], enemies, [], 'Mythic', shelved)
+      .filter(result => result.total_score !== scores.get(result.hero.id))
+
+    expect(moved.length).toBeGreaterThan(0)
+  })
+})
+
 describe('capability counter-play', () => {
   const evasive = () => makeHero({
     role: ['Assassin'],
