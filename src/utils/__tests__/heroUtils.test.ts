@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getJunglers, recommendBoots, calculateJunglerRecommendation } from '../heroUtils'
+import { getJunglers, recommendBoots, calculateJunglerRecommendation, recommendJunglers } from '../heroUtils'
 import type { Hero, HeroCapabilities } from '../../types/hero'
 
 function makeCapabilities(overrides: Partial<HeroCapabilities> = {}): HeroCapabilities {
@@ -360,13 +360,16 @@ describe('regression: Aamon-vs-counters scenario', () => {
       weakAgainst: [],
     })
 
+    const untouched = makeHero({ id: 51, hero_name: 'Untouched', role: ['Assassin'], lane: ['Jungle'], tier: 'B' })
     const result = calculateJunglerRecommendation(aamon, [], [gloo, atlas, hayabusa])
 
     expect(result.breakdown.counter_penalty).toBeLessThan(0)
     expect(Math.abs(result.breakdown.counter_penalty)).toBeGreaterThan(30)
     expect(result.breakdown.strong_against).toBe(0)
-    expect(result.recommendation_level).not.toBe('BEST_PICK')
-    expect(result.recommendation_level).not.toBe('STRONG_PICK')
+
+    const ranked = recommendJunglers([aamon, untouched], [], [gloo, atlas, hayabusa], [], 'Mythic')
+    expect(ranked[0].hero.hero_name).toBe('Untouched')
+    expect(ranked[1].recommendation_level).not.toBe('BEST_PICK')
 
     const weakWarnings = result.warnings.filter(w => w.type === 'WEAK_AGAINST')
     expect(weakWarnings.length).toBe(3)

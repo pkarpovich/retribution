@@ -6,6 +6,7 @@ import type {
   RecommendationLevel,
   RecommendationWeights,
   RecommendationResult,
+  JunglerEvaluation,
   ScoreBreakdown,
   RecommendationWarning,
   BootRecommendation
@@ -337,6 +338,9 @@ const SPECIALIST_STEP = 15;
 const SPECIALIST_CAP = 3;
 const HIGH_CC_SHARE = 0.6;
 const DURABLE_PROFILE = 0.7;
+const CC_SATURATES_AT = 4;
+const CATCH_BONUS = 25;
+const ANTI_HEAL_BONUS = 25;
 
 function hasSurvivability(hero: Hero): boolean {
   const capabilities = hero.capabilities;
@@ -357,12 +361,20 @@ function calculateEnemyVulnerability(
   const enemyStats = {
     tanks: 0,
     squishyTargetValue: 0,
-    ccCount: 0
+    ccCount: 0,
+    mobilityValue: 0,
+    sustainCount: 0
   };
 
   for (const enemy of enemyTeam) {
     if (enemy.role.includes('Tank')) {
       enemyStats.tanks += 1;
+    }
+
+    enemyStats.mobilityValue += Math.min(getMobilityScore(enemy), 3) / 3;
+
+    if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) {
+      enemyStats.sustainCount += 1;
     }
 
     const isSquishyRole =
@@ -408,6 +420,13 @@ function calculateEnemyVulnerability(
 
   if (enemyStats.ccCount / revealed >= HIGH_CC_SHARE && hasImmunityCapability(hero)) {
     score += 20 * weights.enemy_comp;
+  }
+
+  const lockdown = Math.min(getCCScore(hero) / CC_SATURATES_AT, 1);
+  score += CATCH_BONUS * (enemyStats.mobilityValue / revealed) * lockdown * weights.enemy_comp;
+
+  if (hero.capabilities?.antiHeal) {
+    score += ANTI_HEAL_BONUS * (enemyStats.sustainCount / revealed) * weights.enemy_comp;
   }
 
   return score;
@@ -591,11 +610,19 @@ function calculateEarlyLateGameFactor(
 // Recommendation level
 // ---------------------------------------------------------------------------
 
-function getRecommendationLevel(totalScore: number): RecommendationLevel {
-  if (totalScore >= 180) return 'BEST_PICK';
-  if (totalScore >= 140) return 'STRONG_PICK';
-  if (totalScore >= 100) return 'GOOD_PICK';
-  if (totalScore >= 60) return 'SAFE_PICK';
+const LEVEL_BANDS: [number, RecommendationLevel][] = [
+  [0.97, 'BEST_PICK'],
+  [0.92, 'STRONG_PICK'],
+  [0.85, 'GOOD_PICK'],
+  [0.75, 'SAFE_PICK']
+];
+
+function getRelativeLevel(totalScore: number, bestScore: number): RecommendationLevel {
+  if (bestScore <= 0) return 'RISKY_PICK';
+  const ratio = totalScore / bestScore;
+  for (const [threshold, level] of LEVEL_BANDS) {
+    if (ratio >= threshold) return level;
+  }
   return 'RISKY_PICK';
 }
 
@@ -795,7 +822,7 @@ export function calculateJunglerRecommendation(
   enemyTeam: Hero[],
   userRank: UserRank = 'Mythic',
   weights?: RecommendationWeights
-): RecommendationResult {
+): JunglerEvaluation {
   const finalWeights = weights || getDefaultWeights(userRank);
 
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
@@ -838,7 +865,6 @@ export function calculateJunglerRecommendation(
     earlyLateGameScore;
 
   const junglerType = classifyJunglerType(hero);
-  const recommendationLevel = getRecommendationLevel(totalScore);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
   const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
 
@@ -849,7 +875,6 @@ export function calculateJunglerRecommendation(
     total_score: totalScore,
     breakdown,
     jungler_type: junglerType,
-    recommendation_level: recommendationLevel,
     warnings,
     strengths,
     bootRecommendation
@@ -878,5 +903,10 @@ export function recommendJunglers(
 
   recommendations.sort((a, b) => b.total_score - a.total_score);
 
-  return recommendations.slice(0, 8);
+  const bestScore = recommendations[0]?.total_score ?? 0;
+
+  return recommendations.slice(0, 8).map(recommendation => ({
+    ...recommendation,
+    recommendation_level: getRelativeLevel(recommendation.total_score, bestScore)
+  }));
 }

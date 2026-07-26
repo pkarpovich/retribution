@@ -114,7 +114,7 @@ describe('recommendation quality against pro picks', () => {
     for (const revealed of [1, 2, 3, 4]) {
       const { recallAt8, medianRank } = measure(revealed)
       console.log(`${revealed} enemies revealed: recall@8=${(recallAt8 * 100).toFixed(0)}% median rank=${medianRank}`)
-      expect(recallAt8, `${revealed} enemies revealed`).toBeGreaterThan(0.34)
+      expect(recallAt8, `${revealed} enemies revealed`).toBeGreaterThan(0.40)
     }
   })
 })
