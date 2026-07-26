@@ -26,12 +26,17 @@
   let query = $state('')
   let role = $state<HeroRole | null>(null)
 
-  const visible = $derived(
-    heroes.filter(hero =>
-      (!role || hero.role.includes(role))
-      && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
-    )
-  )
+  // Filtering by rebuilding the list would destroy and recreate every cell on
+  // each keystroke, and the portraits are remote, so iPad refetched them all.
+  // The roster is drawn once and non-matching cells are hidden instead.
+  const visible = $derived(new Set(
+    heroes
+      .filter(hero =>
+        (!role || hero.role.includes(role))
+        && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
+      )
+      .map(hero => hero.id)
+  ))
 </script>
 
 <div class="panel">
@@ -53,7 +58,10 @@
       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
     </svg>
     <input bind:value={query} placeholder="Search heroes" aria-label="Search heroes" />
-    <span class="count">{visible.length}</span>
+    {#if query}
+      <button class="clear" onclick={() => (query = '')} aria-label="Clear search">×</button>
+    {/if}
+    <span class="count">{visible.size}</span>
   </label>
 
   <div class="filters">
@@ -71,18 +79,18 @@
   </div>
 
   <div class="grid-wrap">
-    {#if visible.length === 0}
+    {#if visible.size === 0}
       <p class="empty">No heroes match</p>
-    {:else}
-      <div class="grid">
-        {#each visible as hero (hero.id)}
-          <button class="cell" onclick={() => onPick(hero)}>
-            <HeroAvatar {hero} size={44} />
-            <span class="cell-name">{hero.hero_name}</span>
-          </button>
-        {/each}
-      </div>
     {/if}
+
+    <div class="grid">
+      {#each heroes as hero (hero.id)}
+        <button class="cell" hidden={!visible.has(hero.id)} onclick={() => onPick(hero)}>
+          <HeroAvatar {hero} size={44} />
+          <span class="cell-name">{hero.hero_name}</span>
+        </button>
+      {/each}
+    </div>
 
     {#if hiddenByBans > 0}
       <button class="hidden-note" onclick={onOpenBans}>
@@ -156,6 +164,20 @@
     color: var(--color-ink);
   }
 
+  .clear {
+    display: grid;
+    place-items: center;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    line-height: 1;
+    color: var(--color-ink-mute);
+  }
+
   .count {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
@@ -225,6 +247,11 @@
     border: none;
     cursor: pointer;
     min-inline-size: 0;
+  }
+
+  /* Author styles beat the UA rule for [hidden], so it has to be said here. */
+  .cell[hidden] {
+    display: none;
   }
 
   .cell-name {

@@ -38,7 +38,20 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        // Hero portraits live on the game's CDN, so nothing in the precache
+        // covers them and every fresh <img> was a round trip.
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/akmweb\.youngjoygame\.com\/.*\.png$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'hero-portraits',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
       }
     })
   ],

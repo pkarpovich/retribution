@@ -16,12 +16,16 @@
 
   const junglerIds = $derived(new Set(getJunglers(heroes).map(hero => hero.id)))
 
-  const visible = $derived(
-    heroes.filter(hero =>
-      (!junglePoolOnly || junglerIds.has(hero.id))
-      && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
-    )
-  )
+  // Hidden rather than removed: rebuilding the list on each keystroke threw
+  // away the portraits, which are remote and had to be fetched again.
+  const visible = $derived(new Set(
+    heroes
+      .filter(hero =>
+        (!junglePoolOnly || junglerIds.has(hero.id))
+        && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
+      )
+      .map(hero => hero.id)
+  ))
 
   const winRate = (hero: Hero) => getLatestStats(hero)?.win_rate.toFixed(1) ?? '—'
 </script>
@@ -56,7 +60,10 @@
         <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
       </svg>
       <input bind:value={query} placeholder="Search heroes" aria-label="Search heroes" />
-      <span class="count">{visible.length}</span>
+      {#if query}
+        <button class="clear-query" onclick={() => (query = '')} aria-label="Clear search">×</button>
+      {/if}
+      <span class="count">{visible.size}</span>
     </label>
 
     <div class="segmented" role="group" aria-label="Hero pool">
@@ -66,21 +73,26 @@
   </div>
 
   <div class="list">
-    {#if visible.length === 0}
+    {#if visible.size === 0}
       <p class="empty">No heroes match</p>
-    {:else}
-      {#each visible as hero (hero.id)}
-        {@const banned = bans.has(hero.id)}
-        <button class="row" onclick={() => bans.toggle(hero.id)} aria-pressed={banned}>
-          <HeroAvatar {hero} size={34} dimmed={banned} struck={banned} />
-          <span class="meta">
-            <span class="name" class:banned>{hero.hero_name}</span>
-            <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
-          </span>
-          <span class="pill" class:banned>{banned ? 'BANNED' : 'BAN'}</span>
-        </button>
-      {/each}
     {/if}
+
+    {#each heroes as hero (hero.id)}
+      {@const banned = bans.has(hero.id)}
+      <button
+        class="row"
+        hidden={!visible.has(hero.id)}
+        onclick={() => bans.toggle(hero.id)}
+        aria-pressed={banned}
+      >
+        <HeroAvatar {hero} size={34} dimmed={banned} struck={banned} />
+        <span class="meta">
+          <span class="name" class:banned>{hero.hero_name}</span>
+          <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
+        </span>
+        <span class="pill" class:banned>{banned ? 'BANNED' : 'BAN'}</span>
+      </button>
+    {/each}
   </div>
 </section>
 
@@ -210,6 +222,20 @@
     color: var(--color-ink);
   }
 
+  .clear-query {
+    display: grid;
+    place-items: center;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    line-height: 1;
+    color: var(--color-ink-mute);
+  }
+
   .count {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
@@ -265,10 +291,16 @@
     border: none;
     text-align: start;
     cursor: pointer;
+  }
 
-    & + & {
-      border-block-start: 1px solid var(--color-border);
-    }
+  /* Author styles beat the UA rule for [hidden], and the divider has to skip
+     the hidden rows or the first match keeps a rule above it. */
+  .row[hidden] {
+    display: none;
+  }
+
+  .row:not([hidden]) + .row:not([hidden]) {
+    border-block-start: 1px solid var(--color-border);
   }
 
   .meta {

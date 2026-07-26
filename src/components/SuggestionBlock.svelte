@@ -365,11 +365,19 @@
   }
 
   .head,
-  .caps-head,
-  .axis-head {
+  .caps-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  /* Centred, not trailing: on the right it sat directly above the forward
+     arrow and the two were being hit for each other. */
+  .axis-head {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: baseline;
     gap: var(--space-sm);
   }
 

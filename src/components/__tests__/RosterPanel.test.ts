@@ -68,7 +68,33 @@ describe('RosterPanel', () => {
 
     await fireEvent.input(screen.getByLabelText('Search heroes'), { target: { value: 'zzzz' } })
     expect(screen.getByText('No heroes match')).toBeTruthy()
-    expect(container.querySelectorAll('.cell')).toHaveLength(0)
+    expect(container.querySelectorAll('.cell:not([hidden])')).toHaveLength(0)
+  })
+
+  it('empties the search in one tap', async () => {
+    const { container } = render(RosterPanel, props)
+    const search = screen.getByLabelText('Search heroes') as HTMLInputElement
+
+    expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull()
+
+    await fireEvent.input(search, { target: { value: tanks[0].hero_name } })
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
+
+    expect(search.value).toBe('')
+    expect(count(container)).toBe(String(heroes.length))
+  })
+
+  // The portraits are remote and uncached, so a cell that gets torn down and
+  // rebuilt costs a round trip. Filtering must hide cells, not replace them.
+  it('keeps the very same cells alive across a search', async () => {
+    const { container } = render(RosterPanel, props)
+    const search = screen.getByLabelText('Search heroes')
+    const before = [...container.querySelectorAll('.cell')]
+
+    await fireEvent.input(search, { target: { value: tanks[0].hero_name } })
+    await fireEvent.input(search, { target: { value: '' } })
+
+    expect([...container.querySelectorAll('.cell')]).toEqual(before)
   })
 
   it('hands the tapped hero back', async () => {

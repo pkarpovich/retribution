@@ -85,7 +85,7 @@
       {/if}
       <button
         class="bans"
-        onclick={() => (bansOpen = true)}
+        onclick={() => (bansOpen = !bansOpen)}
         aria-label="Banned heroes{bans.size > 0 ? `, ${bans.size} banned` : ''}"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
@@ -144,14 +144,14 @@
       onPick={pick}
       onOpenBans={() => (bansOpen = true)}
     />
+
+    {#if bansOpen}
+      <BansScreen {heroes} onClose={() => (bansOpen = false)} />
+    {/if}
   </div>
 
   {#if toast}
     <p class="toast" role="status">{toast}</p>
-  {/if}
-
-  {#if bansOpen}
-    <BansScreen {heroes} onClose={() => (bansOpen = false)} />
   {/if}
 </div>
 
@@ -192,10 +192,12 @@
     letter-spacing: var(--tracking-tight);
   }
 
+  /* RESET and the ban list are both destructive enough that hitting one while
+     aiming for the other is a real cost, so they keep their distance. */
   .bar-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
+    gap: var(--space-xl);
   }
 
   .tally,
@@ -211,7 +213,7 @@
   }
 
   .ghost {
-    padding: 0;
+    padding: var(--space-2xs) var(--space-xs);
     background: none;
     border: none;
     cursor: pointer;
@@ -223,7 +225,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2xs);
-    padding: 0;
+    padding: var(--space-2xs) var(--space-xs);
     background: none;
     border: none;
     cursor: pointer;
@@ -238,7 +240,10 @@
     font-weight: 700;
   }
 
+  /* The ban list covers the workspace and not the whole window: at the top of
+     the window its back button sits under the OS window controls. */
   .workspace {
+    position: relative;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-block-size: 0;

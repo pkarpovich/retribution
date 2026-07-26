@@ -7,7 +7,7 @@ import { heroes, junglers, textOf } from './fixtures'
 const props = { heroes, onClose: () => {} }
 
 const rowFor = (root: ParentNode, name: string) =>
-  [...root.querySelectorAll('.row')]
+  [...root.querySelectorAll('.row:not([hidden])')]
     .find(row => row.querySelector('.name')?.textContent === name)!
 
 beforeEach(() => {
@@ -27,14 +27,22 @@ describe('BansScreen', () => {
 
   it('filters by name and says so when nothing matches', async () => {
     const { container } = render(BansScreen, props)
-    const search = screen.getByLabelText('Search heroes')
+    const search = screen.getByLabelText('Search heroes') as HTMLInputElement
 
-    await fireEvent.input(search, { target: { value: junglers[0].hero_name } })
-    expect(textOf(container, '.name')).toContain(junglers[0].hero_name)
+    const needle = junglers[0].hero_name
+    await fireEvent.input(search, { target: { value: needle } })
+    const shown = textOf(container, '.row:not([hidden]) .name')
+
+    expect(shown).toContain(needle)
+    for (const name of shown) expect(name.toLowerCase()).toContain(needle.toLowerCase())
 
     await fireEvent.input(search, { target: { value: 'zzzz' } })
     expect(screen.getByText('No heroes match')).toBeTruthy()
     expect(container.querySelector('.count')?.textContent).toBe('0')
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
+    expect(search.value).toBe('')
+    expect(container.querySelector('.count')?.textContent).toBe(String(junglers.length))
   })
 
   it('bans a hero and lets it back in', async () => {
