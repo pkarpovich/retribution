@@ -2,11 +2,14 @@
   import heroData from './data/heroes.json'
   import type { Hero } from './types/hero'
   import { bans } from './lib/bans.svelte'
+  import { matches, newMatchId } from './lib/matches.svelte'
   import { getJunglers, recommendJunglers } from './utils/heroUtils'
-  import { chosen, suggested, toSuggestions } from './utils/presentation'
+  import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import BansScreen from './components/BansScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
+  import MatchBanner from './components/MatchBanner.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
+  import StatsScreen from './components/StatsScreen.svelte'
   import RosterPanel from './components/RosterPanel.svelte'
   import SuggestionBlock from './components/SuggestionBlock.svelte'
   import TeamsStrip from './components/TeamsStrip.svelte'
@@ -23,6 +26,7 @@
   let myPick = $state<Hero | null>(null)
   let mode = $state<'ally' | 'enemy' | 'ban'>('enemy')
   let bansOpen = $state(false)
+  let statsOpen = $state(false)
   let toast = $state<string | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -66,6 +70,44 @@
     enemies = [...enemies, hero]
   }
 
+  // Built from the draft as it stands before the lock: once myPick is set the
+  // hero leaves the candidate list and its evaluation is gone.
+  function lock(hero: Hero) {
+    const index = suggestions.findIndex(suggestion => suggestion.hero.id === hero.id)
+    const suggestion = suggestions[index]
+    const named = (list: Hero[]) => list.map(one => ({ id: one.id, name: one.hero_name }))
+
+    if (suggestion) {
+      matches.log({
+        id: newMatchId(),
+        at: new Date().toISOString(),
+        dataVersion: heroData.lastUpdated,
+        outcome: 'pending',
+        note: '',
+        enemies: named(enemies),
+        allies: named(allies),
+        matchBans: named(matchBans),
+        pick: { id: hero.id, name: hero.hero_name, tier: hero.tier },
+        rank: index + 1,
+        shown: suggestions.length,
+        followedAdvice: index === 0,
+        top: suggestions[0] ? { id: suggestions[0].hero.id, name: suggestions[0].hero.hero_name } : null,
+        totalScore: suggestion.result.total_score,
+        breakdown: suggestion.result.breakdown,
+        warnings: suggestion.result.warnings,
+        strengths: suggestion.result.strengths,
+        build: suggestion.result.bootRecommendation,
+        needs: teamNeeds([...allies, hero], enemies)
+          .map(need => ({ key: need.key, name: need.name, evidence: need.evidence })),
+      })
+    }
+
+    myPick = hero
+    flash('Jungle pick locked')
+  }
+
+  // The result arrives long after the draft is cleared, so an unsettled game
+  // deliberately outlives a reset.
   function reset() {
     allies = []
     enemies = []
@@ -84,7 +126,18 @@
         <button class="ghost" onclick={reset}>RESET</button>
       {/if}
       <button
-        class="bans"
+        class="icon"
+        onclick={() => (statsOpen = !statsOpen)}
+        aria-label="Your games{matches.pending ? ', one waiting on a result' : ''}"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+        </svg>
+        {#if matches.pending}<span class="dot" aria-hidden="true"></span>{/if}
+      </button>
+
+      <button
+        class="icon bans"
         onclick={() => (bansOpen = !bansOpen)}
         aria-label="Banned heroes{bans.size > 0 ? `, ${bans.size} banned` : ''}"
       >
@@ -112,6 +165,10 @@
         onRemove={hero => (matchBans = matchBans.filter(banned => banned.id !== hero.id))}
       />
 
+      {#if matches.pending}
+        <MatchBanner record={matches.pending} onOpenStats={() => (statsOpen = true)} />
+      {/if}
+
       {#if enemies.length > 0}
         <EnemyRead
           {enemies}
@@ -127,10 +184,7 @@
         picksLeft={MAX_ALLIES - allies.length}
         {myPick}
         {hasDraft}
-        onLock={hero => {
-          myPick = hero
-          flash('Jungle pick locked')
-        }}
+        onLock={lock}
         onUnlock={() => {
           myPick = null
           flash('Pick unlocked')
@@ -153,6 +207,10 @@
 
     {#if bansOpen}
       <BansScreen {heroes} onClose={() => (bansOpen = false)} />
+    {/if}
+
+    {#if statsOpen}
+      <StatsScreen onClose={() => (statsOpen = false)} />
     {/if}
   </div>
 
@@ -229,7 +287,7 @@
     color: var(--color-ink-faint);
   }
 
-  .bans {
+  .icon {
     display: flex;
     align-items: center;
     gap: var(--space-2xs);
@@ -238,10 +296,17 @@
     border: none;
     cursor: pointer;
     color: var(--color-ink-mute);
+  }
 
-    &:has(.badge) {
-      color: var(--color-neg);
-    }
+  .bans:has(.badge) {
+    color: var(--color-neg);
+  }
+
+  .dot {
+    inline-size: 5px;
+    block-size: 5px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
   }
 
   .badge {

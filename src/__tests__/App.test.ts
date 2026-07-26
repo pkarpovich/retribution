@@ -3,6 +3,7 @@ import { tick } from 'svelte'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import App from '../App.svelte'
 import { bans } from '../lib/bans.svelte'
+import { matches } from '../lib/matches.svelte'
 import { heroes, textOf } from '../components/__tests__/fixtures'
 
 const cells = (root: ParentNode) => [...root.querySelectorAll('.cell')] as HTMLButtonElement[]
@@ -13,6 +14,7 @@ async function draft(root: ParentNode, times: number) {
 
 beforeEach(() => {
   bans.clear()
+  matches.clear()
   localStorage.clear()
 })
 
@@ -73,6 +75,85 @@ describe('App draft', () => {
     expect(screen.getByText('0/10')).toBeTruthy()
     expect(container.querySelectorAll('.slot.filled')).toHaveLength(0)
     expect(screen.getByText('Start with the enemy team')).toBeTruthy()
+  })
+})
+
+describe('App match log', () => {
+  it('writes down the draft and what the engine said when a pick is locked', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    const suggested = container.querySelector('.card .name')?.textContent
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    const record = matches.pending!
+    expect(record.pick.name).toBe(suggested)
+    expect(record.rank).toBe(1)
+    expect(record.followedAdvice).toBe(true)
+    expect(record.enemies).toHaveLength(2)
+    expect(record.breakdown.base).toBeGreaterThan(0)
+    expect(record.build.boots).toBeTruthy()
+    expect(record.dataVersion).toBeTruthy()
+  })
+
+  it('records that the advice was overridden when it was', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    const rows = [...container.querySelectorAll('.row')]
+    await fireEvent.click(rows[2])
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    expect(matches.pending!.rank).toBe(3)
+    expect(matches.pending!.followedAdvice).toBe(false)
+    expect(matches.pending!.top!.name).not.toBe(matches.pending!.pick.name)
+  })
+
+  it('leaves one open game after changing the pick, not two', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'CHANGE' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    expect(matches.all).toHaveLength(1)
+  })
+
+  // The result lands fifteen minutes after the draft is cleared.
+  it('keeps the open game across a reset and settles it from the banner', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
+
+    expect(matches.pending).toBeTruthy()
+    expect(screen.getByText('HOW DID IT GO')).toBeTruthy()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'WON' }))
+    expect(matches.pending).toBeNull()
+    expect(matches.all[0].outcome).toBe('won')
+    expect(container.querySelector('.banner')).toBeNull()
+  })
+
+  it('discards a game that should not have been logged', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Discard this game without a result' }))
+    expect(matches.all).toEqual([])
+    expect(container.querySelector('.banner')).toBeNull()
+  })
+
+  it('opens the log from the header and closes it again', async () => {
+    render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Your games' }))
+    expect(screen.getByText(/Nothing logged yet/)).toBeTruthy()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'DRAFT' }))
+    expect(screen.queryByText(/Nothing logged yet/)).toBeNull()
   })
 })
 

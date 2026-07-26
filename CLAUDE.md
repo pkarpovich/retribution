@@ -35,9 +35,18 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 ## Architecture
 
 ### State Management
-- Single-component state in `App.tsx` using React `useState`
+- Draft state lives in `App.svelte` as `$state`; it flows down through props and callbacks flow up
+- Two localStorage-backed rune stores in `src/lib/`, both singletons:
+  - `bans.svelte.ts` - personal bans, heroes never to suggest to this player
+  - `matches.svelte.ts` - the match log (see below)
 - No external state management library
-- State flows down through props, callbacks flow up
+
+### Match Log (`src/lib/matches.svelte.ts`, `src/utils/matchStats.ts`)
+- A record is written when a jungle pick is locked, and carries the draft plus everything the engine saw and said: the 12-component breakdown, warnings, strengths, the boot recommendation, the team needs, where the pick ranked among the suggestions and whether the top suggestion was taken
+- Records are self-contained on purpose - `heroes.json` moves twice a week, so a log that only named heroes would stop being readable
+- One pending record at a time: locking again replaces it. A pending record survives RESET because the result arrives long after the draft is cleared
+- Notes persist on a 400ms debounce; every other write is immediate
+- `exportMatches()` produces self-describing JSON intended to be handed to an agent with no other context
 
 ### Core Logic (`src/utils/heroUtils.ts`)
 - `getJunglers()`: Filters heroes by Jungle lane
