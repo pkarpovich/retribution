@@ -76,6 +76,57 @@ describe('App draft', () => {
   })
 })
 
+describe('App match bans', () => {
+  it('takes a hero off the board from the ban side of the roster', async () => {
+    const { container } = render(App)
+    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
+
+    const target = cells(container)[0].textContent?.trim()
+    await fireEvent.click(cells(container)[0])
+
+    expect(container.querySelector('.ban-strip .tally')?.textContent).toBe('1')
+    expect(textOf(container, '.cell-name')).not.toContain(target)
+  })
+
+  // The case that started this: a jungler in the suggestions is banned in the
+  // match, one tap takes it out and the rest are scored again without it.
+  it('bans the suggested jungler in one tap and drops it from the list', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    const suggested = container.querySelector('.card .name')?.textContent
+    await fireEvent.click(screen.getByRole('button', { name: `Ban ${suggested} for this match` }))
+
+    expect(screen.getByRole('status').textContent).toBe(`${suggested} banned this match`)
+    expect(textOf(container, '.row-name')).not.toContain(suggested)
+    expect(container.querySelector('.card .name')?.textContent).not.toBe(suggested)
+  })
+
+  it('lifts a ban entered by mistake', async () => {
+    const { container } = render(App)
+    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
+
+    const target = cells(container)[0].textContent?.trim()
+    await fireEvent.click(cells(container)[0])
+    await fireEvent.click(container.querySelector('.ban-strip .slot')!)
+
+    expect(container.querySelector('.ban-strip')).toBeNull()
+    expect(textOf(container, '.cell-name')).toContain(target)
+  })
+
+  it('clears match bans on reset', async () => {
+    const { container } = render(App)
+    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
+    await fireEvent.click(cells(container)[0])
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Add enemy' }))
+    await draft(container, 1)
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
+
+    expect(container.querySelector('.ban-strip')).toBeNull()
+  })
+})
+
 describe('App bans', () => {
   it('hides banned heroes from the roster and accounts for them', () => {
     bans.toggle(heroes[0].id)

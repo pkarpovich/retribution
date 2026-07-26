@@ -27,6 +27,19 @@ describe('RosterPanel', () => {
     expect(onModeChange).toHaveBeenCalledWith('ally')
   })
 
+  // Match bans are not limited to junglers: any hero taken off the board
+  // changes what the enemy can still pick, so the whole roster stays tappable.
+  it('offers a third side for heroes banned in the match', async () => {
+    const onModeChange = vi.fn()
+    const { container } = render(RosterPanel, { ...props, mode: 'ban', onModeChange })
+
+    expect(screen.getByRole('tab', { name: 'Ban' }).getAttribute('aria-selected')).toBe('true')
+    expect(container.querySelectorAll('.cell')).toHaveLength(heroes.length)
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Add enemy' }))
+    expect(onModeChange).toHaveBeenCalledWith('enemy')
+  })
+
   it('filters by role and lets the same chip clear itself', async () => {
     const { container } = render(RosterPanel, props)
     expect(count(container)).toBe(String(heroes.length))

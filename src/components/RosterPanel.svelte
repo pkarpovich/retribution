@@ -2,7 +2,13 @@
   import type { Hero, HeroRole } from '../types/hero'
   import HeroAvatar from './HeroAvatar.svelte'
 
-  type Mode = 'ally' | 'enemy'
+  type Mode = 'ally' | 'enemy' | 'ban'
+
+  const TABS: { id: Mode; label: string }[] = [
+    { id: 'ally', label: 'Add ally' },
+    { id: 'enemy', label: 'Add enemy' },
+    { id: 'ban', label: 'Ban' },
+  ]
 
   interface Props {
     heroes: Hero[]
@@ -30,7 +36,7 @@
 
 <div class="panel">
   <div class="tabs" role="tablist" aria-label="Draft side">
-    {#each [{ id: 'ally' as Mode, label: 'Add ally' }, { id: 'enemy' as Mode, label: 'Add enemy' }] as tab (tab.id)}
+    {#each TABS as tab (tab.id)}
       <button
         class="tab"
         class:on={mode === tab.id}
@@ -97,7 +103,7 @@
 
   .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     border-block-end: 1px solid var(--color-border);
   }
 
@@ -122,6 +128,10 @@
 
     &.on[data-side='enemy'] {
       border-color: var(--color-neg);
+    }
+
+    &.on[data-side='ban'] {
+      border-color: var(--color-ink-mute);
     }
   }
 

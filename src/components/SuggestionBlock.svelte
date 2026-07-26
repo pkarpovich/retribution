@@ -13,9 +13,10 @@
     hasDraft: boolean
     onLock: (hero: Hero) => void
     onUnlock: () => void
+    onBan: (hero: Hero) => void
   }
 
-  const { suggestions, enemies, myPick, hasDraft, onLock, onUnlock }: Props = $props()
+  const { suggestions, enemies, myPick, hasDraft, onLock, onUnlock, onBan }: Props = $props()
 
   let focusIndex = $state(0)
   let listView = $state<'auto' | 'axis' | 'rows'>('auto')
@@ -31,10 +32,21 @@
   const bestFit = $derived([...suggestions].sort((a, b) => b.fit - a.fit)[0]?.hero.hero_name)
   // Scaled against the engine's own ceiling, not the spread of this candidate
   // set — auto-ranging made a ten-point gap look like opposite ends of the
-  // world. Fit is never negative in practice (min 4.8 across 592 measured
-  // suggestions), so the axis starts at zero.
+  // world. Fit is the squashed situational half, so it is bounded to plus or
+  // minus the budget by construction, and zero sits in the middle: left of it
+  // the draft costs you, right of it it pays.
   const budget = situationalBudget()
-  const axisAt = (value: number) => Math.max(0, Math.min(100, (value / budget) * 100))
+  const axisAt = (value: number) => Math.max(0, Math.min(100, ((value + budget) / (2 * budget)) * 100))
+
+  // The bar is always as long as the better of the two readings, with the tail
+  // showing what the draft added or took away.
+  const barOf = (suggestion: Suggestion) => ({
+    solid: (Math.max(0, Math.min(suggestion.strength, suggestion.result.total_score)) / scale) * 100,
+    delta: (Math.abs(suggestion.fit) / scale) * 100,
+    lost: suggestion.fit < 0,
+  })
+
+  const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
 
   // Left and right step through the dots as drawn, which is fit order, not
   // list order.
@@ -113,6 +125,7 @@
     </div>
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}
+    {@const bar = barOf(focus)}
     <div class="head">
       <span class="kicker">SUGGESTED · JUNGLE</span>
       <span class="legend">
@@ -132,13 +145,15 @@
           <span class="kicker">{rank.label} of {suggestions.length}{rank.tied ? ' · TIED' : ''}</span>
         </div>
         <span class="figures">
-          {Math.round(focus.strength)}<span class="plus">+</span><span class="fit-figure">{Math.round(focus.fit)}</span>
+          {Math.round(focus.strength)}<span
+            class="fit-figure"
+            class:lost={focus.fit < 0}>{signed(focus.fit)}</span>
         </span>
       </div>
 
       <span class="stack" aria-hidden="true">
-        <span class="seg strength" style="inline-size: {(focus.strength / scale) * 100}%"></span>
-        <span class="seg fit" style="inline-size: {(focus.fit / scale) * 100}%"></span>
+        <span class="seg strength" style="inline-size: {bar.solid}%"></span>
+        <span class="seg" class:fit={!bar.lost} class:lost={bar.lost} style="inline-size: {bar.delta}%"></span>
       </span>
 
       <div class="caps">
@@ -165,7 +180,14 @@
         {/if}
       </div>
 
-      <button class="lock" onclick={() => onLock(focus.hero)}>LOCK THIS PICK</button>
+      <div class="actions">
+        <button class="lock" onclick={() => onLock(focus.hero)}>LOCK THIS PICK</button>
+        <button
+          class="ban"
+          onclick={() => onBan(focus.hero)}
+          aria-label="Ban {focus.hero.hero_name} for this match"
+        >BANNED</button>
+      </div>
     </article>
 
     <div class="compare" class:force-rows={listView === 'rows'} class:force-axis={listView === 'axis'}>
@@ -183,6 +205,7 @@
           >‹</button>
 
           <div class="axis-line">
+            <span class="zero" aria-hidden="true"></span>
             {#each suggestions as suggestion, index (suggestion.hero.id)}
               <button
                 class="dot"
@@ -204,9 +227,9 @@
           >›</button>
         </div>
         <div class="axis-foot">
-          <span>0</span>
-          <span class="axis-focus">{focus.hero.hero_name} {Math.round(focus.fit)} · best {bestFit}</span>
-          <span>{budget}</span>
+          <span>-{budget}</span>
+          <span class="axis-focus">{focus.hero.hero_name} {signed(focus.fit)} · best {bestFit}</span>
+          <span>+{budget}</span>
         </div>
       </div>
 
@@ -233,17 +256,20 @@
           <div class="row-group" class:tied={Boolean(group.tie)}>
             {#each group.items as item (item.suggestion.hero.id)}
               {@const itemRank = rankLabel(item.suggestion.hero.hero_name)}
+              {@const itemBar = barOf(item.suggestion)}
               <button class="row" class:on={item.index === focusIndex} onclick={() => (focusIndex = item.index)}>
                 <HeroAvatar hero={item.suggestion.hero} size={16} />
                 <span class="row-rank">{itemRank.label}</span>
                 <span class="row-name">{item.suggestion.hero.hero_name}</span>
                 <span class="stack small" aria-hidden="true">
-                  <span class="seg strength" style="inline-size: {(item.suggestion.strength / scale) * 100}%"></span>
-                  <span class="seg fit" style="inline-size: {(item.suggestion.fit / scale) * 100}%"></span>
+                  <span class="seg strength" style="inline-size: {itemBar.solid}%"></span>
+                  <span class="seg" class:fit={!itemBar.lost} class:lost={itemBar.lost} style="inline-size: {itemBar.delta}%"></span>
                 </span>
-                <span class="row-fit" class:best={item.suggestion.hero.hero_name === bestFit}>
-                  {Math.round(item.suggestion.fit)}
-                </span>
+                <span
+                  class="row-fit"
+                  class:best={item.suggestion.hero.hero_name === bestFit}
+                  class:lost={item.suggestion.fit < 0}
+                >{signed(item.suggestion.fit)}</span>
               </button>
             {/each}
             {#if group.tie}
@@ -420,12 +446,13 @@
     white-space: nowrap;
   }
 
-  .plus {
-    color: var(--color-border-strong);
-  }
-
   .fit-figure {
     color: var(--color-accent);
+    margin-inline-start: 1px;
+  }
+
+  .fit-figure.lost {
+    color: var(--color-neg);
   }
 
   .stack {
@@ -446,6 +473,10 @@
 
   .seg.fit {
     background: var(--color-accent);
+  }
+
+  .seg.lost {
+    background: var(--color-neg);
   }
 
   .caps {
@@ -507,20 +538,42 @@
     margin-inline-end: var(--space-2xs);
   }
 
-  .lock {
+  .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-xs);
+  }
+
+  .lock,
+  .ban {
     padding-block: var(--space-sm);
-    background: var(--color-accent);
-    border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
-    color: var(--color-on-accent);
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
+  }
+
+  .lock {
+    background: var(--color-accent);
+    border: none;
+    color: var(--color-on-accent);
 
     &:hover {
       background: var(--color-accent-hover);
+    }
+  }
+
+  .ban {
+    padding-inline: var(--space-md);
+    background: none;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-ink-mute);
+
+    &:hover {
+      border-color: var(--color-neg);
+      color: var(--color-neg);
     }
   }
 
@@ -661,6 +714,14 @@
     content: '';
     position: absolute;
     inset: -8px;
+  }
+
+  .zero {
+    position: absolute;
+    inset-block: 4px;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: var(--color-border-strong);
   }
 
   .dot.best {

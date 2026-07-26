@@ -31,6 +31,7 @@ const NO_BREAKDOWN: ScoreBreakdown = {
   strong_against: 0,
   cc_chain_synergy: 0,
   counter_penalty: 0,
+  counter_threat: 0,
   synergy_bonus: 0,
   meta_bonus: 0,
   early_late_game: 0,

@@ -6,6 +6,7 @@
   import { toSuggestions } from './utils/presentation'
   import BansScreen from './components/BansScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
+  import MatchBanStrip from './components/MatchBanStrip.svelte'
   import RosterPanel from './components/RosterPanel.svelte'
   import SuggestionBlock from './components/SuggestionBlock.svelte'
   import TeamsStrip from './components/TeamsStrip.svelte'
@@ -18,13 +19,16 @@
 
   let allies = $state<Hero[]>([])
   let enemies = $state<Hero[]>([])
+  let matchBans = $state<Hero[]>([])
   let myPick = $state<Hero | null>(null)
-  let mode = $state<'ally' | 'enemy'>('enemy')
+  let mode = $state<'ally' | 'enemy' | 'ban'>('enemy')
   let bansOpen = $state(false)
   let toast = $state<string | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
-  const drafted = $derived(new Set([...allies, ...enemies, myPick].filter(Boolean).map(hero => hero!.id)))
+  const drafted = $derived(
+    new Set([...allies, ...enemies, ...matchBans, myPick].filter(Boolean).map(hero => hero!.id))
+  )
   const myTeam = $derived(myPick ? [...allies, myPick] : allies)
   const picked = $derived(allies.length + enemies.length + (myPick ? 1 : 0))
   const hasDraft = $derived(allies.length + enemies.length > 0)
@@ -32,7 +36,11 @@
   const bannedList = $derived(heroes.filter(hero => bans.has(hero.id)))
 
   const suggestions = $derived(
-    toSuggestions(recommendJunglers(junglers, myTeam, enemies, bannedList, 'Mythic'), enemies, myTeam)
+    toSuggestions(
+      recommendJunglers(junglers, myTeam, enemies, bannedList, 'Mythic', matchBans),
+      enemies,
+      myTeam
+    )
   )
 
   const roster = $derived(heroes.filter(hero => !drafted.has(hero.id) && !bans.has(hero.id)))
@@ -45,6 +53,10 @@
   }
 
   function pick(hero: Hero) {
+    if (mode === 'ban') {
+      matchBans = [...matchBans, hero]
+      return
+    }
     if (mode === 'ally') {
       if (allies.length >= MAX_ALLIES) return flash('Ally slots full')
       allies = [...allies, hero]
@@ -57,6 +69,7 @@
   function reset() {
     allies = []
     enemies = []
+    matchBans = []
     myPick = null
     mode = 'enemy'
   }
@@ -94,6 +107,11 @@
         onClearPick={() => (myPick = null)}
       />
 
+      <MatchBanStrip
+        bans={matchBans}
+        onRemove={hero => (matchBans = matchBans.filter(banned => banned.id !== hero.id))}
+      />
+
       {#if enemies.length > 0}
         <EnemyRead {enemies} pool={junglers} {suggestions} />
       {/if}
@@ -110,6 +128,10 @@
         onUnlock={() => {
           myPick = null
           flash('Pick unlocked')
+        }}
+        onBan={hero => {
+          matchBans = [...matchBans, hero]
+          flash(`${hero.hero_name} banned this match`)
         }}
       />
     </section>

@@ -23,6 +23,7 @@ const props = {
   hasDraft: true,
   onLock: () => {},
   onUnlock: () => {},
+  onBan: () => {},
 }
 
 const names = (root: ParentNode) => textOf(root, '.row-name')
@@ -45,6 +46,16 @@ describe('SuggestionBlock states', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'CHANGE' }))
     expect(onUnlock).toHaveBeenCalledOnce()
+  })
+
+  it('sends the hero in focus to the match ban list', async () => {
+    const onBan = vi.fn()
+    render(SuggestionBlock, { ...props, onBan })
+
+    await fireEvent.click(screen.getByRole('button', { name: `${c.hero_name}, fit 20` }))
+    await fireEvent.click(screen.getByRole('button', { name: `Ban ${c.hero_name} for this match` }))
+
+    expect(onBan).toHaveBeenCalledWith(c)
   })
 
   it('locks the hero currently in focus, not the first one', async () => {
@@ -75,6 +86,21 @@ describe('SuggestionBlock focus card', () => {
     expect(segments[1].getAttribute('style')).toContain(`${(30 / 130) * 100}%`)
   })
 
+  it('shows a draft that costs the hero as a loss rather than dropping it', () => {
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      suggestions: [suggestionFor(a, 100, -25)],
+    })
+
+    expect(container.querySelector('.figures')?.textContent?.replace(/\s/g, '')).toBe('100-25')
+    expect(container.querySelector('.card .fit-figure')?.className).toContain('lost')
+
+    const segments = container.querySelectorAll('.card .stack .seg')
+    expect(segments[0].getAttribute('style')).toContain(`${(75 / 75) * 100}%`)
+    expect(segments[1].className).toContain('lost')
+    expect(segments[1].getAttribute('style')).toContain(`${(25 / 75) * 100}%`)
+  })
+
   it('falls back to the first suggestion when the list shrinks under the focus', async () => {
     const { container, rerender } = render(SuggestionBlock, props)
 
@@ -95,19 +121,35 @@ describe('SuggestionBlock fit axis', () => {
 
     expect(dots).toHaveLength(spread.length)
     for (const [index, dot] of dots.entries()) {
-      const expected = (spread[index].fit / budget) * 100
+      const expected = ((spread[index].fit + budget) / (2 * budget)) * 100
       expect(dot.getAttribute('style')).toContain(`${expected}%`)
     }
   })
 
-  it('keeps a fit beyond the ceiling on the axis', () => {
+  // Fit is the squashed situational half, so it lives in -budget..+budget with
+  // zero in the middle: a draft that costs the hero sits left of the mark.
+  it('puts a draft that costs the hero on the left of zero', () => {
     const budget = situationalBudget()
     const { container } = render(SuggestionBlock, {
       ...props,
-      suggestions: [suggestionFor(a, 10, budget * 2)],
+      suggestions: [suggestionFor(a, 100, -budget / 2), suggestionFor(b, 100, budget / 2)],
     })
+    const [costly, paying] = [...container.querySelectorAll('.dot')]
 
-    expect(container.querySelector('.dot')?.getAttribute('style')).toContain('100%')
+    expect(costly.getAttribute('style')).toContain('25%')
+    expect(paying.getAttribute('style')).toContain('75%')
+  })
+
+  it('keeps a fit beyond either end on the axis', () => {
+    const budget = situationalBudget()
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      suggestions: [suggestionFor(a, 10, budget * 2), suggestionFor(b, 10, -budget * 2)],
+    })
+    const [high, low] = [...container.querySelectorAll('.dot')]
+
+    expect(high.getAttribute('style')).toContain('100%')
+    expect(low.getAttribute('style')).toContain('0%')
   })
 
   it('steps through the dots in fit order rather than list order', async () => {
@@ -141,7 +183,7 @@ describe('SuggestionBlock fit axis', () => {
     const { container } = render(SuggestionBlock, props)
 
     expect(container.querySelector('.axis-focus')?.textContent)
-      .toBe(`${a.hero_name} 30 · best ${e.hero_name}`)
+      .toBe(`${a.hero_name} +30 · best ${e.hero_name}`)
   })
 })
 
