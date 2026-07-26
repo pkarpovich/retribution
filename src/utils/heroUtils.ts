@@ -332,11 +332,26 @@ function calculateDamageTypeBalance(
   return score;
 }
 
+const FULL_SHARE_AT = 0.4;
+const SPECIALIST_STEP = 15;
+const SPECIALIST_CAP = 3;
+const HIGH_CC_SHARE = 0.6;
+const DURABLE_PROFILE = 0.7;
+
+function hasSurvivability(hero: Hero): boolean {
+  const capabilities = hero.capabilities;
+  if (!capabilities) return hasSustainCapability(hero);
+  if (capabilities.selfSustain || capabilities.hasShield || capabilities.damageReduction) return true;
+  return (capabilities.statProfile?.durability ?? 0) >= DURABLE_PROFILE;
+}
+
 function calculateEnemyVulnerability(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
 ): number {
+  if (enemyTeam.length === 0) return 0;
+
   const heroType = classifyJunglerType(hero);
 
   const enemyStats = {
@@ -370,8 +385,10 @@ function calculateEnemyVulnerability(
 
   let score = 0;
 
-  const tankBonus = enemyStats.tanks >= 2 ? 50 : 0;
-  const squishyBonus = enemyStats.squishyTargetValue >= 2 ? 50 : 0;
+  const revealed = enemyTeam.length;
+  const ramp = (share: number) => 50 * Math.min(share / FULL_SHARE_AT, 1);
+  const tankBonus = ramp(enemyStats.tanks / revealed);
+  const squishyBonus = ramp(enemyStats.squishyTargetValue / revealed);
 
   if (heroType === 'DAMAGE') {
     score += squishyBonus * weights.enemy_comp;
@@ -381,11 +398,15 @@ function calculateEnemyVulnerability(
     score += Math.max(tankBonus, squishyBonus) * 0.6 * weights.enemy_comp;
   }
 
-  if (hero.role.includes('Assassin') && enemyStats.squishyTargetValue >= 1) {
-    score += enemyStats.squishyTargetValue * 15 * weights.enemy_comp;
+  if (hero.role.includes('Assassin')) {
+    score += Math.min(enemyStats.squishyTargetValue, SPECIALIST_CAP) * SPECIALIST_STEP * weights.enemy_comp;
   }
 
-  if (enemyStats.ccCount >= 3 && hasImmunityCapability(hero)) {
+  if (hero.role.includes('Tank')) {
+    score += Math.min(enemyStats.tanks, SPECIALIST_CAP) * SPECIALIST_STEP * weights.enemy_comp;
+  }
+
+  if (enemyStats.ccCount / revealed >= HIGH_CC_SHARE && hasImmunityCapability(hero)) {
     score += 20 * weights.enemy_comp;
   }
 
@@ -443,9 +464,10 @@ function calculateInvadeResistance(
 
   if (enemyEarlyCount < 2) return 0;
 
-  const sustainBonus = hasSustainCapability(hero) ? 15 : 0;
+  const survivable = hasSurvivability(hero);
+  const sustainBonus = survivable ? 15 : 0;
   const mobilityBonus = getMobilityScore(hero) >= 2 ? 10 : 0;
-  const fragile = !hasSustainCapability(hero) && getMobilityScore(hero) <= 1;
+  const fragile = !survivable && getMobilityScore(hero) <= 1;
   const fragilePenalty = fragile ? -20 : 0;
 
   return (sustainBonus + mobilityBonus + fragilePenalty) * weights.invade_resistance;

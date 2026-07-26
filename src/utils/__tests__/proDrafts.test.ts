@@ -106,15 +106,15 @@ describe('recommendation quality against pro picks', () => {
   it('keeps the pro jungler in the top 8 often enough', () => {
     const { recallAt8, medianRank } = measure()
     console.log(`full information: recall@8=${(recallAt8 * 100).toFixed(0)}% median rank=${medianRank}`)
-    expect(recallAt8).toBeGreaterThan(0.33)
-    expect(medianRank).toBeLessThanOrEqual(16)
+    expect(recallAt8).toBeGreaterThan(0.37)
+    expect(medianRank).toBeLessThanOrEqual(14)
   })
 
   it('does not collapse when only part of the enemy team is revealed', () => {
     for (const revealed of [1, 2, 3, 4]) {
       const { recallAt8, medianRank } = measure(revealed)
       console.log(`${revealed} enemies revealed: recall@8=${(recallAt8 * 100).toFixed(0)}% median rank=${medianRank}`)
-      expect(recallAt8, `${revealed} enemies revealed`).toBeGreaterThan(0.27)
+      expect(recallAt8, `${revealed} enemies revealed`).toBeGreaterThan(0.34)
     }
   })
 })
