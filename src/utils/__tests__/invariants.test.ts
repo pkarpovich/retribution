@@ -352,6 +352,57 @@ describe('counter threat', () => {
   })
 })
 
+describe('comfort', () => {
+  const evaluate = (hero: Hero, enemies: Hero[], signatures: number[] = []) =>
+    calculateJunglerRecommendation(hero, [], enemies, 'Mythic', { signatures })
+
+  it('lifts a hero the player is good on', () => {
+    const hero = makeHero()
+    const enemies = [makeHero(), makeHero()]
+
+    expect(evaluate(hero, enemies, [hero.id]).total_score)
+      .toBeGreaterThan(evaluate(hero, enemies).total_score)
+  })
+
+  // It sits outside the squash, so it must not touch the draft response: every
+  // other component stays exactly where it was and the total moves by the flat
+  // bonus alone.
+  it('adds itself without disturbing anything the draft decided', () => {
+    const hero = makeHero({ counters: [relation(makeHero(), 4)] })
+    const enemies = [makeHero(), makeHero(), makeHero()]
+
+    const plain = evaluate(hero, enemies)
+    const mine = evaluate(hero, enemies, [hero.id])
+
+    for (const key of Object.keys(plain.breakdown) as (keyof typeof plain.breakdown)[]) {
+      if (key === 'comfort') continue
+      expect(mine.breakdown[key], key).toBe(plain.breakdown[key])
+    }
+
+    expect(mine.breakdown.comfort).toBeGreaterThan(0)
+    expect(mine.total_score - plain.total_score).toBeCloseTo(mine.breakdown.comfort, 10)
+  })
+
+  // A nudge, not a verdict: the list still belongs to the engine.
+  it('cannot carry a bad hero past a good one', () => {
+    const enemies = [makeHero(), makeHero()]
+    const weak = makeHero({ tier: 'D' })
+    const strong = makeHero({ tier: 'SS' })
+
+    expect(evaluate(weak, enemies, [weak.id]).total_score)
+      .toBeLessThan(evaluate(strong, enemies).total_score)
+  })
+
+  it('leaves every hero the player did not name alone', () => {
+    const hero = makeHero()
+    const other = makeHero()
+    const enemies = [makeHero(), makeHero()]
+
+    expect(evaluate(hero, enemies, [other.id]).total_score)
+      .toBe(evaluate(hero, enemies).total_score)
+  })
+})
+
 describe('capability counter-play', () => {
   const evasive = () => makeHero({
     role: ['Assassin'],

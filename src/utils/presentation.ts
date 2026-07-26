@@ -135,6 +135,7 @@ export interface Suggestion {
   match: number
   strength: number
   fit: number
+  comfort: number
   matchups: Matchup
   reasons: string[]
 }
@@ -151,6 +152,7 @@ export function toSuggestions(
 
   return results.map(result => {
     const strength = result.breakdown.base + result.breakdown.meta_bonus
+    const comfort = result.breakdown.comfort
     return {
       result,
       hero: result.hero,
@@ -158,7 +160,10 @@ export function toSuggestions(
         ? Math.round(DISPLAY_FLOOR + (DISPLAY_CEILING - DISPLAY_FLOOR) * (result.total_score / best))
         : DISPLAY_FLOOR,
       strength,
-      fit: result.total_score - strength,
+      comfort,
+      // Comfort is a third term, not part of the draft response, so the axis
+      // keeps meaning what it says.
+      fit: result.total_score - strength - comfort,
       matchups: matchupsFor(result.hero, enemies, allies),
       reasons: buildReasons(result, enemies),
     }

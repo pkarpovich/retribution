@@ -1,13 +1,13 @@
 <script lang="ts">
   import heroData from './data/heroes.json'
   import type { Hero } from './types/hero'
-  import { bans } from './lib/bans.svelte'
+  import { bans, signatures } from './lib/pool.svelte'
   import type { DraftMode } from './lib/draftStorage'
   import { loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
   import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
   import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
-  import BansScreen from './components/BansScreen.svelte'
+  import PoolScreen from './components/PoolScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
   import MatchBanner from './components/MatchBanner.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
@@ -48,7 +48,7 @@
 
   const suggestions = $derived(
     toSuggestions(
-      recommendJunglers(junglers, myTeam, enemies, bannedList, 'Mythic', matchBans),
+      recommendJunglers(junglers, myTeam, enemies, bannedList, 'Mythic', matchBans, signatures.ids),
       enemies,
       myTeam
     )
@@ -146,12 +146,12 @@
       <button
         class="icon bans"
         onclick={() => (bansOpen = !bansOpen)}
-        aria-label="Banned heroes{bans.size > 0 ? `, ${bans.size} banned` : ''}"
+        aria-label="Your pool{bans.size + signatures.size > 0 ? `, ${signatures.size} mains and ${bans.size} banned` : ''}"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
           <circle cx="12" cy="12" r="8.5" /><path d="m6 6 12 12" />
         </svg>
-        {#if bans.size > 0}<span class="badge">{bans.size}</span>{/if}
+        {#if bans.size + signatures.size > 0}<span class="badge">{bans.size + signatures.size}</span>{/if}
       </button>
     </div>
   </header>
@@ -213,7 +213,7 @@
     />
 
     {#if bansOpen}
-      <BansScreen {heroes} onClose={() => (bansOpen = false)} />
+      <PoolScreen {heroes} onClose={() => (bansOpen = false)} />
     {/if}
 
     {#if statsOpen}

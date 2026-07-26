@@ -352,6 +352,12 @@ export const MAX_ALLIES = 4;
 export const MAX_ENEMIES = 5;
 const THREAT_SLOTS = 3;
 const THREAT_SCALE = 15;
+
+// The whole shown list spans about 31 points, so this is roughly a fifth of it:
+// a hero you play well moves a couple of places, never from the bottom of the
+// list to the top. Deliberately flat rather than scaled by rank - how well you
+// play a hero is not a property of the bracket you play it in.
+const COMFORT_BONUS = 8;
 const BAN_RATE_SATURATES_AT = 50;
 const PICK_RATE_SATURATES_AT = 3;
 const FOUNDATION_SCALE = 3;
@@ -951,6 +957,10 @@ export interface DraftContext {
   weights?: RecommendationWeights;
   // Heroes banned in this match: nobody on either side can pick them.
   matchBans?: Hero[];
+  // Heroes this player is good on. A nudge, not a verdict: it sits outside the
+  // situational budget so it cannot eat the draft response, and it is small
+  // enough to move a hero a couple of places rather than to the front.
+  signatures?: number[];
 }
 
 export function calculateJunglerRecommendation(
@@ -962,6 +972,7 @@ export function calculateJunglerRecommendation(
 ): JunglerEvaluation {
   const finalWeights = context.weights || getDefaultWeights(userRank);
   const matchBans = context.matchBans ?? [];
+  const comfort = context.signatures?.includes(hero.id) ? COMFORT_BONUS : 0;
 
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
   const teamBalanceScore = calculateTeamBalance(hero, yourTeam, finalWeights);
@@ -991,7 +1002,7 @@ export function calculateJunglerRecommendation(
     early_late_game: earlyLateGameScore
   };
 
-  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, ...situational };
+  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, comfort, ...situational };
 
   const rawSituational = Object.values(situational).reduce((sum, value) => sum + value, 0);
   const budget = SITUATIONAL_BUDGET * getTierScore('SS') * finalWeights.tier * FOUNDATION_SCALE;
@@ -1001,6 +1012,7 @@ export function calculateJunglerRecommendation(
   const breakdown: ScoreBreakdown = {
     base: baseScore,
     meta_bonus: metaBonus,
+    comfort,
     team_balance: situational.team_balance * scale,
     damage_type_balance: situational.damage_type_balance * scale,
     enemy_analysis: situational.enemy_analysis * scale,
@@ -1013,7 +1025,10 @@ export function calculateJunglerRecommendation(
     early_late_game: situational.early_late_game * scale
   };
 
-  const totalScore = foundation + squashed;
+  // Comfort sits outside the squash on purpose: inside it would compete with
+  // the draft response for the same room, which is the half the engine spent
+  // the most effort earning.
+  const totalScore = foundation + squashed + comfort;
 
   const junglerType = classifyJunglerType(hero);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
@@ -1041,7 +1056,8 @@ export function recommendJunglers(
   enemyTeam: Hero[],
   personalBans: Hero[],
   userRank: UserRank = 'Mythic',
-  matchBans: Hero[] = []
+  matchBans: Hero[] = [],
+  signatures: number[] = []
 ): RecommendationResult[] {
   if (enemyTeam.length === 0) return [];
 
@@ -1054,7 +1070,7 @@ export function recommendJunglers(
   const availableJunglers = junglers.filter(j => !unavailableIds.has(j.id));
 
   const recommendations = availableJunglers.map(jungler =>
-    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank, { matchBans })
+    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank, { matchBans, signatures })
   );
 
   recommendations.sort((a, b) => b.total_score - a.total_score);

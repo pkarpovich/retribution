@@ -135,6 +135,7 @@ export interface ScoreBreakdown {
   meta_bonus: number;
   early_late_game: number;
   invade_resistance: number;
+  comfort: number;
 }
 
 export interface RecommendationWarning {

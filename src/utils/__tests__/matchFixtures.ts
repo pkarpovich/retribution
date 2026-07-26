@@ -13,6 +13,7 @@ const BREAKDOWN = {
   synergy_bonus: 0,
   early_late_game: 0,
   invade_resistance: 0,
+  comfort: 0,
 }
 
 export function makeRecord(overrides: Partial<MatchRecord> = {}): MatchRecord {

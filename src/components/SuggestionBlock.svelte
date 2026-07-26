@@ -54,12 +54,17 @@
   const axisAt = (value: number) => Math.max(0, Math.min(100, ((value + budget) / (2 * budget)) * 100))
 
   // The bar is always as long as the better of the two readings, with the tail
-  // showing what the draft added or took away.
-  const barOf = (suggestion: Suggestion) => ({
-    solid: (Math.max(0, Math.min(suggestion.strength, suggestion.result.total_score)) / scale) * 100,
-    delta: (Math.abs(suggestion.fit) / scale) * 100,
-    lost: suggestion.fit < 0,
-  })
+  // showing what the draft added or took away. Comfort rides on the end: it is
+  // not part of the draft response and does not belong inside either.
+  const barOf = (suggestion: Suggestion) => {
+    const drafted = suggestion.strength + suggestion.fit
+    return {
+      solid: (Math.max(0, Math.min(suggestion.strength, drafted)) / scale) * 100,
+      delta: (Math.abs(suggestion.fit) / scale) * 100,
+      comfort: (suggestion.comfort / scale) * 100,
+      lost: suggestion.fit < 0,
+    }
+  }
 
   const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
 
@@ -179,6 +184,7 @@
       <span class="legend">
         <span class="swatch strength" aria-hidden="true"></span> strength
         <span class="swatch fit" aria-hidden="true"></span> fit
+        <span class="swatch comfort" aria-hidden="true"></span> yours
       </span>
     </div>
 
@@ -195,13 +201,17 @@
         <span class="figures">
           {Math.round(focus.strength)}<span
             class="fit-figure"
-            class:lost={focus.fit < 0}>{signed(focus.fit)}</span>
+            class:lost={focus.fit < 0}>{signed(focus.fit)}</span>{#if focus.comfort > 0}<span
+            class="comfort-figure">{signed(focus.comfort)}</span>{/if}
         </span>
       </div>
 
       <span class="stack" aria-hidden="true">
         <span class="seg strength" style="inline-size: {bar.solid}%"></span>
         <span class="seg" class:fit={!bar.lost} class:lost={bar.lost} style="inline-size: {bar.delta}%"></span>
+        {#if bar.comfort > 0}
+          <span class="seg comfort" style="inline-size: {bar.comfort}%"></span>
+        {/if}
       </span>
 
       <div class="caps">
@@ -312,6 +322,9 @@
                 <span class="stack small" aria-hidden="true">
                   <span class="seg strength" style="inline-size: {itemBar.solid}%"></span>
                   <span class="seg" class:fit={!itemBar.lost} class:lost={itemBar.lost} style="inline-size: {itemBar.delta}%"></span>
+                  {#if itemBar.comfort > 0}
+                    <span class="seg comfort" style="inline-size: {itemBar.comfort}%"></span>
+                  {/if}
                 </span>
                 <span
                   class="row-fit"
@@ -581,6 +594,16 @@
 
   .seg.lost {
     background: var(--color-neg);
+  }
+
+  .seg.comfort,
+  .swatch.comfort {
+    background: var(--color-pos);
+  }
+
+  .comfort-figure {
+    color: var(--color-pos);
+    margin-inline-start: 1px;
   }
 
   .caps {

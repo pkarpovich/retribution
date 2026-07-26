@@ -36,6 +36,7 @@ const NO_BREAKDOWN: ScoreBreakdown = {
   meta_bonus: 0,
   early_late_game: 0,
   invade_resistance: 0,
+  comfort: 0,
 }
 
 // The screen only reads hero, strength, fit and total_score, so a suggestion
@@ -63,6 +64,7 @@ export function suggestionFor(hero: Hero, strength: number, fit: number): Sugges
     match: 0,
     strength,
     fit,
+    comfort: 0,
     matchups: { strong: [], weak: [], synergy: [] },
     reasons: [],
   }

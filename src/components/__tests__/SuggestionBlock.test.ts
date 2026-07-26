@@ -168,6 +168,26 @@ describe('SuggestionBlock focus card', () => {
     expect(segments[1].getAttribute('style')).toContain(`${(25 / 75) * 100}%`)
   })
 
+  // Comfort is a third reading, not part of the draft response, so it gets its
+  // own segment and its own figure rather than folding into fit.
+  it('shows what the hero is worth to this player as a third term', () => {
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      suggestions: [{ ...suggestionFor(a, 100, 20), comfort: 8, result: { ...suggestionFor(a, 100, 20).result, total_score: 128 } }],
+    })
+
+    expect(container.querySelector('.figures')?.textContent?.replace(/\s/g, '')).toBe('100+20+8')
+    expect(container.querySelectorAll('.card .stack .seg')).toHaveLength(3)
+    expect(container.querySelector('.card .stack .seg.comfort')).toBeTruthy()
+  })
+
+  it('says nothing about comfort for a hero the player never named', () => {
+    const { container } = render(SuggestionBlock, props)
+
+    expect(container.querySelector('.card .stack .seg.comfort')).toBeNull()
+    expect(container.querySelector('.comfort-figure')).toBeNull()
+  })
+
   it('falls back to the first suggestion when the list shrinks under the focus', async () => {
     const { container, rerender } = render(SuggestionBlock, props)
 

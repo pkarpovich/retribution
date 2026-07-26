@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { tick } from 'svelte'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import App from '../App.svelte'
-import { bans } from '../lib/bans.svelte'
+import { bans, signatures } from '../lib/pool.svelte'
 import { matches } from '../lib/matches.svelte'
 import { heroes, textOf } from '../components/__tests__/fixtures'
 
@@ -14,6 +14,7 @@ async function draft(root: ParentNode, times: number) {
 
 beforeEach(() => {
   bans.clear()
+  signatures.clear()
   matches.clear()
   localStorage.clear()
 })
@@ -244,7 +245,7 @@ describe('App match bans', () => {
   })
 })
 
-describe('App bans', () => {
+describe('App pool', () => {
   it('hides banned heroes from the roster and accounts for them', () => {
     bans.toggle(heroes[0].id)
     bans.toggle(heroes[1].id)
@@ -257,13 +258,14 @@ describe('App bans', () => {
     expect(screen.getByRole('button', { name: '2 heroes hidden by bans' })).toBeTruthy()
   })
 
-  it('reads the ban count out on the header button instead of leaving a bare badge', async () => {
+  it('reads both lists out on the header button instead of leaving a bare badge', async () => {
     render(App)
-    expect(screen.getByRole('button', { name: 'Banned heroes' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Your pool' })).toBeTruthy()
 
     bans.toggle(heroes[0].id)
+    signatures.toggle(heroes[1].id)
     await tick()
-    expect(screen.getByRole('button', { name: 'Banned heroes, 1 banned' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Your pool, 1 mains and 1 banned' })).toBeTruthy()
   })
 
   it('opens the ban list from the roster note and closes it again', async () => {
@@ -271,9 +273,9 @@ describe('App bans', () => {
     render(App)
 
     await fireEvent.click(screen.getByRole('button', { name: '1 hero hidden by bans' }))
-    expect(screen.getByText('Banned heroes')).toBeTruthy()
+    expect(screen.getByText('Your pool')).toBeTruthy()
 
     await fireEvent.click(screen.getByRole('button', { name: 'DRAFT' }))
-    expect(screen.queryByText('Banned heroes')).toBeNull()
+    expect(screen.queryByText('Your pool')).toBeNull()
   })
 })

@@ -6,7 +6,7 @@ async function freshBans(stored?: string) {
   localStorage.clear()
   if (stored !== undefined) localStorage.setItem(STORAGE_KEY, stored)
   vi.resetModules()
-  return (await import('../bans.svelte')).bans
+  return (await import('../pool.svelte')).bans
 }
 
 const persisted = () => localStorage.getItem(STORAGE_KEY)
@@ -52,7 +52,7 @@ describe('ban list', () => {
     ['a list of the wrong thing', '["1", null, 7]'],
   ])('starts clean when storage holds %s', async (_case, stored) => {
     const bans = await freshBans(stored)
-    expect(bans.ids.every(id => typeof id === 'number')).toBe(true)
+    expect(bans.ids.every((id: number) => typeof id === 'number')).toBe(true)
     expect(bans.ids).not.toContain('1')
   })
 

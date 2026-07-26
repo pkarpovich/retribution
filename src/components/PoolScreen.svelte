@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
-  import { bans } from '../lib/bans.svelte'
+  import type { PoolStance } from '../lib/pool.svelte'
+  import { bans, setStance, signatures, stanceOf } from '../lib/pool.svelte'
   import { getJunglers, getLatestStats } from '../utils/heroUtils'
   import HeroAvatar from './HeroAvatar.svelte'
 
@@ -28,6 +29,11 @@
   ))
 
   const winRate = (hero: Hero) => getLatestStats(hero)?.win_rate.toFixed(1) ?? '—'
+
+  // Tapping the state a hero is already in clears it, so neutral needs no
+  // button of its own.
+  const choose = (hero: Hero, stance: PoolStance) => () =>
+    setStance(hero.id, stanceOf(hero.id) === stance ? 'neutral' : stance)
 </script>
 
 <section class="screen">
@@ -35,20 +41,27 @@
     <button class="back" onclick={onClose}>
       <span aria-hidden="true">‹</span> DRAFT
     </button>
-    <h2 class="title">Banned heroes</h2>
+    <h2 class="title">Your pool</h2>
     <div class="bar-end">
-      {#if bans.size > 0}
-        <button class="clear" onclick={() => bans.clear()}>CLEAR</button>
+      {#if bans.size + signatures.size > 0}
+        <button
+          class="clear"
+          onclick={() => { bans.clear(); signatures.clear() }}
+        >CLEAR</button>
       {/if}
     </div>
   </header>
 
   <div class="explainer">
     <p class="lede">
-      Banned heroes are never suggested and stay out of the draft roster.
-      Use it for heroes you don't own or don't play.
+      A <strong>main</strong> is a hero you play well: it is scored a little higher,
+      enough to move it a few places but never to the front on its own.
+      A <strong>ban</strong> is never suggested and stays out of the draft roster.
+      A hero can be one or the other, not both.
     </p>
     <p class="tally">
+      <span class="tally-count main" class:active={signatures.size > 0}>{signatures.size}</span>
+      <span class="tally-label">MAINS</span>
       <span class="tally-count" class:active={bans.size > 0}>{bans.size}</span>
       <span class="tally-label">BANNED</span>
     </p>
@@ -78,20 +91,31 @@
     {/if}
 
     {#each heroes as hero (hero.id)}
-      {@const banned = bans.has(hero.id)}
-      <button
-        class="row"
-        hidden={!visible.has(hero.id)}
-        onclick={() => bans.toggle(hero.id)}
-        aria-pressed={banned}
-      >
+      {@const stance = stanceOf(hero.id)}
+      {@const banned = stance === 'banned'}
+      <div class="row" hidden={!visible.has(hero.id)} data-stance={stance}>
         <HeroAvatar {hero} size={34} dimmed={banned} struck={banned} />
         <span class="meta">
           <span class="name" class:banned>{hero.hero_name}</span>
           <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
         </span>
-        <span class="pill" class:banned>{banned ? 'BANNED' : 'BAN'}</span>
-      </button>
+        <span class="stances">
+          <button
+            class="pill main"
+            class:on={stance === 'signature'}
+            aria-pressed={stance === 'signature'}
+            aria-label="{hero.hero_name} is a hero you main"
+            onclick={choose(hero, 'signature')}
+          >MAIN</button>
+          <button
+            class="pill ban"
+            class:on={banned}
+            aria-pressed={banned}
+            aria-label="Never suggest {hero.hero_name}"
+            onclick={choose(hero, 'banned')}
+          >BAN</button>
+        </span>
+      </div>
     {/each}
   </div>
 </section>
@@ -187,6 +211,14 @@
 
   .tally-count.active {
     color: var(--color-neg);
+  }
+
+  .tally-count.main.active {
+    color: var(--color-accent);
+  }
+
+  .tally-count.main {
+    margin-inline-end: 0;
   }
 
   .tally-label {
@@ -286,15 +318,10 @@
   }
 
   .row {
-    inline-size: 100%;
     display: flex;
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-sm) var(--space-3xs);
-    background: none;
-    border: none;
-    text-align: start;
-    cursor: pointer;
   }
 
   /* Author styles beat the UA rule for [hidden], and the divider has to skip
@@ -333,12 +360,19 @@
     color: var(--color-ink-faint);
   }
 
-  .pill {
+  .stances {
+    display: flex;
     flex-shrink: 0;
-    inline-size: 3rem;
+    gap: var(--space-2xs);
+  }
+
+  .pill {
+    inline-size: 2.75rem;
     padding-block: var(--space-2xs);
+    background: none;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xs);
+    cursor: pointer;
     text-align: center;
     font-family: var(--font-mono);
     font-size: var(--font-size-2xs);
@@ -351,9 +385,15 @@
       color var(--duration-fast) var(--ease-out);
   }
 
-  .pill.banned {
+  .pill.ban.on {
     background: color-mix(in oklch, var(--color-neg) 8%, transparent);
     border-color: color-mix(in oklch, var(--color-neg) 27%, transparent);
     color: var(--color-neg);
+  }
+
+  .pill.main.on {
+    background: color-mix(in oklch, var(--color-accent) 9%, transparent);
+    border-color: color-mix(in oklch, var(--color-accent) 32%, transparent);
+    color: var(--color-accent);
   }
 </style>

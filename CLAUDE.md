@@ -37,13 +37,13 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 ### State Management
 - Draft state lives in `App.svelte` as `$state`; it flows down through props and callbacks flow up
 - Two localStorage-backed rune stores in `src/lib/`, both singletons:
-  - `bans.svelte.ts` - personal bans, heroes never to suggest to this player
+  - `pool.svelte.ts` - two hero lists over one factory, mutually exclusive and set through `setStance()`: `bans` (never suggest, removes the candidate, never touches a score) and `signatures` (heroes the player mains, leaves every candidate in place and nudges one). Invariant tests hold the pair apart
   - `matches.svelte.ts` - the match log (see below)
 - `draftStorage.ts` persists the board itself (allies, enemies, match bans, pick, mode) so an OS eviction mid-draft does not cost a hand-rebuilt draft. It stores hero **ids** and resolves them against the live roster on load, the opposite choice from the match log and for the opposite reason. A draft older than `DRAFT_TTL_MS` (3h) is discarded rather than restored: a board that looks ready but answers yesterday's enemy team is worse than an empty one
 - No external state management library
 
 ### Match Log (`src/lib/matches.svelte.ts`, `src/utils/matchStats.ts`)
-- A record is written when a jungle pick is locked, and carries the draft plus everything the engine saw and said: the 12-component breakdown, warnings, strengths, the boot recommendation, the team needs, where the pick ranked among the suggestions and whether the top suggestion was taken
+- A record is written when a jungle pick is locked, and carries the draft plus everything the engine saw and said: the 13-component breakdown, warnings, strengths, the boot recommendation, the team needs, where the pick ranked among the suggestions and whether the top suggestion was taken
 - Records are self-contained on purpose - `heroes.json` moves twice a week, so a log that only named heroes would stop being readable
 - One pending record at a time: locking again replaces it. A pending record survives RESET because the result arrives long after the draft is cleared
 - Notes persist on a 400ms debounce; every other write is immediate
@@ -51,7 +51,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 
 ### Core Logic (`src/utils/heroUtils.ts`)
 - `getJunglers()`: Filters heroes by Jungle lane
-- `recommendJunglers()`: Scores junglers using a 12-component pipeline:
+- `recommendJunglers()`: Scores junglers using a 13-component pipeline:
   - base_score (tier + win rate + pick rate reliability)
   - strong_against_bonus (hero.weakAgainst = victims this hero beats)
   - team_balance (damage/utility/tank composition needs)
@@ -64,6 +64,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
   - synergy_bonus (synergy data with teammates)
   - meta_bonus (ban rate and pick rate signals)
   - early_late_game (tempo mismatch bonuses)
+  - comfort (a flat bonus for heroes the player mains, applied outside the situational squash)
 - Capability helpers: `getMobilityScore()`, `getCCScore()`, `hasSustainCapability()`, `hasImmunityCapability()` read from `hero.capabilities`
 - `recommendBoots()`: Selects optimal boots and Retribution blessing based on hero type + enemy team composition (CC threats, physical-heavy teams, hero role). Called from `calculateJunglerRecommendation()` and attached to each `RecommendationResult`
 
@@ -78,8 +79,9 @@ Components follow a co-located pattern (component + CSS in same directory):
 - `TierBadge`: Hero tier display (SS/S/A/B/C/D)
 
 ### Data Flow
-1. User selects enemy heroes (max 5) and optionally ally heroes (max 4). Two separate ban lists: personal bans (`src/lib/bans.svelte.ts`, localStorage, "never suggest this to me") only shrink the candidate pool; match bans (App state, cleared on reset) also take the hero off the board for the enemy and so feed `counter_threat`
-2. `recommendJunglers()` calculates scores combining 12 components:
+1. User selects enemy heroes (max 5) and optionally ally heroes (max 4). Two separate ban lists: personal bans (`src/lib/pool.svelte.ts`, localStorage, "never suggest this to me") only shrink the candidate pool; match bans (App state, cleared on reset) also take the hero off the board for the enemy and so feed `counter_threat`
+2. `recommendJunglers()` calculates scores combining 13 components:
+   - Comfort (flat bonus for a hero the player mains; sits outside the situational budget so it cannot eat the draft response. Sized at 8 points against a shown list that spans ~31: median displacement 3 places of 39, pulls a hero into the top 8 in 9% of drafts. The pro benchmark cannot validate this one - pros' mains are not yours - so the match log is the only thing that eventually will)
    - Base score (tier: SS=100..D=10, quadratic win rate bonus, pick rate reliability)
    - Matchup data (strong-against bonus from weakAgainst victims, counter penalty from counters, counter threat from counters the enemy can still take, synergy bonus)
    - Team composition (balance, damage type balance, CC chain synergy)
@@ -94,7 +96,7 @@ All types defined in `src/types/hero.ts`:
 - `HeroStatistic`: Pick/win/ban rates by rank and timeframe
 - `HeroCapabilities`: mobilityScore, ccScore, hasSustain, hasAOE, hasImmunity, maxBurstDamage, skillsSummary
 - `HeroRelation`: Counter/synergy/weakAgainst relationship with weighted_score
-- `ScoreBreakdown`: Individual score for each of the 12 scoring components
+- `ScoreBreakdown`: Individual score for each of the 13 scoring components
 - `BootType`: Boot options (`Tough Boots` | `Warrior Boots` | `Arcane Boots` | `Swift Boots` | `Magic Shoes`)
 - `RetributionBlessing`: Blessing options (`Ice` | `Flame` | `Bloody`)
 - `BootRecommendation`: Boot + blessing recommendation with reason strings
