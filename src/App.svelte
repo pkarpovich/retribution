@@ -5,7 +5,7 @@
   import { getJunglers, recommendJunglers } from './utils/heroUtils'
   import { toSuggestions } from './utils/presentation'
   import BansScreen from './components/BansScreen.svelte'
-  import MatchupPeek from './components/MatchupPeek.svelte'
+  import EnemyRead from './components/EnemyRead.svelte'
   import RosterPanel from './components/RosterPanel.svelte'
   import SuggestionBlock from './components/SuggestionBlock.svelte'
   import TeamsStrip from './components/TeamsStrip.svelte'
@@ -94,12 +94,13 @@
         onClearPick={() => (myPick = null)}
       />
 
-      {#if myTeam.length + enemies.length >= 2}
-        <MatchupPeek allies={myTeam} {enemies} />
+      {#if enemies.length > 0}
+        <EnemyRead {enemies} pool={junglers} {suggestions} />
       {/if}
 
       <SuggestionBlock
         {suggestions}
+        {enemies}
         {myPick}
         {hasDraft}
         onLock={hero => {

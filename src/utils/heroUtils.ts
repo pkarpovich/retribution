@@ -361,6 +361,70 @@ function hasSurvivability(hero: Hero): boolean {
   return (capabilities.statProfile?.durability ?? 0) >= DURABLE_PROFILE;
 }
 
+export interface EnemyRuleReadout {
+  revealed: number;
+  squishy: number;
+  tanks: number;
+  ccCount: number;
+  sustainCount: number;
+  immunityCount: number;
+  mobilityShare: number;
+  mitigation: number;
+  antiHealPoints: number;
+  armourBreakPoints: number;
+  catchPoints: number;
+}
+
+export function enemyRuleReadout(
+  enemyTeam: Hero[],
+  userRank: UserRank = 'Mythic'
+): EnemyRuleReadout | null {
+  if (enemyTeam.length === 0) return null;
+
+  const weights = getDefaultWeights(userRank);
+  const revealed = enemyTeam.length;
+
+  let squishy = 0;
+  let tanks = 0;
+  let ccCount = 0;
+  let sustainCount = 0;
+  let immunityCount = 0;
+  let mobilityValue = 0;
+  let mitigationValue = 0;
+
+  for (const enemy of enemyTeam) {
+    if (enemy.role.includes('Tank')) tanks += 1;
+    if (!enemy.role.includes('Tank') && enemy.role.some(r => ['Mage', 'Marksman', 'Assassin'].includes(r))) {
+      squishy += 1;
+    }
+    if (getCCScore(enemy) >= 1) ccCount += 1;
+    if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) sustainCount += 1;
+    if (hasImmunityCapability(enemy)) immunityCount += 1;
+
+    mobilityValue += Math.min(getMobilityScore(enemy), 3) / 3;
+    mitigationValue += (enemy.capabilities?.statProfile?.durability ?? 0.5) * 0.6
+      + (enemy.capabilities?.damageReduction ? 0.2 : 0)
+      + (enemy.capabilities?.hasShield ? 0.2 : 0);
+  }
+
+  const mobilityShare = mobilityValue / revealed;
+  const damping = 1 - IMMUNITY_DAMPING * (immunityCount / revealed);
+
+  return {
+    revealed,
+    squishy,
+    tanks,
+    ccCount,
+    sustainCount,
+    immunityCount,
+    mobilityShare,
+    mitigation: mitigationValue / revealed,
+    antiHealPoints: ANTI_HEAL_BONUS * (sustainCount / revealed) * weights.enemy_comp,
+    armourBreakPoints: ARMOR_BREAK_BONUS * (mitigationValue / revealed) * weights.enemy_comp,
+    catchPoints: CATCH_BONUS * mobilityShare * damping * weights.enemy_comp,
+  };
+}
+
 function calculateEnemyVulnerability(
   hero: Hero,
   enemyTeam: Hero[],
