@@ -351,7 +351,7 @@ const MAX_ALLIES = 4;
 const BAN_RATE_SATURATES_AT = 50;
 const PICK_RATE_SATURATES_AT = 3;
 const FOUNDATION_SCALE = 3;
-const SITUATIONAL_BUDGET = 0.5;
+const SITUATIONAL_BUDGET = 0.75;
 const SITUATIONAL_REFERENCE = 150;
 
 function hasSurvivability(hero: Hero): boolean {

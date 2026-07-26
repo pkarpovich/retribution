@@ -19,6 +19,7 @@
 
   let focusIndex = $state(0)
   let listView = $state<'auto' | 'axis' | 'rows'>('auto')
+  let sortBy = $state<'total' | 'fit'>('total')
 
   $effect(() => {
     if (focusIndex >= suggestions.length) focusIndex = 0
@@ -76,11 +77,18 @@
     items: { suggestion: Suggestion; index: number }[]
   }
 
-  const rows = $derived(suggestions.reduce<Row[]>((groups, suggestion, index) => {
-    const tie = tieOf(suggestion.hero.hero_name)
+  // Rank labels always come from the engine's own ordering, so re-sorting the
+  // list never hides where a hero actually stands. Tie brackets are a property
+  // of that ordering too, so they are only drawn when it is the one on screen.
+  const ordered = $derived(sortBy === 'fit'
+    ? suggestions.map((suggestion, index) => ({ suggestion, index })).sort((a, b) => b.suggestion.fit - a.suggestion.fit)
+    : suggestions.map((suggestion, index) => ({ suggestion, index })))
+
+  const rows = $derived(ordered.reduce<Row[]>((groups, entry) => {
+    const tie = sortBy === 'total' ? tieOf(entry.suggestion.hero.hero_name) : null
     const last = groups.at(-1)
-    if (tie && last && last.tie === tie) last.items.push({ suggestion, index })
-    else groups.push({ tie, items: [{ suggestion, index }] })
+    if (tie && last && last.tie === tie) last.items.push(entry)
+    else groups.push({ tie, items: [entry] })
     return groups
   }, []))
 </script>
@@ -204,7 +212,21 @@
 
       <div class="rows">
         <div class="rows-head">
-          <span class="kicker">ALL {suggestions.length} · STRENGTH + FIT</span>
+          <span class="kicker">ALL {suggestions.length}</span>
+          <div class="sort" role="group" aria-label="Sort suggestions">
+            <button
+              class="sort-option"
+              class:on={sortBy === 'total'}
+              aria-pressed={sortBy === 'total'}
+              onclick={() => (sortBy = 'total')}
+            >TOTAL</button>
+            <button
+              class="sort-option"
+              class:on={sortBy === 'fit'}
+              aria-pressed={sortBy === 'fit'}
+              onclick={() => (sortBy = 'fit')}
+            >FIT</button>
+          </div>
           <button class="toggle" onclick={() => (listView = 'axis')}>COLLAPSE ˄</button>
         </div>
         {#each rows as group, groupIndex (groupIndex)}
@@ -539,10 +561,35 @@
 
   .rows-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-sm);
     padding-block-end: var(--space-3xs);
+  }
+
+  .sort {
+    display: flex;
+    margin-inline-end: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+  }
+
+  .sort-option {
+    padding: 1px var(--space-xs);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.08em;
+    color: var(--color-ink-faint);
+
+    &.on {
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+      font-weight: 700;
+    }
   }
 
   .toggle {
