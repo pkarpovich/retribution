@@ -78,6 +78,42 @@ describe('App draft', () => {
   })
 })
 
+describe('App draft persistence', () => {
+  // The board is rebuilt by hand under a pick timer, so losing it to an OS
+  // eviction is the expensive failure.
+  it('brings the board back when the app is dropped and reopened', async () => {
+    const first = render(App)
+    await draft(first.container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    const taken = textOf(first.container, '.slot.filled')
+    first.unmount()
+
+    const second = render(App)
+    expect(second.container.querySelectorAll('.slot.filled')).toHaveLength(3)
+    expect(textOf(second.container, '.slot.filled')).toEqual(taken)
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+  })
+
+  it('keeps the side you were drafting for', async () => {
+    const first = render(App)
+    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
+    first.unmount()
+
+    render(App)
+    expect(screen.getByRole('tab', { name: 'Ban' }).getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('does not bring back a board that was reset', async () => {
+    const first = render(App)
+    await draft(first.container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
+    first.unmount()
+
+    const second = render(App)
+    expect(second.container.querySelectorAll('.slot.filled')).toHaveLength(0)
+  })
+})
+
 describe('App match log', () => {
   it('writes down the draft and what the engine said when a pick is locked', async () => {
     const { container } = render(App)

@@ -39,6 +39,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 - Two localStorage-backed rune stores in `src/lib/`, both singletons:
   - `bans.svelte.ts` - personal bans, heroes never to suggest to this player
   - `matches.svelte.ts` - the match log (see below)
+- `draftStorage.ts` persists the board itself (allies, enemies, match bans, pick, mode) so an OS eviction mid-draft does not cost a hand-rebuilt draft. It stores hero **ids** and resolves them against the live roster on load, the opposite choice from the match log and for the opposite reason. A draft older than `DRAFT_TTL_MS` (3h) is discarded rather than restored: a board that looks ready but answers yesterday's enemy team is worse than an empty one
 - No external state management library
 
 ### Match Log (`src/lib/matches.svelte.ts`, `src/utils/matchStats.ts`)

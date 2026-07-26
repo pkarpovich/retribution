@@ -2,8 +2,10 @@
   import heroData from './data/heroes.json'
   import type { Hero } from './types/hero'
   import { bans } from './lib/bans.svelte'
+  import type { DraftMode } from './lib/draftStorage'
+  import { loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
-  import { getJunglers, recommendJunglers } from './utils/heroUtils'
+  import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
   import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import BansScreen from './components/BansScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
@@ -17,14 +19,19 @@
   const heroes = heroData.heroes as unknown as Hero[]
   const junglers = getJunglers(heroes)
 
-  const MAX_ALLIES = 4
-  const MAX_ENEMIES = 5
+  // iPadOS drops the app while MLBB is in the foreground, and a draft rebuilt
+  // by hand under the pick timer is the worst moment to lose one.
+  const restored = loadDraft(heroes, Date.now())
 
-  let allies = $state<Hero[]>([])
-  let enemies = $state<Hero[]>([])
-  let matchBans = $state<Hero[]>([])
-  let myPick = $state<Hero | null>(null)
-  let mode = $state<'ally' | 'enemy' | 'ban'>('enemy')
+  let allies = $state<Hero[]>(restored.allies)
+  let enemies = $state<Hero[]>(restored.enemies)
+  let matchBans = $state<Hero[]>(restored.matchBans)
+  let myPick = $state<Hero | null>(restored.myPick)
+  let mode = $state<DraftMode>(restored.mode)
+
+  $effect(() => {
+    saveDraft({ allies, enemies, matchBans, myPick, mode }, Date.now())
+  })
   let bansOpen = $state(false)
   let statsOpen = $state(false)
   let toast = $state<string | null>(null)
