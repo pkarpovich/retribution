@@ -1,20 +1,20 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
-  import type { Suggestion } from '../utils/presentation'
+  import type { Responders } from '../utils/presentation'
   import { enemyReadout } from '../utils/presentation'
 
   interface Props {
     enemies: Hero[]
     pool: Hero[]
-    suggestions: Suggestion[]
+    responders: Responders
   }
 
-  const { enemies, pool, suggestions }: Props = $props()
+  const { enemies, pool, responders }: Props = $props()
 
   let open = $state(false)
   let tallyOpen = $state(false)
 
-  const readout = $derived(enemyReadout(enemies, pool, suggestions))
+  const readout = $derived(enemyReadout(enemies, pool, responders))
   const scale = $derived(Math.max(...(readout?.levers ?? []).map(lever => lever.points ?? 0), 1))
 </script>
 

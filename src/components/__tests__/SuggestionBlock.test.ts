@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
+import type { Hero } from '../../types/hero'
 import SuggestionBlock from '../SuggestionBlock.svelte'
-import { getCCScore, situationalBudget } from '../../utils/heroUtils'
-import { byName, controllers, drySlow, junglers, suggestionFor, textOf } from './fixtures'
+import { getCCScore, recommendBoots, situationalBudget } from '../../utils/heroUtils'
+import { teamNeeds } from '../../utils/presentation'
+import { byName, controllers, drySlow, junglers, suggestionFor, sustainers, textOf } from './fixtures'
 
 const [a, b, c, d, e] = junglers.slice(0, 5)
 
@@ -19,6 +21,8 @@ const spread = [
 const props = {
   suggestions: spread,
   enemies: [],
+  myTeam: [] as Hero[],
+  picksLeft: 4,
   myPick: null,
   hasDraft: true,
   onLock: () => {},
@@ -46,6 +50,69 @@ describe('SuggestionBlock states', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'CHANGE' }))
     expect(onUnlock).toHaveBeenCalledOnce()
+  })
+
+  // The engine has computed boots and a blessing for every candidate since
+  // before the Svelte rewrite, and nothing rendered them until now.
+  it('answers what to build once the pick is locked', () => {
+    const pick = byName('Ling')
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      myTeam: [pick],
+      enemies: drySlow.slice(0, 5),
+    })
+    const build = recommendBoots(pick, drySlow.slice(0, 5))
+
+    expect(screen.getByText('WHAT TO BUY')).toBeTruthy()
+    expect(textOf(container, '.line-name')).toContain(build.boots)
+    expect(textOf(container, '.line-name')).toContain(`${build.blessing} Retribution`)
+    expect(textOf(container, '.line-why')).toContain(build.bootsReason)
+  })
+
+  it('says nothing about the team when the draft leaves nothing to say', () => {
+    const covered = junglers.find(hero =>
+      hero.capabilities?.antiHeal && getCCScore(hero) >= 4)!
+
+    render(SuggestionBlock, {
+      ...props,
+      myPick: covered,
+      myTeam: [covered],
+      enemies: [],
+    })
+
+    expect(screen.queryByText('TELL YOUR TEAM')).toBeNull()
+  })
+
+  it('tells the team what the draft still needs, and how many picks are left', () => {
+    const pick = byName('Ling')
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      myTeam: [pick],
+      enemies: sustainers.slice(0, 5),
+      picksLeft: 2,
+    })
+
+    const needs = teamNeeds([pick], sustainers.slice(0, 5))
+    expect(needs.length).toBeGreaterThan(0)
+
+    expect(screen.getByText('TELL YOUR TEAM')).toBeTruthy()
+    expect(screen.getByText('2 picks left')).toBeTruthy()
+    expect(textOf(container, '.need .line-name')).toContain(needs[0].name)
+  })
+
+  it('calls a gap an item problem when there is nobody left to pick', () => {
+    const pick = byName('Ling')
+    render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      myTeam: [pick],
+      enemies: sustainers.slice(0, 5),
+      picksLeft: 0,
+    })
+
+    expect(screen.getByText('items only now')).toBeTruthy()
   })
 
   it('sends the hero in focus to the match ban list', async () => {

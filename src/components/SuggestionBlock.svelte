@@ -1,14 +1,16 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
   import type { Suggestion } from '../utils/presentation'
-  import { situationalBudget } from '../utils/heroUtils'
-  import { capabilitiesFor, tieGroups } from '../utils/presentation'
+  import { HEAVY_CC_AT, recommendBoots, situationalBudget } from '../utils/heroUtils'
+  import { capabilitiesFor, teamNeeds, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
   import TierBadge from './TierBadge.svelte'
 
   interface Props {
     suggestions: Suggestion[]
     enemies: Hero[]
+    myTeam: Hero[]
+    picksLeft: number
     myPick: Hero | null
     hasDraft: boolean
     onLock: (hero: Hero) => void
@@ -16,7 +18,20 @@
     onBan: (hero: Hero) => void
   }
 
-  const { suggestions, enemies, myPick, hasDraft, onLock, onUnlock, onBan }: Props = $props()
+  const {
+    suggestions,
+    enemies,
+    myTeam,
+    picksLeft,
+    myPick,
+    hasDraft,
+    onLock,
+    onUnlock,
+    onBan,
+  }: Props = $props()
+
+  const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
+  const NEEDS_SHOWN = 3
 
   let focusIndex = $state(0)
   let listView = $state<'auto' | 'axis' | 'rows'>('auto')
@@ -66,11 +81,10 @@
   // Only worth saying when the hero actually brought enough control for the
   // rule to have mattered — otherwise it reads as a complaint about a hero
   // that never had any.
-  const CONTROL_WORTH_MENTIONING = 4
   const switchedOff = $derived(facts.find(fact =>
     fact.stance === 'off'
     && fact.points !== null
-    && (focus?.hero.capabilities?.ccScore ?? 0) >= CONTROL_WORTH_MENTIONING))
+    && (focus?.hero.capabilities?.ccScore ?? 0) >= HEAVY_CC_AT))
 
   function tieOf(name: string) {
     return ties.find(group => group.includes(name)) ?? null
@@ -112,6 +126,7 @@
       <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
     </div>
   {:else if myPick}
+    {@const build = recommendBoots(myPick, enemies)}
     <div class="locked">
       <HeroAvatar hero={myPick} size={42} selected />
       <div class="locked-copy">
@@ -123,6 +138,39 @@
       </div>
       <button class="change" onclick={onUnlock}>CHANGE</button>
     </div>
+
+    <div class="panel">
+      <span class="kicker">WHAT TO BUY</span>
+      <div class="lines">
+        <p class="line">
+          <span class="line-name">{build.boots}</span>
+          <span class="line-why">{build.bootsReason}</span>
+        </p>
+        <p class="line">
+          <span class="line-name">{build.blessing} Retribution</span>
+          <span class="line-why">{build.blessingReason}</span>
+        </p>
+      </div>
+    </div>
+
+    {#if needs.length > 0}
+      <div class="panel">
+        <div class="panel-head">
+          <span class="kicker">TELL YOUR TEAM</span>
+          <span class="kicker">
+            {picksLeft > 0 ? `${picksLeft} pick${picksLeft === 1 ? '' : 's'} left` : 'items only now'}
+          </span>
+        </div>
+        <div class="lines">
+          {#each needs.slice(0, NEEDS_SHOWN) as need (need.key)}
+            <p class="line need">
+              <span class="line-name">{need.name}</span>
+              <span class="line-why">{need.evidence} — {need.gap}</span>
+            </p>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}
     {@const bar = barOf(focus)}
@@ -362,6 +410,48 @@
     font-size: var(--font-size-2xs);
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  .lines {
+    display: grid;
+    gap: var(--space-xs);
+  }
+
+  .line {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+  }
+
+  .line.need {
+    padding-inline-start: var(--space-sm);
+    border-inline-start: 2px solid var(--color-neg);
+  }
+
+  .line-name {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+  }
+
+  .line-why {
+    font-size: var(--font-size-sm);
+    color: var(--color-ink-mute);
+    text-wrap: pretty;
   }
 
   .head,

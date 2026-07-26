@@ -1,6 +1,15 @@
 import type { Hero, RecommendationResult, UserRank } from '../types/hero'
 import type { EnemyRuleReadout } from './heroUtils'
-import { enemyRuleReadout, getCCScore, getMobilityScore } from './heroUtils'
+import {
+  HEAVY_CC_AT,
+  HIGH_CC_SHARE,
+  enemyRuleReadout,
+  getCCScore,
+  getMobilityScore,
+  isDamageDealer,
+  isPrimarilyMagic,
+  isPrimarilyPhysical,
+} from './heroUtils'
 
 export type AxisKey = 'phys' | 'magic' | 'burst' | 'cc' | 'sustain' | 'mobility'
 
@@ -231,7 +240,7 @@ export function capabilitiesFor(hero: Hero, enemies: Hero[], userRank: UserRank 
       key: 'immune',
       short: 'IMMUN',
       label: 'control immunity',
-      stance: read && read.heavyCcCount / read.revealed >= 0.6 ? 'wanted' : 'neutral',
+      stance: read && read.heavyCcCount / read.revealed >= HIGH_CC_SHARE ? 'wanted' : 'neutral',
       present: capabilities.hasImmunity,
       display: capabilities.hasImmunity ? '✓' : '—',
       points: null,
@@ -313,10 +322,31 @@ export interface EnemyReadout {
 // was true for 86% of teams while paying a median of five points.
 const MATERIAL_POINTS = 10
 
+// Who the supply lines are counting. Before a pick is locked that is the list
+// of suggestions; afterwards it is the team, because the suggestions are heroes
+// this player can no longer take and can no longer see.
+export interface Responders {
+  heroes: Hero[]
+  noun: string
+  committed: boolean
+}
+
+export const suggested = (suggestions: Suggestion[]): Responders => ({
+  heroes: suggestions.map(suggestion => suggestion.hero),
+  noun: 'suggestions',
+  committed: false,
+})
+
+export const chosen = (team: Hero[]): Responders => ({
+  heroes: team,
+  noun: team.length === 1 ? 'pick' : 'picks',
+  committed: true,
+})
+
 export function enemyReadout(
   enemies: Hero[],
   pool: Hero[],
-  suggestions: Suggestion[],
+  responders: Responders,
   userRank: UserRank = 'Mythic',
 ): EnemyReadout | null {
   const read = enemyRuleReadout(enemies, userRank)
@@ -324,9 +354,10 @@ export function enemyReadout(
 
   const heals = read.antiHealPoints >= MATERIAL_POINTS
   const breaksArmour = read.armourBreakPoints >= MATERIAL_POINTS
-  const locks = read.heavyCcCount / read.revealed >= 0.6
+  const locks = read.heavyCcCount / read.revealed >= HIGH_CC_SHARE
 
-  const carriers = (predicate: (hero: Hero) => boolean) => suggestions.filter(s => predicate(s.hero)).length
+  const carriers = (predicate: (hero: Hero) => boolean) => responders.heroes.filter(predicate).length
+  const supply = (count: number) => `${count} of the ${responders.heroes.length} ${responders.noun} carry it`
   const poolCarriers = pool.filter(hero => hero.capabilities?.antiHeal)
 
   const levers: Lever[] = []
@@ -340,9 +371,11 @@ export function enemyReadout(
       tone: claimed === 0 ? 'neg' : 'pos',
       points: read.antiHealPoints,
       evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
-      supply: claimed === 0
-        ? `${poolCarriers.length} of ${pool.length} junglers carry it${poolCarriers.length > 0 ? ` — ${poolCarriers.map(hero => `${hero.hero_name}, ${hero.tier} tier`).join(', ')}` : ''}`
-        : `${claimed} of the ${suggestions.length} suggestions carry it`,
+      supply: claimed > 0
+        ? supply(claimed)
+        : responders.committed
+          ? 'nothing you have taken carries it'
+          : `${poolCarriers.length} of ${pool.length} junglers carry it${poolCarriers.length > 0 ? ` — ${poolCarriers.map(hero => `${hero.hero_name}, ${hero.tier} tier`).join(', ')}` : ''}`,
     })
   }
 
@@ -354,7 +387,7 @@ export function enemyReadout(
       tone: 'pos',
       points: read.armourBreakPoints,
       evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
-      supply: `${carriers(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)} of the ${suggestions.length} suggestions carry it`,
+      supply: supply(carriers(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)),
     })
   }
 
@@ -366,7 +399,7 @@ export function enemyReadout(
       tone: 'pos',
       points: null,
       evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
-      supply: `${carriers(hero => Boolean(hero.capabilities?.hasImmunity))} of the ${suggestions.length} carry it`,
+      supply: supply(carriers(hero => Boolean(hero.capabilities?.hasImmunity))),
     })
   }
 
@@ -378,7 +411,9 @@ export function enemyReadout(
     tone: ccOff ? 'faint' : 'pos',
     points: read.catchPoints,
     evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
-    supply: ccOff ? 'the rule runs and returns almost nothing' : `${carriers(hero => (hero.capabilities?.ccScore ?? 0) >= 4)} of the ${suggestions.length} carry heavy control`,
+    supply: ccOff
+      ? 'the rule runs and returns almost nothing'
+      : supply(carriers(hero => (hero.capabilities?.ccScore ?? 0) >= HEAVY_CC_AT)),
   })
 
   const clauses = [
@@ -404,10 +439,14 @@ export function enemyReadout(
     levers,
     poolGap: unclaimed
       ? {
-          headline: 'Nothing you can pick answers their sustain.',
-          detail: poolCarriers.length > 0
-            ? `${poolCarriers.length} jungler in the pool carries anti-heal — ${poolCarriers.map(hero => `${hero.hero_name}, ${hero.tier} tier`).join(', ')}.`
-            : 'No jungler in the pool carries anti-heal.',
+          headline: responders.committed
+            ? 'Your draft has no answer to their sustain.'
+            : 'Nothing you can pick answers their sustain.',
+          detail: responders.committed
+            ? `None of your ${responders.heroes.length} carries anti-heal.`
+            : poolCarriers.length > 0
+              ? `${poolCarriers.length} jungler in the pool carries anti-heal — ${poolCarriers.map(hero => `${hero.hero_name}, ${hero.tier} tier`).join(', ')}.`
+              : 'No jungler in the pool carries anti-heal.',
           value: `+${read.antiHealPoints.toFixed(0)} unclaimed`,
           answer: 'This is an item, not a pick.',
         }
@@ -423,6 +462,113 @@ export function enemyReadout(
       { label: 'tanks', value: `${read.tanks}/${read.revealed}`, drives: false },
     ],
   }
+}
+
+// ---------------------------------------------------------------------------
+// What is still missing from your side, phrased so it can be said out loud to
+// a teammate who has not picked yet.
+//
+// Every gate here is one the engine already applies, and the composition tests
+// use the engine's own predicates rather than the looser ones heroAxes carries,
+// so a need can never contradict the score that produced it.
+// ---------------------------------------------------------------------------
+
+export interface TeamNeed {
+  key: string
+  name: string
+  points: number | null
+  evidence: string
+  gap: string
+}
+
+export function teamNeeds(
+  allies: Hero[],
+  enemies: Hero[],
+  userRank: UserRank = 'Mythic',
+): TeamNeed[] {
+  const read = enemyRuleReadout(enemies, userRank)
+  if (!read) return []
+
+  const nobody = (predicate: (hero: Hero) => boolean) => !allies.some(predicate)
+  const needs: TeamNeed[] = []
+
+  if (read.antiHealPoints >= MATERIAL_POINTS && nobody(hero => Boolean(hero.capabilities?.antiHeal))) {
+    needs.push({
+      key: 'antiHeal',
+      name: 'Anti-heal',
+      points: read.antiHealPoints,
+      evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
+      gap: 'nobody on your side carries it',
+    })
+  }
+
+  if (read.catchPoints >= SWITCHED_OFF_BELOW && nobody(hero => getCCScore(hero) >= HEAVY_CC_AT)) {
+    needs.push({
+      key: 'cc',
+      name: 'Lockdown',
+      points: read.catchPoints,
+      evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
+      gap: 'nothing on your side holds anyone still',
+    })
+  }
+
+  if (read.armourBreakPoints >= MATERIAL_POINTS && nobody(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)) {
+    needs.push({
+      key: 'armour',
+      name: 'Damage their armour cannot stop',
+      points: read.armourBreakPoints,
+      evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
+      gap: 'everything you have has to go through it',
+    })
+  }
+
+  if (read.heavyCcCount / read.revealed >= HIGH_CC_SHARE && nobody(hero => Boolean(hero.capabilities?.hasImmunity))) {
+    needs.push({
+      key: 'immune',
+      name: 'A way out of their control',
+      points: null,
+      evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
+      gap: 'nobody on your side can shrug it off',
+    })
+  }
+
+  if (allies.length > 0 && allies.every(hero => !isDamageDealer(hero))) {
+    needs.push({
+      key: 'damage',
+      name: 'Someone to do the damage',
+      points: null,
+      evidence: `none of your ${allies.length} deals it`,
+      gap: 'this is the largest single gap the engine scores',
+    })
+  }
+
+  if (allies.length >= 2) {
+    const physical = allies.filter(isPrimarilyPhysical).length
+    const magic = allies.filter(isPrimarilyMagic).length
+    const single = physical === allies.length ? 'physical' : magic === allies.length ? 'magic' : null
+
+    if (single) {
+      needs.push({
+        key: 'damageType',
+        name: 'The other damage school',
+        points: null,
+        evidence: `all ${allies.length} of your picks are ${single}`,
+        gap: 'one defensive item answers your whole team',
+      })
+    }
+
+    if (allies.every(hero => !hero.role.includes('Tank'))) {
+      needs.push({
+        key: 'frontline',
+        name: 'A frontline',
+        points: null,
+        evidence: `none of your ${allies.length} is a tank`,
+        gap: 'somebody has to be hit first',
+      })
+    }
+  }
+
+  return needs.sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
 }
 
 // Ties are what rounding already collapses — no extra threshold to tune.

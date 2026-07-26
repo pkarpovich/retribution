@@ -3,7 +3,7 @@
   import type { Hero } from './types/hero'
   import { bans } from './lib/bans.svelte'
   import { getJunglers, recommendJunglers } from './utils/heroUtils'
-  import { toSuggestions } from './utils/presentation'
+  import { chosen, suggested, toSuggestions } from './utils/presentation'
   import BansScreen from './components/BansScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
@@ -113,12 +113,18 @@
       />
 
       {#if enemies.length > 0}
-        <EnemyRead {enemies} pool={junglers} {suggestions} />
+        <EnemyRead
+          {enemies}
+          pool={junglers}
+          responders={myPick ? chosen(myTeam) : suggested(suggestions)}
+        />
       {/if}
 
       <SuggestionBlock
         {suggestions}
         {enemies}
+        {myTeam}
+        picksLeft={MAX_ALLIES - allies.length}
         {myPick}
         {hasDraft}
         onLock={hero => {

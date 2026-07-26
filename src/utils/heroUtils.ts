@@ -76,7 +76,7 @@ export function getLatestStats(hero: Hero, userRank: UserRank = 'Mythic') {
   return latestAll || allRankStats[0] || hero.statistics[0];
 }
 
-function isPrimarilyPhysical(hero: Hero): boolean {
+export function isPrimarilyPhysical(hero: Hero): boolean {
   const physicalIndicators = ['Marksman', 'Fighter'];
   const physicalSpecs = ['Physical Damage', 'Damage'];
 
@@ -88,7 +88,7 @@ function isPrimarilyPhysical(hero: Hero): boolean {
   return hasPhysicalRole || physicalSpecs.some(s => hero.speciality.includes(s));
 }
 
-function isPrimarilyMagic(hero: Hero): boolean {
+export function isPrimarilyMagic(hero: Hero): boolean {
   return hero.role.includes('Mage') || hero.speciality.includes('Magic Damage');
 }
 
@@ -102,7 +102,7 @@ function isLateGame(hero: Hero): boolean {
   return lateIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
-function isDamageDealer(hero: Hero): boolean {
+export function isDamageDealer(hero: Hero): boolean {
   const damageRoles = ['Assassin', 'Marksman', 'Mage'];
   const damageSpecs = ['Finisher', 'Burst', 'Damage', 'Magic Damage', 'Mixed Damage'];
 
@@ -339,8 +339,8 @@ function calculateDamageTypeBalance(
 const FULL_SHARE_AT = 0.4;
 const SPECIALIST_STEP = 15;
 const SPECIALIST_CAP = 3;
-const HIGH_CC_SHARE = 0.6;
-const HEAVY_CC_AT = 4;
+export const HIGH_CC_SHARE = 0.6;
+export const HEAVY_CC_AT = 4;
 const DURABLE_PROFILE = 0.7;
 const CC_SATURATES_AT = 4;
 const CATCH_BONUS = 25;

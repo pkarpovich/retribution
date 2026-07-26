@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import EnemyRead from '../EnemyRead.svelte'
 import { enemyRuleReadout, getCCScore } from '../../utils/heroUtils'
+import { chosen, suggested } from '../../utils/presentation'
 import { drySlow, heroes, junglers, suggestionFor, sustainers, textOf } from './fixtures'
 
 const healers = sustainers.slice(0, 5)
 const lockers = heroes.filter(hero => getCCScore(hero) >= 4).slice(0, 5)
 const antiHealJungler = junglers.find(hero => hero.capabilities?.antiHeal)!
 
-const base = { pool: junglers, suggestions: [] }
+const base = { pool: junglers, responders: suggested([]) }
 
 describe('EnemyRead', () => {
   it('stays out of the way until an enemy is revealed', () => {
@@ -52,7 +53,7 @@ describe('EnemyRead', () => {
     const { container } = render(EnemyRead, {
       ...base,
       enemies: healers,
-      suggestions: [suggestionFor(antiHealJungler, 100, 10)],
+      responders: suggested([suggestionFor(antiHealJungler, 100, 10)]),
     })
 
     expect(container.querySelector('.peek-points')).toBeNull()
@@ -98,6 +99,35 @@ describe('EnemyRead', () => {
 
     expect(container.querySelector('.statement')?.textContent).toContain('they will lock you down')
     expect(textOf(container, '.points')).toContain('+?')
+  })
+
+  // Once a pick is locked the suggestions are heroes this player can no longer
+  // take and can no longer see, so the supply lines have to switch to the team.
+  it('counts the team rather than the suggestions once a pick is committed', async () => {
+    const { container } = render(EnemyRead, {
+      ...base,
+      enemies: healers,
+      responders: chosen([antiHealJungler]),
+    })
+
+    await fireEvent.click(container.querySelector('.peek')!)
+    expect(container.textContent).toContain('1 of the 1 pick carry it')
+    expect(container.textContent).not.toContain('suggestions')
+    expect(container.querySelector('.gap-note')).toBeNull()
+  })
+
+  it('calls an unanswered rule an item problem once the side is chosen', async () => {
+    const bare = junglers.find(hero => !hero.capabilities?.antiHeal)!
+    const { container } = render(EnemyRead, {
+      ...base,
+      enemies: healers,
+      responders: chosen([bare]),
+    })
+
+    await fireEvent.click(container.querySelector('.peek')!)
+    expect(container.querySelector('.gap-note')?.textContent)
+      .toContain('None of your 1 carries anti-heal.')
+    expect(container.textContent).not.toContain('junglers carry it')
   })
 
   it('keeps the raw numbers behind a toggle', async () => {
