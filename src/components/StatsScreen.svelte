@@ -36,6 +36,12 @@
     URL.revokeObjectURL(url)
   }
 
+  const OUTCOMES: { value: MatchOutcome; label: string }[] = [
+    { value: 'won', label: 'WON' },
+    { value: 'lost', label: 'LOST' },
+    { value: 'pending', label: 'OPEN' },
+  ]
+
   const settle = (record: MatchRecord, outcome: MatchOutcome) => () =>
     matches.settle(record.id, outcome)
 </script>
@@ -112,7 +118,6 @@
           <article class="game" data-outcome={record.outcome}>
             <div class="game-head">
               <span class="game-pick">{record.pick.name}</span>
-              <span class="pill" data-outcome={record.outcome}>{record.outcome}</span>
               <span class="game-meta">
                 {#if record.rank}#{record.rank} of {record.shown}{/if}
                 · {new Date(record.at).toLocaleDateString()}
@@ -123,12 +128,19 @@
               vs {record.enemies.map(hero => hero.name).join(', ') || 'nobody revealed'}
             </p>
 
-            {#if record.outcome === 'pending'}
-              <div class="calls">
-                <button class="call" onclick={settle(record, 'won')}>WON</button>
-                <button class="call" onclick={settle(record, 'lost')}>LOST</button>
-              </div>
-            {/if}
+            <!-- Every game stays editable. A result can be entered days later,
+                 and a misremembered one can be corrected. -->
+            <div class="outcome" role="group" aria-label="Result for {record.pick.name}">
+              {#each OUTCOMES as option (option.value)}
+                <button
+                  class="call"
+                  data-outcome={option.value}
+                  class:on={record.outcome === option.value}
+                  aria-pressed={record.outcome === option.value}
+                  onclick={settle(record, option.value)}
+                >{option.label}</button>
+              {/each}
+            </div>
 
             <textarea
               class="note"
@@ -358,27 +370,6 @@
     font-weight: 600;
   }
 
-  .pill {
-    padding: 1px var(--space-xs);
-    border-radius: var(--radius-xs);
-    border: 1px solid var(--color-border-strong);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--color-ink-mute);
-  }
-
-  .pill[data-outcome='won'] {
-    border-color: color-mix(in oklch, var(--color-pos) 45%, transparent);
-    color: var(--color-pos);
-  }
-
-  .pill[data-outcome='lost'] {
-    border-color: color-mix(in oklch, var(--color-neg) 45%, transparent);
-    color: var(--color-neg);
-  }
-
   .game-meta {
     margin-inline-start: auto;
     font-family: var(--font-mono);
@@ -394,14 +385,14 @@
     text-wrap: pretty;
   }
 
-  .calls {
+  .outcome {
     display: flex;
     gap: var(--space-xs);
   }
 
   .call {
     padding: var(--space-2xs) var(--space-md);
-    border: 1px solid var(--color-border-strong);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: none;
     cursor: pointer;
@@ -409,6 +400,29 @@
     font-size: var(--font-size-2xs);
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
+    color: var(--color-ink-faint);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .call.on[data-outcome='won'] {
+    border-color: color-mix(in oklch, var(--color-pos) 45%, transparent);
+    background: color-mix(in oklch, var(--color-pos) 9%, transparent);
+    color: var(--color-pos);
+  }
+
+  .call.on[data-outcome='lost'] {
+    border-color: color-mix(in oklch, var(--color-neg) 45%, transparent);
+    background: color-mix(in oklch, var(--color-neg) 9%, transparent);
+    color: var(--color-neg);
+  }
+
+  .call.on[data-outcome='pending'] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
   }
 
   .note {

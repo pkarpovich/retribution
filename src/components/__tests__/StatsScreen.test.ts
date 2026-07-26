@@ -16,11 +16,11 @@ beforeEach(() => {
   localStorage.clear()
   captured = null
 
-  vi.stubGlobal('URL', {
-    ...URL,
-    createObjectURL: vi.fn(() => 'blob:stub'),
-    revokeObjectURL: vi.fn(),
-  })
+  // Added to the real URL rather than replacing it: swapping in a plain object
+  // takes the constructor with it, and module loading needs it.
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:stub') })
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+  Object.defineProperty(HTMLAnchorElement.prototype, 'click', { configurable: true, value: vi.fn() })
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: { writeText: vi.fn((text: string) => { captured = text; return Promise.resolve() }) },
@@ -63,8 +63,38 @@ describe('StatsScreen', () => {
     matches.log(makeRecord({ id: 'a' }))
     render(StatsScreen, props)
 
-    await fireEvent.click(screen.getAllByRole('button', { name: 'WON' })[0])
+    await fireEvent.click(screen.getByRole('button', { name: 'WON' }))
     expect(matches.all[0].outcome).toBe('won')
+  })
+
+  // The result can be entered days later, and a misremembered one corrected.
+  it('lets a settled game be changed and reopened', async () => {
+    matches.log(makeRecord({ id: 'a', outcome: 'won' }))
+    render(StatsScreen, props)
+
+    const option = (name: string) => screen.getByRole('button', { name })
+    expect(option('WON').getAttribute('aria-pressed')).toBe('true')
+
+    await fireEvent.click(option('LOST'))
+    expect(matches.all[0].outcome).toBe('lost')
+    expect(option('LOST').getAttribute('aria-pressed')).toBe('true')
+    expect(option('WON').getAttribute('aria-pressed')).toBe('false')
+
+    await fireEvent.click(option('OPEN'))
+    expect(matches.pending?.id).toBe('a')
+  })
+
+  // The iPad drops the app while MLBB is in the foreground, so the game is
+  // usually settled in a session that never saw the draft. The screen has no
+  // idea where a record came from; that it survives the reload is pinned in
+  // the store's own tests.
+  it('offers the result on a game this session never drafted', async () => {
+    matches.log(makeRecord({ id: 'a', pick: { id: 7, name: 'Baxia', tier: 'A' } }))
+    render(StatsScreen, props)
+
+    expect(screen.getByRole('group', { name: 'Result for Baxia' })).toBeTruthy()
+    await fireEvent.click(screen.getByRole('button', { name: 'LOST' }))
+    expect(matches.all[0].outcome).toBe('lost')
   })
 
   it('keeps a free text note against the game', async () => {

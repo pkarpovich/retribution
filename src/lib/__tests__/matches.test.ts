@@ -96,6 +96,33 @@ describe('match log', () => {
     expect(reloaded.all[0].id).toBe('a')
   })
 
+  // iPadOS drops the app while MLBB is in the foreground, so the session that
+  // enters the result is usually not the one that drafted the game.
+  it('still owes a result on a game that outlived the session that drafted it', async () => {
+    const matches = await freshMatches()
+    matches.log(makeRecord({ id: 'a' }))
+
+    const reloaded = await freshMatches(localStorage.getItem(STORAGE_KEY)!)
+    expect(reloaded.pending?.id).toBe('a')
+
+    reloaded.settle('a', 'won')
+    expect(reloaded.pending).toBeNull()
+    expect(persisted()[0].outcome).toBe('won')
+  })
+
+  it('can correct a result that was entered wrong', async () => {
+    const matches = await freshMatches()
+    matches.log(makeRecord({ id: 'a' }))
+
+    matches.settle('a', 'won')
+    matches.settle('a', 'lost')
+    expect(matches.all[0].outcome).toBe('lost')
+
+    matches.settle('a', 'pending')
+    expect(matches.pending?.id).toBe('a')
+    expect(persisted()[0].outcome).toBe('pending')
+  })
+
   it.each([
     ['not json', 'nonsense'],
     ['not a list', '{"matches":[]}'],
