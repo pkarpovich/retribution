@@ -2,8 +2,9 @@
   import heroData from './data/heroes.json'
   import type { Hero } from './types/hero'
   import { bans, signatures } from './lib/pool.svelte'
+  import type { MatchRecord } from './types/match'
   import type { DraftMode } from './lib/draftStorage'
-  import { loadDraft, saveDraft } from './lib/draftStorage'
+  import { draftFromRecord, loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
   import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
   import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
@@ -123,6 +124,19 @@
     flash('Jungle pick locked')
   }
 
+  // Puts a logged game back on the board. The pick is left off so the hero is
+  // among the candidates again and its standing today can be read off the list.
+  function reopen(record: MatchRecord) {
+    const board = draftFromRecord(record, heroes)
+    allies = board.allies
+    enemies = board.enemies
+    matchBans = board.matchBans
+    myPick = null
+    mode = board.mode
+    statsOpen = false
+    flash(`Reopened the draft you took ${record.pick.name} into`)
+  }
+
   // The result arrives long after the draft is cleared, so an unsettled game
   // deliberately outlives a reset.
   function reset() {
@@ -224,7 +238,7 @@
     {/if}
 
     {#if statsOpen}
-      <StatsScreen onClose={() => (statsOpen = false)} />
+      <StatsScreen onClose={() => (statsOpen = false)} onReopen={reopen} />
     {/if}
   </div>
 

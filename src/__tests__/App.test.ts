@@ -194,6 +194,41 @@ describe('App match log', () => {
   })
 })
 
+describe('App reopening a logged game', () => {
+  it('puts the draft back on the board and scores it again', async () => {
+    const first = render(App)
+    await draft(first.container, 3)
+    const board = textOf(first.container, '.slot.filled')
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    const taken = matches.pending!.pick.name
+
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
+    expect(first.container.querySelectorAll('.slot.filled')).toHaveLength(0)
+
+    await fireEvent.click(screen.getByRole('button', { name: /Your games/ }))
+    await fireEvent.click(screen.getByRole('button', { name: /OPEN DRAFT/ }))
+
+    expect(screen.queryByText(/Nothing logged yet/)).toBeNull()
+    expect(textOf(first.container, '.slot.filled')).toEqual(board)
+    expect(screen.getByRole('status').textContent).toBe(`Reopened the draft you took ${taken} into`)
+  })
+
+  // The point of reopening is to read where that hero stands now, which needs
+  // it back among the candidates rather than locked out of them.
+  it('leaves the pick unlocked so it can be scored alongside the rest', async () => {
+    const first = render(App)
+    await draft(first.container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    const taken = matches.pending!.pick.name
+
+    await fireEvent.click(screen.getByRole('button', { name: /Your games/ }))
+    await fireEvent.click(screen.getByRole('button', { name: /OPEN DRAFT/ }))
+
+    expect(screen.queryByText('YOUR JUNGLE PICK')).toBeNull()
+    expect(textOf(first.container, '.row-name')).toContain(taken)
+  })
+})
+
 describe('App match bans', () => {
   it('takes a hero off the board from the ban side of the roster', async () => {
     const { container } = render(App)

@@ -1,14 +1,21 @@
 <script lang="ts">
   import type { MatchRecord, MatchOutcome } from '../types/match'
   import type { Tally } from '../utils/matchStats'
+  import heroData from '../data/heroes.json'
   import { matches } from '../lib/matches.svelte'
   import { CONFIDENT_AT, exportMatches, summarise, winRate } from '../utils/matchStats'
 
   interface Props {
     onClose: () => void
+    onReopen: (record: MatchRecord) => void
   }
 
-  const { onClose }: Props = $props()
+  const { onClose, onReopen }: Props = $props()
+
+  // heroes.json moves twice a week, so a game scored on an older roster will
+  // not reproduce its logged numbers. Say so rather than let the difference
+  // look like a bug.
+  const stale = (record: MatchRecord) => record.dataVersion !== heroData.lastUpdated
 
   let copied = $state<string | null>(null)
 
@@ -152,6 +159,10 @@
             ></textarea>
 
             <div class="game-actions">
+              <button class="link strong" onclick={() => onReopen(record)}>
+                OPEN DRAFT
+                {#if stale(record)}<span class="stale">· older data</span>{/if}
+              </button>
               <button class="link" onclick={() => deliver([record], `retribution-${record.id}.json`)}>
                 EXPORT
               </button>
@@ -460,6 +471,16 @@
   }
 
   .link.muted {
+    color: var(--color-ink-faint);
+  }
+
+  .link.strong {
+    font-weight: 700;
+  }
+
+  .stale {
+    margin-inline-start: var(--space-2xs);
+    font-weight: 400;
     color: var(--color-ink-faint);
   }
 </style>

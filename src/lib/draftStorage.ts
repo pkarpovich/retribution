@@ -1,4 +1,5 @@
 import type { Hero } from '../types/hero'
+import type { MatchRecord } from '../types/match'
 import { MAX_ALLIES, MAX_ENEMIES } from '../utils/heroUtils'
 
 export type DraftMode = 'ally' | 'enemy' | 'ban'
@@ -27,6 +28,27 @@ export const emptyDraft = (): Draft => ({
   myPick: null,
   mode: 'enemy',
 })
+
+// Puts a logged game back on the board so it can be scored against today's
+// data. The jungle pick is deliberately left off: locking it would hide the
+// suggestions, and the point of reopening a game is to see where that hero
+// stands now, which needs it back among the candidates.
+export function draftFromRecord(record: MatchRecord, heroes: Hero[]): Draft {
+  const byId = new Map(heroes.map(hero => [hero.id, hero]))
+  const resolve = (named: { id: number }[], limit: number) =>
+    named
+      .map(entry => byId.get(entry.id))
+      .filter((hero): hero is Hero => Boolean(hero))
+      .slice(0, limit)
+
+  return {
+    allies: resolve(record.allies, MAX_ALLIES),
+    enemies: resolve(record.enemies, MAX_ENEMIES),
+    matchBans: resolve(record.matchBans, heroes.length),
+    myPick: null,
+    mode: 'enemy',
+  }
+}
 
 interface StoredDraft {
   at: number

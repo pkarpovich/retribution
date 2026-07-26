@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
+import heroData from '../../data/heroes.json'
 import StatsScreen from '../StatsScreen.svelte'
 import { matches } from '../../lib/matches.svelte'
 import { CONFIDENT_AT } from '../../utils/matchStats'
 import { makeRecord } from '../../utils/__tests__/matchFixtures'
 
-const props = { onClose: () => {} }
+const props = { onClose: () => {}, onReopen: () => {} }
 
 // The delivery half of export touches two APIs jsdom does not carry. The
 // serialisation it hands them is covered on its own in matchStats.
@@ -130,6 +131,29 @@ describe('StatsScreen', () => {
     const parsed = JSON.parse(captured!)
     expect(parsed.matches).toHaveLength(1)
     expect(parsed.matches[0].id).toBe('new')
+  })
+
+  it('hands a logged game back to the draft screen', async () => {
+    const onReopen = vi.fn()
+    matches.log(makeRecord({ id: 'a' }))
+    render(StatsScreen, { ...props, onReopen })
+
+    await fireEvent.click(screen.getByRole('button', { name: /OPEN DRAFT/ }))
+    expect(onReopen).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }))
+  })
+
+  // Reopening rescores against today's roster, so a game logged on an older
+  // one will not reproduce its numbers. Better said than left to look like a bug.
+  it('warns when the game was scored on a roster that has since moved', () => {
+    matches.log(makeRecord({ id: 'old', dataVersion: '2020-01-01T00:00:00.000Z' }))
+    const { container } = render(StatsScreen, props)
+
+    expect(container.querySelector('.stale')).toBeTruthy()
+
+    matches.clear()
+    matches.log(makeRecord({ id: 'fresh', dataVersion: heroData.lastUpdated }))
+    const fresh = render(StatsScreen, props)
+    expect(fresh.container.querySelector('.stale')).toBeNull()
   })
 
   it('drops a game from the log', async () => {
