@@ -3,20 +3,21 @@
 
   interface Props {
     hero: Hero
-    size?: number
+    size?: number | string
     dimmed?: boolean
     selected?: boolean
     struck?: boolean
   }
 
   const { hero, size = 34, dimmed = false, selected = false, struck = false }: Props = $props()
+  const length = $derived(typeof size === 'number' ? `${size}px` : size)
 </script>
 
 <span
   class="avatar"
   class:dimmed
   class:selected
-  style="--size: {size}px"
+  style="--size: {length}"
 >
   <img src={hero.img_src} alt={hero.hero_name} loading="lazy" decoding="async" />
   {#if struck}

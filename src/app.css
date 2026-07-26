@@ -13,7 +13,7 @@
     --color-panel: oklch(100% 0 0);
     --color-ink: oklch(21% 0.007 78);
     --color-ink-mute: oklch(51.5% 0.012 82);
-    --color-ink-faint: oklch(55% 0.014 81);
+    --color-ink-faint: oklch(52% 0.014 81);
 
     --color-border: color-mix(in oklch, var(--color-ink) 9%, transparent);
     --color-border-strong: color-mix(in oklch, var(--color-ink) 16%, transparent);
@@ -23,7 +23,7 @@
     --color-accent-hover: oklch(from var(--color-accent) calc(l - 0.1) c h);
     --color-on-accent: oklch(100% 0 0);
 
-    --color-pos: oklch(55% 0.13 150);
+    --color-pos: oklch(50% 0.13 150);
     --color-neg: oklch(56% 0.17 25);
 
     --font-sans: 'Inter Tight Variable', system-ui, sans-serif;
@@ -60,7 +60,7 @@
 
     --shadow-toast: 0 6px 20px oklch(0% 0 0 / 0.2);
 
-    --app-inline-size: 26rem;
+    --app-inline-size: 68rem;
   }
 }
 
