@@ -245,7 +245,7 @@ function calculateBaseScore(
     statBonus = winRateModifier + pickRateReliability;
   }
 
-  return (tierScore * weights.tier) + (statBonus * weights.stats);
+  return ((tierScore * weights.tier) + (statBonus * weights.stats)) * FOUNDATION_SCALE;
 }
 
 function calculateTeamBalance(
@@ -341,6 +341,9 @@ const DURABLE_PROFILE = 0.7;
 const CC_SATURATES_AT = 4;
 const CATCH_BONUS = 25;
 const ANTI_HEAL_BONUS = 25;
+const FOUNDATION_SCALE = 3;
+const SITUATIONAL_BUDGET = 0.5;
+const SITUATIONAL_REFERENCE = 150;
 
 function hasSurvivability(hero: Hero): boolean {
   const capabilities = hero.capabilities;
@@ -837,8 +840,9 @@ export function calculateJunglerRecommendation(
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
   const earlyLateGameScore = calculateEarlyLateGameFactor(hero, yourTeam, enemyTeam, finalWeights);
 
-  const breakdown: ScoreBreakdown = {
-    base: baseScore,
+  const foundation = baseScore + metaBonus;
+
+  const situational = {
     team_balance: teamBalanceScore,
     damage_type_balance: damageTypeBalanceScore,
     enemy_analysis: enemyAnalysisScore,
@@ -847,26 +851,35 @@ export function calculateJunglerRecommendation(
     invade_resistance: invadeResistanceScore,
     counter_penalty: counterPenalty === 0 ? 0 : -counterPenalty,
     synergy_bonus: synergyBonus,
-    meta_bonus: metaBonus,
     early_late_game: earlyLateGameScore
   };
 
-  const totalScore =
-    baseScore +
-    teamBalanceScore +
-    damageTypeBalanceScore +
-    enemyAnalysisScore +
-    strongAgainstBonus +
-    ccChainSynergyScore +
-    invadeResistanceScore -
-    counterPenalty +
-    synergyBonus +
-    metaBonus +
-    earlyLateGameScore;
+  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, ...situational };
+
+  const rawSituational = Object.values(situational).reduce((sum, value) => sum + value, 0);
+  const budget = SITUATIONAL_BUDGET * getTierScore('SS') * finalWeights.tier * FOUNDATION_SCALE;
+  const squashed = budget > 0 ? budget * Math.tanh(rawSituational / SITUATIONAL_REFERENCE) : 0;
+  const scale = rawSituational === 0 ? 1 : squashed / rawSituational;
+
+  const breakdown: ScoreBreakdown = {
+    base: baseScore,
+    meta_bonus: metaBonus,
+    team_balance: situational.team_balance * scale,
+    damage_type_balance: situational.damage_type_balance * scale,
+    enemy_analysis: situational.enemy_analysis * scale,
+    strong_against: situational.strong_against * scale,
+    cc_chain_synergy: situational.cc_chain_synergy * scale,
+    invade_resistance: situational.invade_resistance * scale,
+    counter_penalty: situational.counter_penalty * scale,
+    synergy_bonus: situational.synergy_bonus * scale,
+    early_late_game: situational.early_late_game * scale
+  };
+
+  const totalScore = foundation + squashed;
 
   const junglerType = classifyJunglerType(hero);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
-  const strengths = generateStrengths(hero, enemyTeam, breakdown, userRank);
+  const strengths = generateStrengths(hero, enemyTeam, rawBreakdown, userRank);
 
   const bootRecommendation = recommendBoots(hero, enemyTeam);
 

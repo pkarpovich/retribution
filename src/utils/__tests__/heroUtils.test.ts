@@ -363,9 +363,10 @@ describe('regression: Aamon-vs-counters scenario', () => {
     const untouched = makeHero({ id: 51, hero_name: 'Untouched', role: ['Assassin'], lane: ['Jungle'], tier: 'B' })
     const result = calculateJunglerRecommendation(aamon, [], [gloo, atlas, hayabusa])
 
+
     expect(result.breakdown.counter_penalty).toBeLessThan(0)
-    expect(Math.abs(result.breakdown.counter_penalty)).toBeGreaterThan(30)
     expect(result.breakdown.strong_against).toBe(0)
+    expect(result.total_score).toBeLessThan(calculateJunglerRecommendation(untouched, [], [gloo, atlas, hayabusa]).total_score)
 
     const ranked = recommendJunglers([aamon, untouched], [], [gloo, atlas, hayabusa], [], 'Mythic')
     expect(ranked[0].hero.hero_name).toBe('Untouched')

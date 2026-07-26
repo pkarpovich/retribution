@@ -143,6 +143,55 @@ describe('unknown information is not treated as evidence', () => {
   })
 })
 
+describe('the draft adjusts a pick, it does not decide it', () => {
+  const victims = (count: number) => Array.from({ length: count }, () => makeHero({
+    role: ['Marksman'],
+    capabilities: makeCapabilities({ mobilityScore: 0 }),
+  }))
+
+  it('a bottom tier hero cannot overtake a top tier one on matchups alone', () => {
+    const enemies = victims(5)
+    const favoured = makeHero({
+      tier: 'D',
+      role: ['Assassin'],
+      capabilities: makeCapabilities({ ccScore: 6, antiHeal: true }),
+      weakAgainst: enemies.map(enemy => relation(enemy, 9)),
+    })
+    const strong = makeHero({ tier: 'SS' })
+
+    expect(scoreOf(favoured, enemies)).toBeLessThan(scoreOf(strong, enemies))
+  })
+
+  it('within one tier a favourable matchup does decide', () => {
+    const victim = makeHero()
+    const bully = makeHero()
+    const enemies = [victim, bully]
+
+    const counterPick = makeHero({ tier: 'B', weakAgainst: [relation(victim, 6)] })
+    const countered = makeHero({ tier: 'B', counters: [relation(bully, 6)] })
+
+    expect(scoreOf(counterPick, enemies)).toBeGreaterThan(scoreOf(countered, enemies))
+  })
+
+  it('situational terms never outweigh the empirical foundation', () => {
+    const enemies = victims(5)
+    const hero = makeHero({
+      capabilities: makeCapabilities({ ccScore: 6, antiHeal: true }),
+      weakAgainst: enemies.map(enemy => relation(enemy, 9)),
+    })
+
+    const breakdown = calculateJunglerRecommendation(hero, [], enemies, 'Mythic').breakdown
+    const foundation = Math.abs(breakdown.base) + Math.abs(breakdown.meta_bonus)
+    const situational = Math.abs(breakdown.team_balance) + Math.abs(breakdown.damage_type_balance)
+      + Math.abs(breakdown.enemy_analysis) + Math.abs(breakdown.strong_against)
+      + Math.abs(breakdown.cc_chain_synergy) + Math.abs(breakdown.invade_resistance)
+      + Math.abs(breakdown.counter_penalty) + Math.abs(breakdown.synergy_bonus)
+      + Math.abs(breakdown.early_late_game)
+
+    expect(situational).toBeLessThan(foundation * 2)
+  })
+})
+
 describe('recommendation labels stay meaningful', () => {
   const junglers = getJunglers(heroData.heroes as unknown as Hero[])
   const ORDER: RecommendationLevel[] = ['RISKY_PICK', 'SAFE_PICK', 'GOOD_PICK', 'STRONG_PICK', 'BEST_PICK']
