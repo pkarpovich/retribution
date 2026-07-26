@@ -76,7 +76,7 @@ export function getLatestStats(hero: Hero, userRank: UserRank = 'Mythic') {
   return latestAll || allRankStats[0] || hero.statistics[0];
 }
 
-function isPrimarilyPhysical(hero: Hero): boolean {
+export function isPrimarilyPhysical(hero: Hero): boolean {
   const physicalIndicators = ['Marksman', 'Fighter'];
   const physicalSpecs = ['Physical Damage', 'Damage'];
 
@@ -88,7 +88,7 @@ function isPrimarilyPhysical(hero: Hero): boolean {
   return hasPhysicalRole || physicalSpecs.some(s => hero.speciality.includes(s));
 }
 
-function isPrimarilyMagic(hero: Hero): boolean {
+export function isPrimarilyMagic(hero: Hero): boolean {
   return hero.role.includes('Mage') || hero.speciality.includes('Magic Damage');
 }
 
@@ -102,7 +102,7 @@ function isLateGame(hero: Hero): boolean {
   return lateIndicators.some(indicator => hero.speciality.includes(indicator));
 }
 
-function isDamageDealer(hero: Hero): boolean {
+export function isDamageDealer(hero: Hero): boolean {
   const damageRoles = ['Assassin', 'Marksman', 'Mage'];
   const damageSpecs = ['Finisher', 'Burst', 'Damage', 'Magic Damage', 'Mixed Damage'];
 
@@ -339,8 +339,8 @@ function calculateDamageTypeBalance(
 const FULL_SHARE_AT = 0.4;
 const SPECIALIST_STEP = 15;
 const SPECIALIST_CAP = 3;
-const HIGH_CC_SHARE = 0.6;
-const HEAVY_CC_AT = 4;
+export const HIGH_CC_SHARE = 0.6;
+export const HEAVY_CC_AT = 4;
 const DURABLE_PROFILE = 0.7;
 const CC_SATURATES_AT = 4;
 const CATCH_BONUS = 25;
@@ -348,7 +348,16 @@ const ANTI_HEAL_BONUS = 25;
 const ARMOR_BREAK_BONUS = 30;
 const ARMOR_AGNOSTIC_MAX = 2;
 const IMMUNITY_DAMPING = 0.5;
-const MAX_ALLIES = 4;
+export const MAX_ALLIES = 4;
+export const MAX_ENEMIES = 5;
+const THREAT_SLOTS = 3;
+const THREAT_SCALE = 15;
+
+// The whole shown list spans about 31 points, so this is roughly a fifth of it:
+// a hero you play well moves a couple of places, never from the bottom of the
+// list to the top. Deliberately flat rather than scaled by rank - how well you
+// play a hero is not a property of the bracket you play it in.
+const COMFORT_BONUS = 8;
 const BAN_RATE_SATURATES_AT = 50;
 const PICK_RATE_SATURATES_AT = 3;
 const FOUNDATION_SCALE = 3;
@@ -613,6 +622,41 @@ function calculateCounterPenalty(
   const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.counter_penalty / 10);
 
   return Math.min(weakPenalty, 120);
+}
+
+// counter_penalty prices the counters the enemy already took. This prices the
+// ones they can still take: while they hold open slots, a hero whose bullies
+// are all on the board is a riskier pick than one whose bullies are gone.
+//
+// Availability is a property of the match, not of the player. A hero on the
+// personal ban list is one this player will not pick; it does nothing to stop
+// the other team picking it, so only drafted heroes and match bans count as
+// gone. Counters are weighted by their own tier because a D-tier bully nobody
+// plays is not a threat anybody is holding over you.
+//
+// There is no mirror bonus for victims left on the board. The enemy chooses
+// their picks: they will hunt for what beats us and avoid what we beat.
+function calculateCounterThreat(
+  hero: Hero,
+  yourTeam: Hero[],
+  enemyTeam: Hero[],
+  matchBans: Hero[],
+  weights: RecommendationWeights
+): number {
+  const openSlots = MAX_ENEMIES - enemyTeam.length;
+  if (openSlots <= 0 || !hero.counters) return 0;
+
+  const gone = new Set([...yourTeam, ...enemyTeam, ...matchBans].map(h => h.id));
+
+  const live = hero.counters
+    .filter(counter => !gone.has(counter.id))
+    .map(counter => counter.weighted_score * (getTierScore(counter.tier) / getTierScore('SS')))
+    .sort((a, b) => b - a)
+    .slice(0, Math.min(openSlots, THREAT_SLOTS));
+
+  const exposure = live.reduce((sum, value) => sum + value, 0);
+
+  return Math.sqrt(exposure) * THREAT_SCALE * (weights.counter_penalty / 10);
 }
 
 function calculateSynergyBonus(
@@ -909,14 +953,26 @@ function selectBlessing(hero: Hero): Pick<BootRecommendation, 'blessing' | 'bles
 // Public API: calculateJunglerRecommendation, recommendJunglers
 // ---------------------------------------------------------------------------
 
+export interface DraftContext {
+  weights?: RecommendationWeights;
+  // Heroes banned in this match: nobody on either side can pick them.
+  matchBans?: Hero[];
+  // Heroes this player is good on. A nudge, not a verdict: it sits outside the
+  // situational budget so it cannot eat the draft response, and it is small
+  // enough to move a hero a couple of places rather than to the front.
+  signatures?: number[];
+}
+
 export function calculateJunglerRecommendation(
   hero: Hero,
   yourTeam: Hero[],
   enemyTeam: Hero[],
   userRank: UserRank = 'Mythic',
-  weights?: RecommendationWeights
+  context: DraftContext = {}
 ): JunglerEvaluation {
-  const finalWeights = weights || getDefaultWeights(userRank);
+  const finalWeights = context.weights || getDefaultWeights(userRank);
+  const matchBans = context.matchBans ?? [];
+  const comfort = context.signatures?.includes(hero.id) ? COMFORT_BONUS : 0;
 
   const baseScore = calculateBaseScore(hero, userRank, finalWeights);
   const teamBalanceScore = calculateTeamBalance(hero, yourTeam, finalWeights);
@@ -926,6 +982,7 @@ export function calculateJunglerRecommendation(
   const ccChainSynergyScore = calculateCCChainSynergy(hero, yourTeam, finalWeights);
   const invadeResistanceScore = calculateInvadeResistance(hero, enemyTeam, finalWeights);
   const counterPenalty = calculateCounterPenalty(hero, enemyTeam, finalWeights);
+  const counterThreat = calculateCounterThreat(hero, yourTeam, enemyTeam, matchBans, finalWeights);
   const synergyBonus = calculateSynergyBonus(hero, yourTeam, finalWeights);
   const metaBonus = calculateMetaBonus(hero, userRank, finalWeights);
   const earlyLateGameScore = calculateEarlyLateGameFactor(hero, yourTeam, enemyTeam, finalWeights);
@@ -940,11 +997,12 @@ export function calculateJunglerRecommendation(
     cc_chain_synergy: ccChainSynergyScore,
     invade_resistance: invadeResistanceScore,
     counter_penalty: counterPenalty === 0 ? 0 : -counterPenalty,
+    counter_threat: counterThreat === 0 ? 0 : -counterThreat,
     synergy_bonus: synergyBonus,
     early_late_game: earlyLateGameScore
   };
 
-  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, ...situational };
+  const rawBreakdown: ScoreBreakdown = { base: baseScore, meta_bonus: metaBonus, comfort, ...situational };
 
   const rawSituational = Object.values(situational).reduce((sum, value) => sum + value, 0);
   const budget = SITUATIONAL_BUDGET * getTierScore('SS') * finalWeights.tier * FOUNDATION_SCALE;
@@ -954,6 +1012,7 @@ export function calculateJunglerRecommendation(
   const breakdown: ScoreBreakdown = {
     base: baseScore,
     meta_bonus: metaBonus,
+    comfort,
     team_balance: situational.team_balance * scale,
     damage_type_balance: situational.damage_type_balance * scale,
     enemy_analysis: situational.enemy_analysis * scale,
@@ -961,11 +1020,15 @@ export function calculateJunglerRecommendation(
     cc_chain_synergy: situational.cc_chain_synergy * scale,
     invade_resistance: situational.invade_resistance * scale,
     counter_penalty: situational.counter_penalty * scale,
+    counter_threat: situational.counter_threat * scale,
     synergy_bonus: situational.synergy_bonus * scale,
     early_late_game: situational.early_late_game * scale
   };
 
-  const totalScore = foundation + squashed;
+  // Comfort sits outside the squash on purpose: inside it would compete with
+  // the draft response for the same room, which is the half the engine spent
+  // the most effort earning.
+  const totalScore = foundation + squashed + comfort;
 
   const junglerType = classifyJunglerType(hero);
   const warnings = generateWarnings(hero, enemyTeam, finalWeights);
@@ -984,24 +1047,30 @@ export function calculateJunglerRecommendation(
   };
 }
 
+// personalBans are heroes this player will not pick. matchBans are heroes
+// nobody can pick. Both shrink the candidate pool; only match bans change what
+// the enemy can still do about a pick, so only they reach the score.
 export function recommendJunglers(
   junglers: Hero[],
   yourTeam: Hero[],
   enemyTeam: Hero[],
-  bannedHeroes: Hero[],
-  userRank: UserRank = 'Mythic'
+  personalBans: Hero[],
+  userRank: UserRank = 'Mythic',
+  matchBans: Hero[] = [],
+  signatures: number[] = []
 ): RecommendationResult[] {
   if (enemyTeam.length === 0) return [];
 
-  const bannedIds = new Set(bannedHeroes.map(h => h.id));
-  const enemyIds = new Set(enemyTeam.map(h => h.id));
-  const yourTeamIds = new Set(yourTeam.map(h => h.id));
-
-  const unavailableIds = new Set([...bannedIds, ...enemyIds, ...yourTeamIds]);
+  const unavailableIds = new Set([
+    ...personalBans,
+    ...matchBans,
+    ...enemyTeam,
+    ...yourTeam,
+  ].map(hero => hero.id));
   const availableJunglers = junglers.filter(j => !unavailableIds.has(j.id));
 
   const recommendations = availableJunglers.map(jungler =>
-    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank)
+    calculateJunglerRecommendation(jungler, yourTeam, enemyTeam, userRank, { matchBans, signatures })
   );
 
   recommendations.sort((a, b) => b.total_score - a.total_score);

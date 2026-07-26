@@ -130,10 +130,12 @@ export interface ScoreBreakdown {
   strong_against: number;
   cc_chain_synergy: number;
   counter_penalty: number;
+  counter_threat: number;
   synergy_bonus: number;
   meta_bonus: number;
   early_late_game: number;
   invade_resistance: number;
+  comfort: number;
 }
 
 export interface RecommendationWarning {

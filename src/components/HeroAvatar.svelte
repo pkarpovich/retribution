@@ -43,6 +43,9 @@
     block-size: 100%;
     object-fit: cover;
     display: block;
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      filter var(--duration-fast) var(--ease-out);
   }
 
   .dimmed img {
@@ -63,5 +66,6 @@
     border-radius: 1px;
     rotate: -45deg;
     box-shadow: 0 0 0 1px var(--color-panel);
+    animation: fade-in var(--duration-fast) var(--ease-out);
   }
 </style>

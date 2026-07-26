@@ -2,7 +2,13 @@
   import type { Hero, HeroRole } from '../types/hero'
   import HeroAvatar from './HeroAvatar.svelte'
 
-  type Mode = 'ally' | 'enemy'
+  type Mode = 'ally' | 'enemy' | 'ban'
+
+  const TABS: { id: Mode; label: string }[] = [
+    { id: 'ally', label: 'Add ally' },
+    { id: 'enemy', label: 'Add enemy' },
+    { id: 'ban', label: 'Ban' },
+  ]
 
   interface Props {
     heroes: Hero[]
@@ -20,17 +26,22 @@
   let query = $state('')
   let role = $state<HeroRole | null>(null)
 
-  const visible = $derived(
-    heroes.filter(hero =>
-      (!role || hero.role.includes(role))
-      && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
-    )
-  )
+  // Filtering by rebuilding the list would destroy and recreate every cell on
+  // each keystroke, and the portraits are remote, so iPad refetched them all.
+  // The roster is drawn once and non-matching cells are hidden instead.
+  const visible = $derived(new Set(
+    heroes
+      .filter(hero =>
+        (!role || hero.role.includes(role))
+        && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
+      )
+      .map(hero => hero.id)
+  ))
 </script>
 
 <div class="panel">
   <div class="tabs" role="tablist" aria-label="Draft side">
-    {#each [{ id: 'ally' as Mode, label: 'Add ally' }, { id: 'enemy' as Mode, label: 'Add enemy' }] as tab (tab.id)}
+    {#each TABS as tab (tab.id)}
       <button
         class="tab"
         class:on={mode === tab.id}
@@ -47,7 +58,10 @@
       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
     </svg>
     <input bind:value={query} placeholder="Search heroes" aria-label="Search heroes" />
-    <span class="count">{visible.length}</span>
+    {#if query}
+      <button class="clear" onclick={() => (query = '')} aria-label="Clear search">×</button>
+    {/if}
+    <span class="count">{visible.size}</span>
   </label>
 
   <div class="filters">
@@ -65,18 +79,18 @@
   </div>
 
   <div class="grid-wrap">
-    {#if visible.length === 0}
+    {#if visible.size === 0}
       <p class="empty">No heroes match</p>
-    {:else}
-      <div class="grid">
-        {#each visible as hero (hero.id)}
-          <button class="cell" onclick={() => onPick(hero)}>
-            <HeroAvatar {hero} size={44} />
-            <span class="cell-name">{hero.hero_name}</span>
-          </button>
-        {/each}
-      </div>
     {/if}
+
+    <div class="grid">
+      {#each heroes as hero (hero.id)}
+        <button class="cell" hidden={!visible.has(hero.id)} onclick={() => onPick(hero)}>
+          <HeroAvatar {hero} size={44} />
+          <span class="cell-name">{hero.hero_name}</span>
+        </button>
+      {/each}
+    </div>
 
     {#if hiddenByBans > 0}
       <button class="hidden-note" onclick={onOpenBans}>
@@ -97,7 +111,7 @@
 
   .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     border-block-end: 1px solid var(--color-border);
   }
 
@@ -110,6 +124,9 @@
     cursor: pointer;
     font-size: var(--font-size-md);
     color: var(--color-ink-faint);
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
 
     &.on {
       color: var(--color-ink);
@@ -122,6 +139,10 @@
 
     &.on[data-side='enemy'] {
       border-color: var(--color-neg);
+    }
+
+    &.on[data-side='ban'] {
+      border-color: var(--color-ink-mute);
     }
   }
 
@@ -144,6 +165,20 @@
     background: none;
     font-size: var(--font-size-md);
     color: var(--color-ink);
+  }
+
+  .clear {
+    display: grid;
+    place-items: center;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    line-height: 1;
+    color: var(--color-ink-mute);
   }
 
   .count {
@@ -172,6 +207,9 @@
     letter-spacing: 0.1em;
     color: var(--color-ink-mute);
     --role-hue: 265;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
 
     &.on {
       color: var(--color-ink);
@@ -217,6 +255,11 @@
     min-inline-size: 0;
   }
 
+  /* Author styles beat the UA rule for [hidden], so it has to be said here. */
+  .cell[hidden] {
+    display: none;
+  }
+
   .cell-name {
     max-inline-size: 100%;
     font-family: var(--font-mono);
@@ -229,6 +272,8 @@
   }
 
   .empty {
+    max-inline-size: var(--measure);
+    margin-inline: auto;
     padding-block: var(--space-2xl);
     text-align: center;
     font-family: var(--font-serif);
@@ -237,6 +282,7 @@
   }
 
   .hidden-note {
+    max-inline-size: var(--measure);
     inline-size: 100%;
     margin-block-start: var(--space-lg);
     padding-block: var(--space-xs);

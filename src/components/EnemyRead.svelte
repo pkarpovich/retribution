@@ -1,20 +1,20 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
-  import type { Suggestion } from '../utils/presentation'
+  import type { Responders } from '../utils/presentation'
   import { enemyReadout } from '../utils/presentation'
 
   interface Props {
     enemies: Hero[]
     pool: Hero[]
-    suggestions: Suggestion[]
+    responders: Responders
   }
 
-  const { enemies, pool, suggestions }: Props = $props()
+  const { enemies, pool, responders }: Props = $props()
 
   let open = $state(false)
   let tallyOpen = $state(false)
 
-  const readout = $derived(enemyReadout(enemies, pool, suggestions))
+  const readout = $derived(enemyReadout(enemies, pool, responders))
   const scale = $derived(Math.max(...(readout?.levers ?? []).map(lever => lever.points ?? 0), 1))
 </script>
 
@@ -174,6 +174,7 @@
     display: grid;
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg) var(--space-lg);
+    animation: fade-in var(--duration-base) var(--ease-out);
   }
 
   .head {
@@ -194,6 +195,7 @@
   }
 
   .statement {
+    max-inline-size: var(--measure);
     font-family: var(--font-serif);
     font-size: var(--font-size-display);
     font-weight: 400;
@@ -248,6 +250,7 @@
   }
 
   .points {
+    font-variant-numeric: tabular-nums;
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--font-size-xl);
@@ -268,6 +271,7 @@
     display: block;
     block-size: 100%;
     background: var(--tone);
+    transition: inline-size var(--duration-base) var(--ease-out);
   }
 
   .detail {
@@ -303,12 +307,14 @@
   }
 
   .supply {
+    max-inline-size: var(--measure);
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
     text-wrap: pretty;
   }
 
   .gap-note {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);

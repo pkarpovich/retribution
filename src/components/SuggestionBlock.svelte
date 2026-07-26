@@ -1,28 +1,59 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
   import type { Suggestion } from '../utils/presentation'
-  import { situationalBudget } from '../utils/heroUtils'
-  import { capabilitiesFor, tieGroups } from '../utils/presentation'
+  import { HEAVY_CC_AT, recommendBoots, situationalBudget } from '../utils/heroUtils'
+  import { capabilitiesFor, teamNeeds, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
   import TierBadge from './TierBadge.svelte'
 
   interface Props {
     suggestions: Suggestion[]
     enemies: Hero[]
+    myTeam: Hero[]
+    picksLeft: number
     myPick: Hero | null
     hasDraft: boolean
     onLock: (hero: Hero) => void
     onUnlock: () => void
+    onBan: (hero: Hero) => void
   }
 
-  const { suggestions, enemies, myPick, hasDraft, onLock, onUnlock }: Props = $props()
+  const {
+    suggestions,
+    enemies,
+    myTeam,
+    picksLeft,
+    myPick,
+    hasDraft,
+    onLock,
+    onUnlock,
+    onBan,
+  }: Props = $props()
+
+  const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
+  const NEEDS_SHOWN = 3
+
+  type SortKey = 'total' | 'fit' | 'comfort'
 
   let focusIndex = $state(0)
   let listView = $state<'auto' | 'axis' | 'rows'>('auto')
-  let sortBy = $state<'total' | 'fit'>('total')
+  let sortBy = $state<SortKey>('total')
+
+  // The third option only exists when the player has named something, so the
+  // control never offers an ordering that would come out arbitrary.
+  const anyComfort = $derived(suggestions.some(suggestion => suggestion.comfort > 0))
+  const sorts = $derived<{ key: SortKey; label: string }[]>([
+    { key: 'total', label: 'TOTAL' },
+    { key: 'fit', label: 'FIT' },
+    ...(anyComfort ? [{ key: 'comfort' as SortKey, label: 'YOURS' }] : []),
+  ])
 
   $effect(() => {
     if (focusIndex >= suggestions.length) focusIndex = 0
+  })
+
+  $effect(() => {
+    if (sortBy === 'comfort' && !anyComfort) sortBy = 'total'
   })
 
   const focus = $derived(suggestions[Math.min(focusIndex, suggestions.length - 1)] ?? null)
@@ -31,10 +62,26 @@
   const bestFit = $derived([...suggestions].sort((a, b) => b.fit - a.fit)[0]?.hero.hero_name)
   // Scaled against the engine's own ceiling, not the spread of this candidate
   // set — auto-ranging made a ten-point gap look like opposite ends of the
-  // world. Fit is never negative in practice (min 4.8 across 592 measured
-  // suggestions), so the axis starts at zero.
+  // world. Fit is the squashed situational half, so it is bounded to plus or
+  // minus the budget by construction, and zero sits in the middle: left of it
+  // the draft costs you, right of it it pays.
   const budget = situationalBudget()
-  const axisAt = (value: number) => Math.max(0, Math.min(100, (value / budget) * 100))
+  const axisAt = (value: number) => Math.max(0, Math.min(100, ((value + budget) / (2 * budget)) * 100))
+
+  // The bar is always as long as the better of the two readings, with the tail
+  // showing what the draft added or took away. Comfort rides on the end: it is
+  // not part of the draft response and does not belong inside either.
+  const barOf = (suggestion: Suggestion) => {
+    const drafted = suggestion.strength + suggestion.fit
+    return {
+      solid: (Math.max(0, Math.min(suggestion.strength, drafted)) / scale) * 100,
+      delta: (Math.abs(suggestion.fit) / scale) * 100,
+      comfort: (suggestion.comfort / scale) * 100,
+      lost: suggestion.fit < 0,
+    }
+  }
+
+  const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
 
   // Left and right step through the dots as drawn, which is fit order, not
   // list order.
@@ -54,11 +101,10 @@
   // Only worth saying when the hero actually brought enough control for the
   // rule to have mattered — otherwise it reads as a complaint about a hero
   // that never had any.
-  const CONTROL_WORTH_MENTIONING = 4
   const switchedOff = $derived(facts.find(fact =>
     fact.stance === 'off'
     && fact.points !== null
-    && (focus?.hero.capabilities?.ccScore ?? 0) >= CONTROL_WORTH_MENTIONING))
+    && (focus?.hero.capabilities?.ccScore ?? 0) >= HEAVY_CC_AT))
 
   function tieOf(name: string) {
     return ties.find(group => group.includes(name)) ?? null
@@ -80,9 +126,17 @@
   // Rank labels always come from the engine's own ordering, so re-sorting the
   // list never hides where a hero actually stands. Tie brackets are a property
   // of that ordering too, so they are only drawn when it is the one on screen.
-  const ordered = $derived(sortBy === 'fit'
-    ? suggestions.map((suggestion, index) => ({ suggestion, index })).sort((a, b) => b.suggestion.fit - a.suggestion.fit)
-    : suggestions.map((suggestion, index) => ({ suggestion, index })))
+  const RANK_BY: Record<SortKey, (suggestion: Suggestion) => number> = {
+    total: () => 0,
+    fit: suggestion => suggestion.fit,
+    comfort: suggestion => suggestion.comfort,
+  }
+
+  const ordered = $derived(
+    suggestions
+      .map((suggestion, index) => ({ suggestion, index }))
+      .sort((a, b) => RANK_BY[sortBy](b.suggestion) - RANK_BY[sortBy](a.suggestion))
+  )
 
   const rows = $derived(ordered.reduce<Row[]>((groups, entry) => {
     const tie = sortBy === 'total' ? tieOf(entry.suggestion.hero.hero_name) : null
@@ -100,6 +154,7 @@
       <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
     </div>
   {:else if myPick}
+    {@const build = recommendBoots(myPick, enemies)}
     <div class="locked">
       <HeroAvatar hero={myPick} size={42} selected />
       <div class="locked-copy">
@@ -111,13 +166,48 @@
       </div>
       <button class="change" onclick={onUnlock}>CHANGE</button>
     </div>
+
+    <div class="panel">
+      <span class="kicker">WHAT TO BUY</span>
+      <div class="lines">
+        <p class="line">
+          <span class="line-name">{build.boots}</span>
+          <span class="line-why">{build.bootsReason}</span>
+        </p>
+        <p class="line">
+          <span class="line-name">{build.blessing} Retribution</span>
+          <span class="line-why">{build.blessingReason}</span>
+        </p>
+      </div>
+    </div>
+
+    {#if needs.length > 0}
+      <div class="panel">
+        <div class="panel-head">
+          <span class="kicker">TELL YOUR TEAM</span>
+          <span class="kicker">
+            {picksLeft > 0 ? `${picksLeft} pick${picksLeft === 1 ? '' : 's'} left` : 'items only now'}
+          </span>
+        </div>
+        <div class="lines">
+          {#each needs.slice(0, NEEDS_SHOWN) as need (need.key)}
+            <p class="line need">
+              <span class="line-name">{need.name}</span>
+              <span class="line-why">{need.evidence} — {need.gap}</span>
+            </p>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}
+    {@const bar = barOf(focus)}
     <div class="head">
       <span class="kicker">SUGGESTED · JUNGLE</span>
       <span class="legend">
         <span class="swatch strength" aria-hidden="true"></span> strength
         <span class="swatch fit" aria-hidden="true"></span> fit
+        <span class="swatch comfort" aria-hidden="true"></span> yours
       </span>
     </div>
 
@@ -132,13 +222,19 @@
           <span class="kicker">{rank.label} of {suggestions.length}{rank.tied ? ' · TIED' : ''}</span>
         </div>
         <span class="figures">
-          {Math.round(focus.strength)}<span class="plus">+</span><span class="fit-figure">{Math.round(focus.fit)}</span>
+          {Math.round(focus.strength)}<span
+            class="fit-figure"
+            class:lost={focus.fit < 0}>{signed(focus.fit)}</span>{#if focus.comfort > 0}<span
+            class="comfort-figure">{signed(focus.comfort)}</span>{/if}
         </span>
       </div>
 
       <span class="stack" aria-hidden="true">
-        <span class="seg strength" style="inline-size: {(focus.strength / scale) * 100}%"></span>
-        <span class="seg fit" style="inline-size: {(focus.fit / scale) * 100}%"></span>
+        <span class="seg strength" style="inline-size: {bar.solid}%"></span>
+        <span class="seg" class:fit={!bar.lost} class:lost={bar.lost} style="inline-size: {bar.delta}%"></span>
+        {#if bar.comfort > 0}
+          <span class="seg comfort" style="inline-size: {bar.comfort}%"></span>
+        {/if}
       </span>
 
       <div class="caps">
@@ -165,7 +261,14 @@
         {/if}
       </div>
 
-      <button class="lock" onclick={() => onLock(focus.hero)}>LOCK THIS PICK</button>
+      <div class="actions">
+        <button class="lock" onclick={() => onLock(focus.hero)}>LOCK THIS PICK</button>
+        <button
+          class="ban"
+          onclick={() => onBan(focus.hero)}
+          aria-label="Ban {focus.hero.hero_name} for this match"
+        >BANNED</button>
+      </div>
     </article>
 
     <div class="compare" class:force-rows={listView === 'rows'} class:force-axis={listView === 'axis'}>
@@ -183,6 +286,7 @@
           >‹</button>
 
           <div class="axis-line">
+            <span class="zero" aria-hidden="true"></span>
             {#each suggestions as suggestion, index (suggestion.hero.id)}
               <button
                 class="dot"
@@ -204,9 +308,9 @@
           >›</button>
         </div>
         <div class="axis-foot">
-          <span>0</span>
-          <span class="axis-focus">{focus.hero.hero_name} {Math.round(focus.fit)} · best {bestFit}</span>
-          <span>{budget}</span>
+          <span>-{budget}</span>
+          <span class="axis-focus">{focus.hero.hero_name} {signed(focus.fit)} · best {bestFit}</span>
+          <span>+{budget}</span>
         </div>
       </div>
 
@@ -214,18 +318,14 @@
         <div class="rows-head">
           <span class="kicker">ALL {suggestions.length}</span>
           <div class="sort" role="group" aria-label="Sort suggestions">
-            <button
-              class="sort-option"
-              class:on={sortBy === 'total'}
-              aria-pressed={sortBy === 'total'}
-              onclick={() => (sortBy = 'total')}
-            >TOTAL</button>
-            <button
-              class="sort-option"
-              class:on={sortBy === 'fit'}
-              aria-pressed={sortBy === 'fit'}
-              onclick={() => (sortBy = 'fit')}
-            >FIT</button>
+            {#each sorts as option (option.key)}
+              <button
+                class="sort-option"
+                class:on={sortBy === option.key}
+                aria-pressed={sortBy === option.key}
+                onclick={() => (sortBy = option.key)}
+              >{option.label}</button>
+            {/each}
           </div>
           <button class="toggle" onclick={() => (listView = 'axis')}>COLLAPSE ˄</button>
         </div>
@@ -233,17 +333,23 @@
           <div class="row-group" class:tied={Boolean(group.tie)}>
             {#each group.items as item (item.suggestion.hero.id)}
               {@const itemRank = rankLabel(item.suggestion.hero.hero_name)}
+              {@const itemBar = barOf(item.suggestion)}
               <button class="row" class:on={item.index === focusIndex} onclick={() => (focusIndex = item.index)}>
                 <HeroAvatar hero={item.suggestion.hero} size={16} />
                 <span class="row-rank">{itemRank.label}</span>
                 <span class="row-name">{item.suggestion.hero.hero_name}</span>
                 <span class="stack small" aria-hidden="true">
-                  <span class="seg strength" style="inline-size: {(item.suggestion.strength / scale) * 100}%"></span>
-                  <span class="seg fit" style="inline-size: {(item.suggestion.fit / scale) * 100}%"></span>
+                  <span class="seg strength" style="inline-size: {itemBar.solid}%"></span>
+                  <span class="seg" class:fit={!itemBar.lost} class:lost={itemBar.lost} style="inline-size: {itemBar.delta}%"></span>
+                  {#if itemBar.comfort > 0}
+                    <span class="seg comfort" style="inline-size: {itemBar.comfort}%"></span>
+                  {/if}
                 </span>
-                <span class="row-fit" class:best={item.suggestion.hero.hero_name === bestFit}>
-                  {Math.round(item.suggestion.fit)}
-                </span>
+                <span
+                  class="row-fit"
+                  class:best={item.suggestion.hero.hero_name === bestFit}
+                  class:lost={item.suggestion.fit < 0}
+                >{signed(item.suggestion.fit)}</span>
               </button>
             {/each}
             {#if group.tie}
@@ -297,6 +403,7 @@
   }
 
   .prompt-copy {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -338,12 +445,63 @@
     letter-spacing: var(--tracking-mono);
   }
 
-  .head,
-  .caps-head,
-  .axis-head {
+  .panel {
+    display: grid;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .panel-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  .lines {
+    display: grid;
+    gap: var(--space-xs);
+  }
+
+  .line {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+  }
+
+  .line.need {
+    padding-inline-start: var(--space-sm);
+    border-inline-start: 2px solid var(--color-neg);
+  }
+
+  .line-name {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+  }
+
+  .line-why {
+    max-inline-size: var(--measure);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink-mute);
+    text-wrap: pretty;
+  }
+
+  .head,
+  .caps-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  /* Centred, not trailing: on the right it sat directly above the forward
+     arrow and the two were being hit for each other. */
+  .axis-head {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: baseline;
     gap: var(--space-sm);
   }
 
@@ -420,12 +578,13 @@
     white-space: nowrap;
   }
 
-  .plus {
-    color: var(--color-border-strong);
-  }
-
   .fit-figure {
     color: var(--color-accent);
+    margin-inline-start: 1px;
+  }
+
+  .fit-figure.lost {
+    color: var(--color-neg);
   }
 
   .stack {
@@ -440,12 +599,32 @@
     block-size: 7px;
   }
 
+  /* The bars carry the score from one draft to the next: watching a hero's
+     fit shrink when an enemy is added is the point, not decoration. */
+  .seg {
+    transition: inline-size var(--duration-base) var(--ease-out);
+  }
+
   .seg.strength {
     background: var(--color-ink);
   }
 
   .seg.fit {
     background: var(--color-accent);
+  }
+
+  .seg.lost {
+    background: var(--color-neg);
+  }
+
+  .seg.comfort,
+  .swatch.comfort {
+    background: var(--color-pos);
+  }
+
+  .comfort-figure {
+    color: var(--color-pos);
+    margin-inline-start: 1px;
   }
 
   .caps {
@@ -493,6 +672,7 @@
   }
 
   .note {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -507,20 +687,42 @@
     margin-inline-end: var(--space-2xs);
   }
 
-  .lock {
+  .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-xs);
+  }
+
+  .lock,
+  .ban {
     padding-block: var(--space-sm);
-    background: var(--color-accent);
-    border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
-    color: var(--color-on-accent);
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
+  }
+
+  .lock {
+    background: var(--color-accent);
+    border: none;
+    color: var(--color-on-accent);
 
     &:hover {
       background: var(--color-accent-hover);
+    }
+  }
+
+  .ban {
+    padding-inline: var(--space-md);
+    background: none;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-ink-mute);
+
+    &:hover {
+      border-color: var(--color-neg);
+      color: var(--color-neg);
     }
   }
 
@@ -584,6 +786,7 @@
     font-size: var(--font-size-2xs);
     letter-spacing: 0.08em;
     color: var(--color-ink-faint);
+    transition: background-color var(--duration-fast) var(--ease-out);
 
     &.on {
       background: var(--color-accent-soft);
@@ -654,6 +857,12 @@
     background: var(--color-panel);
     border: 1.5px solid var(--color-border-strong);
     cursor: pointer;
+    transition:
+      inset-inline-start var(--duration-base) var(--ease-out),
+      inset-block-start var(--duration-fast) var(--ease-out),
+      inline-size var(--duration-fast) var(--ease-out),
+      block-size var(--duration-fast) var(--ease-out),
+      margin-inline-start var(--duration-fast) var(--ease-out);
   }
 
   /* The hit target is the tap area, not the drawn dot. */
@@ -661,6 +870,14 @@
     content: '';
     position: absolute;
     inset: -8px;
+  }
+
+  .zero {
+    position: absolute;
+    inset-block: 4px;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: var(--color-border-strong);
   }
 
   .dot.best {
@@ -717,6 +934,9 @@
     border-radius: var(--radius-xs);
     cursor: pointer;
     text-align: start;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
 
     &.on {
       background: var(--color-accent-soft);

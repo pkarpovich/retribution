@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
-  import { bans } from '../lib/bans.svelte'
+  import type { PoolStance } from '../lib/pool.svelte'
+  import { bans, setStance, signatures, stanceOf } from '../lib/pool.svelte'
   import { getJunglers, getLatestStats } from '../utils/heroUtils'
   import HeroAvatar from './HeroAvatar.svelte'
 
@@ -16,14 +17,23 @@
 
   const junglerIds = $derived(new Set(getJunglers(heroes).map(hero => hero.id)))
 
-  const visible = $derived(
-    heroes.filter(hero =>
-      (!junglePoolOnly || junglerIds.has(hero.id))
-      && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
-    )
-  )
+  // Hidden rather than removed: rebuilding the list on each keystroke threw
+  // away the portraits, which are remote and had to be fetched again.
+  const visible = $derived(new Set(
+    heroes
+      .filter(hero =>
+        (!junglePoolOnly || junglerIds.has(hero.id))
+        && hero.hero_name.toLowerCase().includes(query.trim().toLowerCase())
+      )
+      .map(hero => hero.id)
+  ))
 
   const winRate = (hero: Hero) => getLatestStats(hero)?.win_rate.toFixed(1) ?? '—'
+
+  // Tapping the state a hero is already in clears it, so neutral needs no
+  // button of its own.
+  const choose = (hero: Hero, stance: PoolStance) => () =>
+    setStance(hero.id, stanceOf(hero.id) === stance ? 'neutral' : stance)
 </script>
 
 <section class="screen">
@@ -31,20 +41,27 @@
     <button class="back" onclick={onClose}>
       <span aria-hidden="true">‹</span> DRAFT
     </button>
-    <h2 class="title">Banned heroes</h2>
+    <h2 class="title">Your pool</h2>
     <div class="bar-end">
-      {#if bans.size > 0}
-        <button class="clear" onclick={() => bans.clear()}>CLEAR</button>
+      {#if bans.size + signatures.size > 0}
+        <button
+          class="clear"
+          onclick={() => { bans.clear(); signatures.clear() }}
+        >CLEAR</button>
       {/if}
     </div>
   </header>
 
   <div class="explainer">
     <p class="lede">
-      Banned heroes are never suggested and stay out of the draft roster.
-      Use it for heroes you don't own or don't play.
+      A <strong>main</strong> is a hero you play well: it is scored a little higher,
+      enough to move it a few places but never to the front on its own.
+      A <strong>ban</strong> is never suggested and stays out of the draft roster.
+      A hero can be one or the other, not both.
     </p>
     <p class="tally">
+      <span class="tally-count main" class:active={signatures.size > 0}>{signatures.size}</span>
+      <span class="tally-label">MAINS</span>
       <span class="tally-count" class:active={bans.size > 0}>{bans.size}</span>
       <span class="tally-label">BANNED</span>
     </p>
@@ -56,7 +73,10 @@
         <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
       </svg>
       <input bind:value={query} placeholder="Search heroes" aria-label="Search heroes" />
-      <span class="count">{visible.length}</span>
+      {#if query}
+        <button class="clear-query" onclick={() => (query = '')} aria-label="Clear search">×</button>
+      {/if}
+      <span class="count">{visible.size}</span>
     </label>
 
     <div class="segmented" role="group" aria-label="Hero pool">
@@ -66,21 +86,43 @@
   </div>
 
   <div class="list">
-    {#if visible.length === 0}
+    {#if visible.size === 0}
       <p class="empty">No heroes match</p>
-    {:else}
-      {#each visible as hero (hero.id)}
-        {@const banned = bans.has(hero.id)}
-        <button class="row" onclick={() => bans.toggle(hero.id)} aria-pressed={banned}>
-          <HeroAvatar {hero} size={34} dimmed={banned} struck={banned} />
-          <span class="meta">
-            <span class="name" class:banned>{hero.hero_name}</span>
-            <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
-          </span>
-          <span class="pill" class:banned>{banned ? 'BANNED' : 'BAN'}</span>
-        </button>
-      {/each}
     {/if}
+
+    {#each heroes as hero (hero.id)}
+      {@const stance = stanceOf(hero.id)}
+      {@const banned = stance === 'banned'}
+      <div class="row" hidden={!visible.has(hero.id)} data-stance={stance}>
+        <HeroAvatar
+          {hero}
+          size={34}
+          dimmed={banned}
+          struck={banned}
+          selected={stance === 'signature'}
+        />
+        <span class="meta">
+          <span class="name" class:banned class:main={stance === 'signature'}>{hero.hero_name}</span>
+          <span class="facts">{hero.role.join('/')} · {hero.tier}-tier · WR {winRate(hero)}%</span>
+        </span>
+        <span class="stances">
+          <button
+            class="pill main"
+            class:on={stance === 'signature'}
+            aria-pressed={stance === 'signature'}
+            aria-label="{hero.hero_name} is a hero you main"
+            onclick={choose(hero, 'signature')}
+          >MAIN</button>
+          <button
+            class="pill ban"
+            class:on={banned}
+            aria-pressed={banned}
+            aria-label="Never suggest {hero.hero_name}"
+            onclick={choose(hero, 'banned')}
+          >BAN</button>
+        </span>
+      </div>
+    {/each}
   </div>
 </section>
 
@@ -92,6 +134,7 @@
     display: grid;
     grid-template-rows: auto auto auto minmax(0, 1fr);
     background: var(--color-bg);
+    animation: sheet-in var(--duration-base) var(--ease-out);
   }
 
   .bar,
@@ -153,6 +196,7 @@
   }
 
   .lede {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -166,6 +210,7 @@
   }
 
   .tally-count {
+    font-variant-numeric: tabular-nums;
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--font-size-xl);
@@ -174,6 +219,14 @@
 
   .tally-count.active {
     color: var(--color-neg);
+  }
+
+  .tally-count.main.active {
+    color: var(--color-accent);
+  }
+
+  .tally-count.main {
+    margin-inline-end: 0;
   }
 
   .tally-label {
@@ -210,6 +263,20 @@
     color: var(--color-ink);
   }
 
+  .clear-query {
+    display: grid;
+    place-items: center;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    line-height: 1;
+    color: var(--color-ink-mute);
+  }
+
   .count {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
@@ -233,6 +300,9 @@
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
     color: var(--color-ink-mute);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
   }
 
   .segmented button.on {
@@ -247,6 +317,8 @@
   }
 
   .empty {
+    max-inline-size: var(--measure);
+    margin-inline: auto;
     padding-block: var(--space-2xl);
     text-align: center;
     font-family: var(--font-serif);
@@ -255,20 +327,34 @@
     color: var(--color-ink-faint);
   }
 
+  /* Both states earn a rail so either can be found while scrolling thirty-nine
+     rows. Ban de-emphasises what it marks, main emphasises it. */
   .row {
-    inline-size: 100%;
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding: var(--space-sm) var(--space-3xs);
-    background: none;
-    border: none;
-    text-align: start;
-    cursor: pointer;
+    padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-xs);
+    border-inline-start: 2px solid transparent;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
 
-    & + & {
-      border-block-start: 1px solid var(--color-border);
-    }
+  .row[data-stance='signature'] {
+    border-inline-start-color: var(--color-accent);
+    background: color-mix(in oklch, var(--color-accent) 4%, transparent);
+  }
+
+  .row[data-stance='banned'] {
+    border-inline-start-color: color-mix(in oklch, var(--color-neg) 45%, transparent);
+  }
+
+  /* Author styles beat the UA rule for [hidden], and the divider has to skip
+     the hidden rows or the first match keeps a rule above it. */
+  .row[hidden] {
+    display: none;
+  }
+
+  .row:not([hidden]) + .row:not([hidden]) {
+    border-block-start: 1px solid var(--color-border);
   }
 
   .meta {
@@ -290,6 +376,11 @@
     text-decoration-color: color-mix(in oklch, var(--color-neg) 55%, transparent);
   }
 
+  .name.main {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
   .facts {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
@@ -297,23 +388,42 @@
     color: var(--color-ink-faint);
   }
 
-  .pill {
+  .stances {
+    display: flex;
     flex-shrink: 0;
-    inline-size: 3rem;
+    gap: var(--space-2xs);
+  }
+
+  .pill {
+    inline-size: 2.75rem;
     padding-block: var(--space-2xs);
+    background: none;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xs);
+    cursor: pointer;
     text-align: center;
     font-family: var(--font-mono);
     font-size: var(--font-size-2xs);
     font-weight: 700;
     letter-spacing: 0.1em;
     color: var(--color-ink-faint);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
   }
 
-  .pill.banned {
+  .pill.ban.on {
     background: color-mix(in oklch, var(--color-neg) 8%, transparent);
     border-color: color-mix(in oklch, var(--color-neg) 27%, transparent);
     color: var(--color-neg);
+  }
+
+  /* Filled rather than tinted: the ban carries a struck portrait and a struck
+     name, so the main needs weight of its own to balance it. */
+  .pill.main.on {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-on-accent);
   }
 </style>
