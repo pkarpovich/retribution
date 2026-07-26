@@ -250,6 +250,8 @@
   }
 
   .empty {
+    max-inline-size: var(--measure);
+    margin-inline: auto;
     margin: 0;
     padding-block: var(--space-2xl);
     text-align: center;
@@ -277,12 +279,14 @@
   }
 
   .figure-value {
+    font-variant-numeric: tabular-nums;
     font-family: var(--font-serif);
     font-size: var(--font-size-xl);
     line-height: 1;
   }
 
   .caveat {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -390,6 +394,7 @@
   }
 
   .game-draft {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -437,6 +442,7 @@
   }
 
   .note {
+    max-inline-size: var(--measure);
     inline-size: 100%;
     field-sizing: content;
     min-block-size: 2lh;

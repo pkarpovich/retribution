@@ -196,6 +196,7 @@
   }
 
   .lede {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -209,6 +210,7 @@
   }
 
   .tally-count {
+    font-variant-numeric: tabular-nums;
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--font-size-xl);
@@ -315,6 +317,8 @@
   }
 
   .empty {
+    max-inline-size: var(--measure);
+    margin-inline: auto;
     padding-block: var(--space-2xl);
     text-align: center;
     font-family: var(--font-serif);

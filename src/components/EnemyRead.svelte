@@ -195,6 +195,7 @@
   }
 
   .statement {
+    max-inline-size: var(--measure);
     font-family: var(--font-serif);
     font-size: var(--font-size-display);
     font-weight: 400;
@@ -249,6 +250,7 @@
   }
 
   .points {
+    font-variant-numeric: tabular-nums;
     font-family: var(--font-serif);
     font-style: italic;
     font-size: var(--font-size-xl);
@@ -305,12 +307,14 @@
   }
 
   .supply {
+    max-inline-size: var(--measure);
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
     text-wrap: pretty;
   }
 
   .gap-note {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);

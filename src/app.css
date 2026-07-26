@@ -38,8 +38,13 @@
     --font-size-xl: 1.375rem;
     --font-size-display: clamp(1.5rem, 1rem + 2vw, 2.5rem);
 
-    --line-height-body: 1.45;
+    --line-height-body: 1.5;
     --line-height-heading: 1.05;
+
+    /* Nothing capped a line before this, so on an iPad the two full-width
+       screens ran prose the whole 68rem. Font-relative, so it holds whatever
+       size the block is set in. */
+    --measure: 62ch;
     --tracking-mono: 0.12em;
     --tracking-tight: -0.02em;
 
@@ -109,6 +114,8 @@
 @layer base {
   html {
     background: oklch(94% 0.004 85);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
@@ -118,7 +125,6 @@
     font-size: 1rem;
     line-height: var(--line-height-body);
     text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
   }
 
   h1,

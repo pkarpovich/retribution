@@ -403,6 +403,7 @@
   }
 
   .prompt-copy {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
@@ -481,6 +482,7 @@
   }
 
   .line-why {
+    max-inline-size: var(--measure);
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
     text-wrap: pretty;
@@ -670,6 +672,7 @@
   }
 
   .note {
+    max-inline-size: var(--measure);
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);

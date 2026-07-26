@@ -272,6 +272,8 @@
   }
 
   .empty {
+    max-inline-size: var(--measure);
+    margin-inline: auto;
     padding-block: var(--space-2xl);
     text-align: center;
     font-family: var(--font-serif);
@@ -280,6 +282,7 @@
   }
 
   .hidden-note {
+    max-inline-size: var(--measure);
     inline-size: 100%;
     margin-block-start: var(--space-lg);
     padding-block: var(--space-xs);
