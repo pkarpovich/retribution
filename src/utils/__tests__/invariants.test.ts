@@ -124,6 +124,33 @@ describe('unknown information is not treated as evidence', () => {
     expect(breakdown.damage_type_balance).toBe(0)
   })
 
+  it('team balance stays silent until allies are known, then grows with them', () => {
+    const enemy = makeHero()
+    const ally = () => makeHero({ role: ['Tank'] })
+    const hero = makeHero({ role: ['Assassin'] })
+
+    const balanceWith = (allies: Hero[]) =>
+      calculateJunglerRecommendation(hero, allies, [enemy], 'Mythic').breakdown.team_balance
+
+    expect(balanceWith([])).toBe(0)
+    expect(Math.abs(balanceWith([ally(), ally()])))
+      .toBeLessThan(Math.abs(balanceWith([ally(), ally(), ally(), ally()])))
+  })
+
+  it('the meta bonus has no cliff', () => {
+    const enemy = makeHero()
+    const banned = (rate: number) => makeHero({
+      statistics: [{ ...makeHero().statistics[0], ban_rate: rate }],
+    })
+
+    const below = scoreOf(banned(29.9), [enemy])
+    const above = scoreOf(banned(30.1), [enemy])
+    const high = scoreOf(banned(50), [enemy])
+
+    expect(above - below).toBeLessThan(1)
+    expect(high).toBeGreaterThan(above)
+  })
+
   it('an enemy threshold cannot fire on a single revealed enemy', () => {
     const tank = makeHero({ role: ['Tank'] })
     const hero = makeHero({ role: ['Tank'] })

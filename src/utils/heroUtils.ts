@@ -253,6 +253,9 @@ function calculateTeamBalance(
   yourTeam: Hero[],
   weights: RecommendationWeights
 ): number {
+  if (yourTeam.length === 0) return 0;
+
+  const confidence = Math.min(yourTeam.length / MAX_ALLIES, 1);
   const heroType = classifyJunglerType(hero);
 
   const teamStats = {
@@ -302,7 +305,7 @@ function calculateTeamBalance(
     score += 20 * weights.team_balance;
   }
 
-  return score;
+  return score * confidence;
 }
 
 function calculateDamageTypeBalance(
@@ -344,6 +347,9 @@ const ANTI_HEAL_BONUS = 25;
 const ARMOR_BREAK_BONUS = 30;
 const ARMOR_AGNOSTIC_MAX = 2;
 const IMMUNITY_DAMPING = 0.5;
+const MAX_ALLIES = 4;
+const BAN_RATE_SATURATES_AT = 50;
+const PICK_RATE_SATURATES_AT = 3;
 const FOUNDATION_SCALE = 3;
 const SITUATIONAL_BUDGET = 0.5;
 const SITUATIONAL_REFERENCE = 150;
@@ -561,19 +567,10 @@ function calculateMetaBonus(
   const stats = getLatestStats(hero, userRank);
   if (!stats) return 0;
 
-  let bonus = 0;
+  const banSignal = Math.min(stats.ban_rate / BAN_RATE_SATURATES_AT, 1);
+  const pickSignal = Math.min(stats.pick_rate / PICK_RATE_SATURATES_AT, 1);
 
-  if (stats.ban_rate > 50) {
-    bonus += 20 * weights.meta;
-  } else if (stats.ban_rate > 30) {
-    bonus += 10 * weights.meta;
-  }
-
-  if (stats.pick_rate >= 1.0 && stats.pick_rate <= 3.0) {
-    bonus += 10 * weights.meta;
-  }
-
-  return bonus;
+  return (banSignal * 20 + pickSignal * 10) * weights.meta;
 }
 
 function calculateEarlyLateGameFactor(
