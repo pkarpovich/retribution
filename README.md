@@ -154,7 +154,9 @@ pnpm install
 pnpm dev
 ```
 
-Then http://localhost:50200. Node 22+, pnpm 10+.
+Then http://localhost:50200. The toolchain is pinned in `mise.toml` — Node 24.18.0
+and pnpm 11.17.0 — and `packageManager` in `package.json` holds CI to the same pnpm,
+so a machine with mise needs nothing else.
 
 ```fish
 pnpm test      # 272 tests: engine, invariants, benchmark, components

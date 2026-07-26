@@ -1,0 +1,5 @@
+# pnpm 11 stopped reading the "pnpm" field in package.json. Settings live here
+# now, and this override is a security fix rather than a preference: without it
+# workbox-build pulls a serialize-javascript with a known advisory.
+overrides:
+  serialize-javascript: ^7.0.4

@@ -24,12 +24,12 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Setup pnpm via corepack
         run: |
           corepack enable
-          corepack prepare pnpm@10 --activate
+          corepack prepare --activate
 
       - name: Cache pnpm store
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
