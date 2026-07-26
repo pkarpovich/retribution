@@ -1,7 +1,11 @@
 import fs from 'fs';
 import https from 'https';
+import { computeCapabilities, computeStatProfiles } from './lib/capabilities.js';
+import { deriveJungleAdditions } from './lib/pro-meta.js';
 
 const API_SECRET = process.env.MLBB_API_SECRET;
+const LIQUIPEDIA_PATH = './src/data/liquipedia-heroes.json';
+const PRO_DRAFTS_PATH = './src/data/pro-drafts.json';
 
 const useProxy = !API_SECRET;
 const BASE_URL = useProxy
@@ -79,152 +83,48 @@ async function fetchHeroDetails(heroName, maxRetries = 3) {
   return null;
 }
 
-function parseSkillTypes(skills) {
-  if (!skills || !Array.isArray(skills)) return [];
-
-  return skills.map(skill => {
-    const rawType = skill.type || '';
-    const tags = rawType.split('|').map(t => t.trim()).filter(Boolean);
-    const scaling = skill.scaling || {};
-
-    return {
-      name: skill.name || '',
-      tags,
-      cooldown: scaling.cooldown ? parseFloat(scaling.cooldown) : null,
-      maxBaseDamage: Array.isArray(scaling.base_damage)
-        ? scaling.base_damage[scaling.base_damage.length - 1]
-        : null,
-    };
-  });
-}
-
-function computeCapabilities(hero) {
-  const parsed = parseSkillTypes(hero.skills);
-
-  const placeholderPattern = /^(skill \d+|ultimate|passive)$/i;
-  const placeholderCount = parsed.filter(s =>
-    placeholderPattern.test(s.name.trim()) && s.tags.length === 0
-  ).length;
-  if (placeholderCount >= 2) {
+function loadJson(path) {
+  if (!fs.existsSync(path)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(path, 'utf8'));
+  } catch (error) {
+    console.error(`Failed to read ${path}: ${error.message}`);
     return null;
   }
-
-  const skillsWithTags = parsed.filter(s => s.tags.length > 0).length;
-  const hasDescriptions = (hero.skills || []).some(
-    s => s.description && s.description.trim().length > 20
-  );
-  if (skillsWithTags <= 1 && !hasDescriptions && parsed.length >= 3) {
-    return null;
-  }
-
-  let mobilityScore = 0;
-  let ccScore = 0;
-  let hasSustain = false;
-  let hasAOE = false;
-  let hasImmunity = false;
-  let maxBurstDamage = 0;
-  const cooldowns = [];
-
-  for (const skill of parsed) {
-    if (skill.tags.includes('Mobility')) mobilityScore += 1;
-    if (skill.tags.includes('Blink')) mobilityScore += 1;
-    if (skill.tags.includes('CC') || skill.tags.includes('Stun') || skill.tags.includes('Immobilize')) ccScore += 1;
-    if (skill.tags.includes('Heal') || skill.tags.includes('Regen')) hasSustain = true;
-    if (skill.tags.includes('AOE')) hasAOE = true;
-    if (skill.tags.includes('Immunity')) hasImmunity = true;
-
-    if (skill.maxBaseDamage && skill.maxBaseDamage > maxBurstDamage) {
-      maxBurstDamage = skill.maxBaseDamage;
-    }
-
-    if (skill.cooldown !== null && skill.cooldown > 0) {
-      cooldowns.push(skill.cooldown);
-    }
-  }
-
-  const description = hero.skills
-    ?.map(s => (s.description || '').toLowerCase())
-    .join(' ') || '';
-
-  if (description.includes('immun') || description.includes('untargetable') || description.includes('invincib')) {
-    hasImmunity = true;
-  }
-  if (!hasSustain) {
-    for (const s of hero.skills || []) {
-      const desc = (s.description || '').toLowerCase();
-      if (!desc) continue;
-      if (desc.includes('heal')) {
-        hasSustain = true;
-        break;
-      }
-      const hasHPContext = desc.includes('hp') || desc.includes('health') || desc.includes('hit point') || desc.includes('life');
-      if ((desc.includes('regenerat') || desc.includes('restore')) && hasHPContext) {
-        hasSustain = true;
-        break;
-      }
-    }
-  }
-
-  if (mobilityScore === 0) {
-    let descMobility = 0;
-    for (const s of hero.skills || []) {
-      const desc = (s.description || '').toLowerCase();
-      if (!desc) continue;
-      if (desc.includes('dash') || desc.includes('blink') || desc.includes('leap') ||
-          desc.includes('teleport') || desc.includes('lunge') || desc.includes('jump') ||
-          desc.includes('pounce') || desc.includes('sprint') || desc.includes('vault')) {
-        descMobility++;
-      }
-    }
-    mobilityScore = descMobility;
-  }
-
-  const speciality = hero.speciality || [];
-
-  const mobilitySpecs = ['Chase', 'Charge', 'Blink'];
-  const specMobility = mobilitySpecs.filter(s => speciality.includes(s)).length;
-  mobilityScore = Math.max(mobilityScore, specMobility);
-
-  const ccSpecs = ['Crowd Control', 'Control', 'Initiator'];
-  const specCC = ccSpecs.filter(s => speciality.includes(s)).length;
-  ccScore = Math.max(ccScore, Math.min(specCC * 2, 3));
-
-  if (!hasSustain && speciality.includes('Regen')) {
-    hasSustain = true;
-  }
-
-  const avgCooldown = cooldowns.length > 0
-    ? Math.round(cooldowns.reduce((a, b) => a + b, 0) / cooldowns.length * 10) / 10
-    : null;
-
-  return {
-    mobilityScore,
-    ccScore,
-    hasSustain,
-    hasAOE,
-    hasImmunity,
-    maxBurstDamage,
-    avgCooldown,
-    skillsSummary: parsed.map(s => ({
-      name: s.name,
-      tags: s.tags,
-      cooldown: s.cooldown,
-    })),
-  };
 }
 
-function enrichHeroes(heroes) {
-  return heroes.map(hero => {
-    const hasSkillData = hero.skills && Array.isArray(hero.skills) && hero.skills.length > 0;
-    const capabilities = hasSkillData ? computeCapabilities(hero) : null;
+function applyJungleAdditions(heroes, proDrafts) {
+  if (!proDrafts?.games?.length) return [];
+
+  const additions = deriveJungleAdditions(proDrafts.games, heroes);
+  const byName = new Map(heroes.map(hero => [hero.hero_name, hero]));
+
+  for (const addition of additions) {
+    byName.get(addition.hero).lane = [...byName.get(addition.hero).lane, 'Jungle'];
+  }
+
+  return additions;
+}
+
+function enrichHeroes(heroes, liquipediaHeroes) {
+  const capabilitiesByHero = {};
+
+  const enriched = heroes.map(hero => {
+    const source = liquipediaHeroes?.[hero.hero_name] ?? null;
+    const capabilities = source ? computeCapabilities(source) : null;
+    if (capabilities) {
+      capabilities.source = 'liquipedia';
+      capabilitiesByHero[hero.hero_name] = capabilities;
+    }
 
     const { skills, ...heroWithoutSkills } = hero;
 
-    return {
-      ...heroWithoutSkills,
-      capabilities,
-    };
+    return { ...heroWithoutSkills, capabilities };
   });
+
+  computeStatProfiles(capabilitiesByHero);
+
+  return enriched;
 }
 
 const allowPartial = process.argv.includes('--allow-partial');
@@ -278,34 +178,48 @@ async function main() {
     console.warn('Proceeding with partial data — re-run to include dropped heroes.\n');
   }
 
-  const missingSkills = heroesWithDetails.filter(h => !h.skills || !Array.isArray(h.skills) || h.skills.length === 0);
-  if (missingSkills.length > 0) {
-    console.warn(`\nWARNING: ${missingSkills.length} hero(es) have missing/empty skills data (capabilities derived from speciality only):`);
-    for (const h of missingSkills) {
-      console.warn(`  - ${h.hero_name} (speciality: ${(h.speciality || []).join(', ') || 'none'})`);
-    }
+  const liquipediaHeroes = loadJson(LIQUIPEDIA_PATH)?.heroes ?? null;
+  if (!liquipediaHeroes) {
+    console.warn(`\nWARNING: ${LIQUIPEDIA_PATH} not found — capabilities will be null for every hero.`);
+    console.warn('Run: node scripts/fetch-liquipedia-skills.js');
     dataDegraded = true;
   }
 
   console.log('\nEnriching hero data...');
-  const enrichedHeroes = enrichHeroes(heroesWithDetails);
+  const enrichedHeroes = enrichHeroes(heroesWithDetails, liquipediaHeroes);
 
+  const withCapabilities = enrichedHeroes.filter(h => h.capabilities);
   const capsStats = {
-    withMobility: enrichedHeroes.filter(h => h.capabilities?.mobilityScore > 0).length,
-    withCC: enrichedHeroes.filter(h => h.capabilities?.ccScore > 0).length,
-    withSustain: enrichedHeroes.filter(h => h.capabilities?.hasSustain).length,
-    withAOE: enrichedHeroes.filter(h => h.capabilities?.hasAOE).length,
-    withImmunity: enrichedHeroes.filter(h => h.capabilities?.hasImmunity).length,
-    withSkillData: enrichedHeroes.filter(h => h.capabilities !== null).length,
+    withSkillData: withCapabilities.length,
+    withCC: withCapabilities.filter(h => h.capabilities.ccScore > 0).length,
+    withMobility: withCapabilities.filter(h => h.capabilities.mobilityScore > 0).length,
+    withSelfSustain: withCapabilities.filter(h => h.capabilities.selfSustain).length,
+    withAllySustain: withCapabilities.filter(h => h.capabilities.allySustain).length,
+    withImmunity: withCapabilities.filter(h => h.capabilities.hasImmunity).length,
+    withAntiHeal: withCapabilities.filter(h => h.capabilities.antiHeal).length,
+    withDamageReduction: withCapabilities.filter(h => h.capabilities.damageReduction).length,
+    withShield: withCapabilities.filter(h => h.capabilities.hasShield).length,
+    withAOE: withCapabilities.filter(h => h.capabilities.hasAOE).length,
   };
   console.log('Capabilities breakdown:', capsStats);
 
-  const missingSkillsNames = new Set(missingSkills.map(h => h.hero_name));
-  const placeholderHeroes = enrichedHeroes.filter(h => h.capabilities === null && !missingSkillsNames.has(h.hero_name));
-  if (placeholderHeroes.length > 0) {
-    console.warn(`\nWARNING: ${placeholderHeroes.length} hero(es) have placeholder/malformed skill data (capabilities could not be computed):`);
-    for (const h of placeholderHeroes) {
-      console.warn(`  - ${h.hero_name} (speciality: ${(h.speciality || []).join(', ') || 'none'})`);
+  const proDrafts = loadJson(PRO_DRAFTS_PATH);
+  if (!proDrafts) {
+    console.warn(`\nWARNING: ${PRO_DRAFTS_PATH} not found — meta jungle lanes will not be applied.`);
+  }
+  const laneAdditions = applyJungleAdditions(enrichedHeroes, proDrafts);
+  if (laneAdditions.length > 0) {
+    console.log('\nJungle lane added from pro drafts:');
+    for (const addition of laneAdditions) {
+      console.log(`  ${addition.hero}: ${addition.jungleGames}/${addition.totalPicks} picks as jungler (${Math.round(addition.share * 100)}%)`);
+    }
+  }
+
+  const missingCapabilities = enrichedHeroes.filter(h => !h.capabilities);
+  if (missingCapabilities.length > 0) {
+    console.warn(`\nWARNING: ${missingCapabilities.length} hero(es) have no Liquipedia skill data:`);
+    for (const h of missingCapabilities) {
+      console.warn(`  - ${h.hero_name}`);
     }
     dataDegraded = true;
   }
@@ -318,6 +232,7 @@ async function main() {
   const output = {
     lastUpdated: new Date().toISOString(),
     totalHeroes: enrichedHeroes.length,
+    laneAdditions,
     heroes: enrichedHeroes
   };
 
@@ -334,10 +249,11 @@ async function main() {
   console.log('\nSample jungler capabilities:');
   for (const j of junglers.slice(0, 3)) {
     if (!j.capabilities) {
-      console.log(`  ${j.hero_name}: capabilities=null (malformed skill data)`);
+      console.log(`  ${j.hero_name}: capabilities=null (no Liquipedia data)`);
       continue;
     }
-    console.log(`  ${j.hero_name}: mob=${j.capabilities.mobilityScore} cc=${j.capabilities.ccScore} sustain=${j.capabilities.hasSustain} aoe=${j.capabilities.hasAOE} immune=${j.capabilities.hasImmunity} burst=${j.capabilities.maxBurstDamage}`);
+    const c = j.capabilities;
+    console.log(`  ${j.hero_name}: cc=${c.ccScore} mob=${c.mobilityScore} self=${c.selfSustain} ally=${c.allySustain} immune=${c.hasImmunity} anti=${c.antiHeal} aoe=${c.hasAOE} burst=${c.maxBurstDamage}`);
   }
 
   if (dataDegraded) {
@@ -349,15 +265,10 @@ async function main() {
         const more = droppedHeroes.length > 3 ? ` +${droppedHeroes.length - 3}` : '';
         parts.push(`dropped ${droppedHeroes.length}: ${names}${more}`);
       }
-      if (missingSkills.length > 0) {
-        const names = missingSkills.slice(0, 3).map(h => h.hero_name).join(', ');
-        const more = missingSkills.length > 3 ? ` +${missingSkills.length - 3}` : '';
-        parts.push(`missing skills ${missingSkills.length}: ${names}${more}`);
-      }
-      if (placeholderHeroes.length > 0) {
-        const names = placeholderHeroes.slice(0, 3).map(h => h.hero_name).join(', ');
-        const more = placeholderHeroes.length > 3 ? ` +${placeholderHeroes.length - 3}` : '';
-        parts.push(`placeholder ${placeholderHeroes.length}: ${names}${more}`);
+      if (missingCapabilities.length > 0) {
+        const names = missingCapabilities.slice(0, 3).map(h => h.hero_name).join(', ');
+        const more = missingCapabilities.length > 3 ? ` +${missingCapabilities.length - 3}` : '';
+        parts.push(`no capabilities ${missingCapabilities.length}: ${names}${more}`);
       }
       fs.appendFileSync(ghOutput, `degraded=true\n`);
       fs.appendFileSync(ghOutput, `degradation_summary=${parts.join('; ')}\n`);

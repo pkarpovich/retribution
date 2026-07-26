@@ -44,14 +44,43 @@ export interface SkillSummary {
   cooldown: number | null;
 }
 
+export type CapabilitySource = 'liquipedia';
+
+export interface HeroBaseStats {
+  hp?: number;
+  hpReg?: number;
+  mana?: number;
+  manaReg?: number;
+  phyAtk?: number;
+  phyDef?: number;
+  magDef?: number;
+  moveSpeed?: number;
+  atkSpeed?: number;
+}
+
+export interface HeroStatProfile {
+  durability: number;
+  regen: number;
+  attack: number;
+  speed: number;
+}
+
 export interface HeroCapabilities {
   mobilityScore: number;
   ccScore: number;
   hasSustain: boolean;
+  selfSustain: boolean;
+  allySustain: boolean;
+  antiHeal: boolean;
   hasAOE: boolean;
   hasImmunity: boolean;
+  hasShield: boolean;
+  damageReduction: boolean;
   maxBurstDamage: number;
   avgCooldown: number | null;
+  baseStats: HeroBaseStats | null;
+  statProfile?: HeroStatProfile;
+  source: CapabilitySource;
   skillsSummary: SkillSummary[];
 }
 

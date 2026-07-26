@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { getJunglers, recommendBoots, calculateJunglerRecommendation } from '../heroUtils'
-import type { Hero } from '../../types/hero'
+import type { Hero, HeroCapabilities } from '../../types/hero'
+
+function makeCapabilities(overrides: Partial<HeroCapabilities> = {}): HeroCapabilities {
+  return {
+    mobilityScore: 0,
+    ccScore: 0,
+    hasSustain: false,
+    selfSustain: false,
+    allySustain: false,
+    antiHeal: false,
+    hasAOE: false,
+    hasImmunity: false,
+    hasShield: false,
+    damageReduction: false,
+    maxBurstDamage: 0,
+    avgCooldown: null,
+    baseStats: null,
+    source: 'liquipedia',
+    skillsSummary: [],
+    ...overrides,
+  }
+}
 
 function makeHero(overrides: Partial<Hero> = {}): Hero {
   return {
@@ -68,13 +89,13 @@ describe('recommendBoots - boot selection', () => {
       id: 10,
       role: ['Tank'],
       speciality: ['Crowd Control', 'Initiator'],
-      capabilities: { mobilityScore: 1, ccScore: 2, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 1, ccScore: 2, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] }),
     })
     const ccEnemy2 = makeHero({
       id: 11,
       role: ['Support'],
       speciality: ['Control'],
-      capabilities: { mobilityScore: 0, ccScore: 2, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 50, avgCooldown: 10, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 0, ccScore: 2, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 50, avgCooldown: 10, skillsSummary: [] }),
     })
     const result = recommendBoots(hero, [ccEnemy, ccEnemy2])
     expect(result.boots).toBe('Tough Boots')
@@ -86,7 +107,7 @@ describe('recommendBoots - boot selection', () => {
     const makeCC = (id: number) => makeHero({
       id,
       speciality: ['Crowd Control'],
-      capabilities: { mobilityScore: 1, ccScore: 1, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 1, ccScore: 1, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] }),
     })
     const result = recommendBoots(hero, [makeCC(10), makeCC(11), makeCC(12)])
     expect(result.boots).toBe('Tough Boots')
@@ -117,7 +138,7 @@ describe('recommendBoots - boot selection', () => {
     const fighter = makeHero({
       role: ['Fighter'],
       speciality: ['Damage'],
-      capabilities: { mobilityScore: 1, ccScore: 1, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 8, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 1, ccScore: 1, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 8, skillsSummary: [] }),
     })
     const result = recommendBoots(fighter, [])
     expect(result.boots).toBe('Magic Shoes')
@@ -127,7 +148,7 @@ describe('recommendBoots - boot selection', () => {
     const fighter = makeHero({
       role: ['Fighter'],
       speciality: ['Damage'],
-      capabilities: { mobilityScore: 3, ccScore: 0, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 24, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 3, ccScore: 0, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 300, avgCooldown: 24, skillsSummary: [] }),
     })
     const result = recommendBoots(fighter, [])
     expect(result.boots).toBe('Swift Boots')
@@ -144,11 +165,11 @@ describe('recommendBoots - boot selection', () => {
     const mage = makeHero({ role: ['Mage'] })
     const ccEnemy = makeHero({
       id: 10,
-      capabilities: { mobilityScore: 1, ccScore: 3, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 1, ccScore: 3, hasSustain: false, hasAOE: true, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] }),
     })
     const ccEnemy2 = makeHero({
       id: 11,
-      capabilities: { mobilityScore: 0, ccScore: 2, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 50, avgCooldown: 10, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 0, ccScore: 2, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 50, avgCooldown: 10, skillsSummary: [] }),
     })
     const result = recommendBoots(mage, [ccEnemy, ccEnemy2])
     expect(result.boots).toBe('Tough Boots')
@@ -174,7 +195,7 @@ describe('recommendBoots - blessing selection', () => {
     const hero = makeHero({
       role: ['Fighter'],
       speciality: ['Guard', 'Regen'],
-      capabilities: { mobilityScore: 1, ccScore: 1, hasSustain: true, hasAOE: false, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 1, ccScore: 1, hasSustain: true, hasAOE: false, hasImmunity: false, maxBurstDamage: 100, avgCooldown: 8, skillsSummary: [] }),
     })
     const result = recommendBoots(hero, [])
     expect(result.blessing).toBe('Bloody')
@@ -184,7 +205,7 @@ describe('recommendBoots - blessing selection', () => {
     const hero = makeHero({
       role: ['Assassin'],
       speciality: ['Chase'],
-      capabilities: { mobilityScore: 3, ccScore: 0, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 500, avgCooldown: 6, skillsSummary: [] },
+      capabilities: makeCapabilities({ mobilityScore: 3, ccScore: 0, hasSustain: false, hasAOE: false, hasImmunity: false, maxBurstDamage: 500, avgCooldown: 6, skillsSummary: [] }),
     })
     const result = recommendBoots(hero, [])
     expect(result.blessing).toBe('Flame')
