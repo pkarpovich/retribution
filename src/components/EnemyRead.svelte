@@ -174,6 +174,7 @@
     display: grid;
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg) var(--space-lg);
+    animation: fade-in var(--duration-base) var(--ease-out);
   }
 
   .head {
@@ -268,6 +269,7 @@
     display: block;
     block-size: 100%;
     background: var(--tone);
+    transition: inline-size var(--duration-base) var(--ease-out);
   }
 
   .detail {

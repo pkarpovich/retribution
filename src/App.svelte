@@ -151,7 +151,9 @@
   </div>
 
   {#if toast}
-    <p class="toast" role="status">{toast}</p>
+    {#key toast}
+      <p class="toast" role="status">{toast}</p>
+    {/key}
   {/if}
 </div>
 
@@ -288,5 +290,6 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     box-shadow: var(--shadow-toast);
+    animation: toast-life 1600ms var(--ease-out) forwards;
   }
 </style>

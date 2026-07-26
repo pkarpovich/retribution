@@ -34,6 +34,7 @@
     padding: var(--space-xs) var(--space-lg);
     background: var(--color-panel);
     border-block-end: 1px solid var(--color-border);
+    animation: fade-in var(--duration-base) var(--ease-out);
   }
 
   .kicker {

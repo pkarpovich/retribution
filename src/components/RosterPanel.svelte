@@ -124,6 +124,9 @@
     cursor: pointer;
     font-size: var(--font-size-md);
     color: var(--color-ink-faint);
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
 
     &.on {
       color: var(--color-ink);
@@ -204,6 +207,9 @@
     letter-spacing: 0.1em;
     color: var(--color-ink-mute);
     --role-hue: 265;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
 
     &.on {
       color: var(--color-ink);

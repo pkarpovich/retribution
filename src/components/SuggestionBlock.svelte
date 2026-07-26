@@ -475,6 +475,12 @@
     block-size: 7px;
   }
 
+  /* The bars carry the score from one draft to the next: watching a hero's
+     fit shrink when an enemy is added is the point, not decoration. */
+  .seg {
+    transition: inline-size var(--duration-base) var(--ease-out);
+  }
+
   .seg.strength {
     background: var(--color-ink);
   }
@@ -645,6 +651,7 @@
     font-size: var(--font-size-2xs);
     letter-spacing: 0.08em;
     color: var(--color-ink-faint);
+    transition: background-color var(--duration-fast) var(--ease-out);
 
     &.on {
       background: var(--color-accent-soft);
@@ -715,6 +722,12 @@
     background: var(--color-panel);
     border: 1.5px solid var(--color-border-strong);
     cursor: pointer;
+    transition:
+      inset-inline-start var(--duration-base) var(--ease-out),
+      inset-block-start var(--duration-fast) var(--ease-out),
+      inline-size var(--duration-fast) var(--ease-out),
+      block-size var(--duration-fast) var(--ease-out),
+      margin-inline-start var(--duration-fast) var(--ease-out);
   }
 
   /* The hit target is the tap area, not the drawn dot. */
@@ -786,6 +799,9 @@
     border-radius: var(--radius-xs);
     cursor: pointer;
     text-align: start;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
 
     &.on {
       background: var(--color-accent-soft);

@@ -60,6 +60,12 @@
 
     --shadow-toast: 0 6px 20px oklch(0% 0 0 / 0.2);
 
+    /* A draft runs on a timer, so motion confirms a tap or carries a number
+       from one value to the next, and never makes anyone wait to read. */
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+    --duration-fast: 120ms;
+    --duration-base: 180ms;
+
     --app-inline-size: 68rem;
   }
 }
@@ -143,5 +149,41 @@
 
   ::-webkit-scrollbar-track {
     background: transparent;
+  }
+
+  /* Shared because Svelte scopes keyframes per component, and three panels
+     want the same two. A height that eases open is deliberately not here:
+     nothing interpolates to auto, and faking it costs more than it returns. */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  /* The toast is removed on a 1600ms timer, so its fade-out is the tail of one
+     animation rather than an exit transition nobody can drive from CSS. */
+  @keyframes toast-life {
+    0% {
+      opacity: 0;
+      translate: 0 8px;
+    }
+
+    12%,
+    78% {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    100% {
+      opacity: 0;
+      translate: 0 4px;
+    }
   }
 }

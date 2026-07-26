@@ -104,6 +104,7 @@
     display: grid;
     grid-template-rows: auto auto auto minmax(0, 1fr);
     background: var(--color-bg);
+    animation: sheet-in var(--duration-base) var(--ease-out);
   }
 
   .bar,
@@ -259,6 +260,9 @@
     font-weight: 700;
     letter-spacing: var(--tracking-mono);
     color: var(--color-ink-mute);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
   }
 
   .segmented button.on {
@@ -341,6 +345,10 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     color: var(--color-ink-faint);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
   }
 
   .pill.banned {
