@@ -49,6 +49,9 @@ jobs:
       - name: Verify build passes with refreshed data
         run: pnpm build
 
+      - name: Verify tests pass with refreshed data
+        run: pnpm test
+
       - name: Commit and push if changed
         env:
           GH_PAT: ${{ secrets.GH_TOKEN }}
