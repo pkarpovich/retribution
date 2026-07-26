@@ -231,11 +231,11 @@ export function capabilitiesFor(hero: Hero, enemies: Hero[], userRank: UserRank 
       key: 'immune',
       short: 'IMMUN',
       label: 'control immunity',
-      stance: read && read.ccCount / read.revealed >= 0.6 ? 'wanted' : 'neutral',
+      stance: read && read.heavyCcCount / read.revealed >= 0.6 ? 'wanted' : 'neutral',
       present: capabilities.hasImmunity,
       display: capabilities.hasImmunity ? '✓' : '—',
       points: null,
-      why: read ? `${read.ccCount} of ${read.revealed} carry crowd control` : '',
+      why: read ? `${read.heavyCcCount} of ${read.revealed} carry heavy control` : '',
     },
     {
       key: 'cc',
@@ -308,6 +308,11 @@ export interface EnemyReadout {
   tally: { label: string; value: string; drives: boolean }[]
 }
 
+// A fact earns a line when the rule it drives is worth this much. Anything
+// under it is noise: half the roster heals, so "at least one of them heals"
+// was true for 86% of teams while paying a median of five points.
+const MATERIAL_POINTS = 10
+
 export function enemyReadout(
   enemies: Hero[],
   pool: Hero[],
@@ -317,15 +322,16 @@ export function enemyReadout(
   const read = enemyRuleReadout(enemies, userRank)
   if (!read) return null
 
-  const heals = read.sustainCount / read.revealed >= 0.5
-  const locks = read.ccCount / read.revealed >= 0.6
+  const heals = read.antiHealPoints >= MATERIAL_POINTS
+  const breaksArmour = read.armourBreakPoints >= MATERIAL_POINTS
+  const locks = read.heavyCcCount / read.revealed >= 0.6
 
   const carriers = (predicate: (hero: Hero) => boolean) => suggestions.filter(s => predicate(s.hero)).length
   const poolCarriers = pool.filter(hero => hero.capabilities?.antiHeal)
 
   const levers: Lever[] = []
 
-  if (read.sustainCount > 0) {
+  if (heals) {
     const claimed = carriers(hero => Boolean(hero.capabilities?.antiHeal))
     levers.push({
       key: 'antiHeal',
@@ -340,7 +346,7 @@ export function enemyReadout(
     })
   }
 
-  if (read.mitigation > 0) {
+  if (breaksArmour) {
     levers.push({
       key: 'armour',
       name: 'Armour-ignoring damage',
@@ -359,7 +365,7 @@ export function enemyReadout(
       flag: null,
       tone: 'pos',
       points: null,
-      evidence: `${read.ccCount} of ${read.revealed} of them carry crowd control`,
+      evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
       supply: `${carriers(hero => Boolean(hero.capabilities?.hasImmunity))} of the ${suggestions.length} carry it`,
     })
   }
@@ -375,16 +381,23 @@ export function enemyReadout(
     supply: ccOff ? 'the rule runs and returns almost nothing' : `${carriers(hero => (hero.capabilities?.ccScore ?? 0) >= 4)} of the ${suggestions.length} carry heavy control`,
   })
 
-  const statement = [
-    heals ? 'They heal' : null,
+  const clauses = [
+    heals ? 'they heal' : null,
     locks ? 'they will lock you down' : null,
-  ].filter(Boolean).join(', ') || 'Nothing about their draft is extreme'
+    breaksArmour && !heals && !locks ? 'they soak damage' : null,
+  ].filter((clause): clause is string => Boolean(clause))
 
-  const unclaimed = read.sustainCount > 0 && carriers(hero => Boolean(hero.capabilities?.antiHeal)) === 0
+  const sentence = clauses.join(', ') || 'nothing about their draft stands out'
+  const statement = `${sentence[0].toUpperCase()}${sentence.slice(1)}.`
+
+  // Same test as the headline, so the two can never disagree — the screenshot
+  // that started this said "they will lock you down" and then advised anti-heal
+  // in the same breath.
+  const unclaimed = heals && carriers(hero => Boolean(hero.capabilities?.antiHeal)) === 0
 
   return {
     read,
-    statement: `${statement}.`,
+    statement,
     aside: read.immunityCount === 0
       ? 'They cannot shrug off control themselves.'
       : `${read.immunityCount} of them shrug off control.`,
@@ -401,7 +414,8 @@ export function enemyReadout(
       : null,
     tally: [
       { label: 'sustain', value: `${read.sustainCount}/${read.revealed}`, drives: true },
-      { label: 'crowd control', value: `${read.ccCount}/${read.revealed}`, drives: true },
+      { label: 'crowd control', value: `${read.ccCount}/${read.revealed}`, drives: false },
+      { label: 'heavy control', value: `${read.heavyCcCount}/${read.revealed}`, drives: true },
       { label: 'control immunity', value: `${read.immunityCount}/${read.revealed}`, drives: true },
       { label: 'mobility', value: `${Math.round(read.mobilityShare * 100)}%`, drives: true },
       { label: 'damage mitigation', value: read.mitigation.toFixed(2), drives: true },

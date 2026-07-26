@@ -340,6 +340,7 @@ const FULL_SHARE_AT = 0.4;
 const SPECIALIST_STEP = 15;
 const SPECIALIST_CAP = 3;
 const HIGH_CC_SHARE = 0.6;
+const HEAVY_CC_AT = 4;
 const DURABLE_PROFILE = 0.7;
 const CC_SATURATES_AT = 4;
 const CATCH_BONUS = 25;
@@ -373,6 +374,7 @@ export interface EnemyRuleReadout {
   squishy: number;
   tanks: number;
   ccCount: number;
+  heavyCcCount: number;
   sustainCount: number;
   immunityCount: number;
   mobilityShare: number;
@@ -394,6 +396,7 @@ export function enemyRuleReadout(
   let squishy = 0;
   let tanks = 0;
   let ccCount = 0;
+  let heavyCcCount = 0;
   let sustainCount = 0;
   let immunityCount = 0;
   let mobilityValue = 0;
@@ -405,6 +408,7 @@ export function enemyRuleReadout(
       squishy += 1;
     }
     if (getCCScore(enemy) >= 1) ccCount += 1;
+    if (getCCScore(enemy) >= HEAVY_CC_AT) heavyCcCount += 1;
     if (enemy.capabilities?.selfSustain || enemy.capabilities?.allySustain) sustainCount += 1;
     if (hasImmunityCapability(enemy)) immunityCount += 1;
 
@@ -422,6 +426,7 @@ export function enemyRuleReadout(
     squishy,
     tanks,
     ccCount,
+    heavyCcCount,
     sustainCount,
     immunityCount,
     mobilityShare,
@@ -483,7 +488,7 @@ function calculateEnemyVulnerability(
       enemyStats.squishyTargetValue += mobilityFactor;
     }
 
-    if (getCCScore(enemy) >= 1) {
+    if (getCCScore(enemy) >= HEAVY_CC_AT) {
       enemyStats.ccCount += 1;
     }
   }
