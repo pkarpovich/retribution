@@ -17,7 +17,7 @@
   const { suggestions, enemies, myPick, hasDraft, onLock, onUnlock }: Props = $props()
 
   let focusIndex = $state(0)
-  let expanded = $state(false)
+  let listView = $state<'auto' | 'axis' | 'rows'>('auto')
 
   $effect(() => {
     if (focusIndex >= suggestions.length) focusIndex = 0
@@ -149,11 +149,11 @@
       <button class="lock" onclick={() => onLock(focus.hero)}>LOCK THIS PICK</button>
     </article>
 
-    <div class="compare" class:expanded>
+    <div class="compare" class:force-rows={listView === 'rows'} class:force-axis={listView === 'axis'}>
       <div class="axis">
         <div class="axis-head">
           <span class="kicker">FIT · ALL {suggestions.length}</span>
-          <button class="expand" onclick={() => (expanded = true)}>{suggestions.length} BARS ›</button>
+          <button class="toggle" onclick={() => (listView = 'rows')}>{suggestions.length} BARS ›</button>
         </div>
         <div class="axis-line">
           {#each suggestions as suggestion, index (suggestion.hero.id)}
@@ -174,6 +174,10 @@
       </div>
 
       <div class="rows">
+        <div class="rows-head">
+          <span class="kicker">ALL {suggestions.length} · STRENGTH + FIT</span>
+          <button class="toggle" onclick={() => (listView = 'axis')}>COLLAPSE ˄</button>
+        </div>
         {#each rows as group, groupIndex (groupIndex)}
           <div class="row-group" class:tied={Boolean(group.tie)}>
             {#each group.items as item (item.suggestion.hero.id)}
@@ -483,14 +487,6 @@
     gap: var(--space-2xs);
   }
 
-  .compare.expanded .axis {
-    display: none;
-  }
-
-  .compare.expanded .rows {
-    display: grid;
-  }
-
   @container app (inline-size > 46rem) {
     .axis {
       display: none;
@@ -501,7 +497,26 @@
     }
   }
 
-  .expand {
+  /* An explicit choice wins over the container default at any width. */
+  .compare.force-rows .axis,
+  .compare.force-axis .rows {
+    display: none;
+  }
+
+  .compare.force-rows .rows,
+  .compare.force-axis .axis {
+    display: grid;
+  }
+
+  .rows-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding-block-end: var(--space-3xs);
+  }
+
+  .toggle {
     padding: 0;
     background: none;
     border: none;
@@ -567,15 +582,17 @@
     text-overflow: ellipsis;
   }
 
+  /* Every group carries the same gutter so the tie bracket cannot shift its
+     rows out of line with the rest of the list. */
   .row-group {
     display: grid;
     gap: var(--space-3xs);
+    padding-inline-start: var(--space-xs);
+    border-inline-start: 2px solid transparent;
   }
 
   .row-group.tied {
-    padding-inline-start: var(--space-xs);
-    margin-inline-start: -3px;
-    border-inline-start: 2px solid var(--color-border-strong);
+    border-inline-start-color: var(--color-border-strong);
   }
 
   .row {
