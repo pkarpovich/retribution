@@ -521,9 +521,10 @@
     border-radius: 1px;
   }
 
+  /* A large fill rather than ink: see --color-figure. Identical in light. */
   .swatch.strength,
   .swatch.pays {
-    background: var(--color-ink);
+    background: var(--color-figure);
   }
 
   .swatch.fit {
@@ -606,7 +607,7 @@
   }
 
   .seg.strength {
-    background: var(--color-ink);
+    background: var(--color-figure);
   }
 
   .seg.fit {
