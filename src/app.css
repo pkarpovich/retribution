@@ -73,6 +73,48 @@
 
     --app-inline-size: 68rem;
   }
+
+  /* Dark is not a mirror of light. Lightness moves, hue is kept, and chroma
+     comes down on the three signal colours because full chroma vibrates
+     against a dark field. Every value below was solved for a contrast ratio
+     rather than picked: each one matches or beats what its light counterpart
+     scores, so nothing that passed AA on white stops passing here.
+     Measured on the darker of the two surfaces, --color-bg:
+       ink 13.0   ink-mute 5.4   ink-faint 5.3
+       accent 6.4   pos 5.4   neg 5.1   label on accent 6.4 */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+
+      /* Panel stays the raised surface, as in light mode. Further apart than
+         the 2 points light uses, because dark surfaces need more separation
+         before the eye reads them as different planes. */
+      --color-bg: oklch(17% 0.006 85);
+      --color-panel: oklch(21.5% 0.006 85);
+      --color-ink: oklch(87.3% 0.01 78);
+      --color-ink-mute: oklch(62.8% 0.012 82);
+      --color-ink-faint: oklch(62.4% 0.014 81);
+
+      /* Lifted past the light theme's 9 and 16. At parity the ratios match,
+         but a low-contrast light-on-dark edge reads weaker than the number
+         says, so these buy back the difference. */
+      --color-border: color-mix(in oklch, var(--color-ink) 12%, transparent);
+      --color-border-strong: color-mix(in oklch, var(--color-ink) 20%, transparent);
+
+      --color-accent: oklch(67.4% 0.115 265);
+      --color-accent-soft: oklch(27.5% 0.045 265);
+      --color-accent-hover: oklch(from var(--color-accent) calc(l + 0.08) c h);
+      /* The accent is the light surface here, so its label goes dark. */
+      --color-on-accent: oklch(17% 0.01 265);
+
+      --color-pos: oklch(61.5% 0.115 150);
+      --color-neg: oklch(63.1% 0.15 25);
+
+      /* A soft shadow is invisible on a dark field; the toast needs the depth
+         to come from opacity instead. */
+      --shadow-toast: 0 6px 24px oklch(0% 0 0 / 0.55);
+    }
+  }
 }
 
 @layer reset {
