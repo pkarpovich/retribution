@@ -3,17 +3,66 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>Retribution — Jungler Picker for Mobile Legends: Bang Bang</title>
+        <meta
+            name="description"
+            content="Free MLBB jungler pick helper. Ranks every jungler against the enemy draft and explains why, with boots and Retribution blessing for the pick. No ads, no account."
+        />
+        <link rel="canonical" href="https://retribution.pkarpovich.dev/" />
+        <meta name="theme-color" content="#faf8f4" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Retribution" />
+        <meta property="og:url" content="https://retribution.pkarpovich.dev/" />
+        <meta property="og:title" content="Retribution — Jungler Picker for Mobile Legends: Bang Bang" />
+        <meta
+            property="og:description"
+            content="Ranks every jungler against the enemy draft and explains why, with boots and Retribution blessing for the pick."
+        />
+        <meta property="og:image" content="https://retribution.pkarpovich.dev/og.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <title>Retribution</title>
+
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                "name": "Retribution",
+                "url": "https://retribution.pkarpovich.dev/",
+                "applicationCategory": "GameApplication",
+                "operatingSystem": "Any",
+                "browserRequirements": "Requires JavaScript",
+                "description": "Jungler pick helper for Mobile Legends: Bang Bang. Ranks every jungler against the enemy draft, explains what the draft is paying for, and suggests boots and Retribution blessing.",
+                "isAccessibleForFree": true,
+                "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+                "author": { "@type": "Person", "name": "Pavel Karpovich" },
+                "codeRepository": "https://github.com/pkarpovich/retribution"
+            }
+        </script>
     </head>
     <body>
-        <div id="root"></div>
+        <!-- The app is client-rendered, so this is the only copy a crawler sees
+             if it does not run the bundle. Short and honest rather than stuffed. -->
+        <div id="root">
+            <noscript>
+                <h1>Retribution</h1>
+                <p>
+                    A jungler pick helper for Mobile Legends: Bang Bang. It ranks every jungle hero
+                    against the enemy draft, explains what that draft is paying for, and suggests
+                    boots and a Retribution blessing once you lock a pick. JavaScript is required.
+                </p>
+                <p><a href="https://github.com/pkarpovich/retribution">Source on GitHub</a></p>
+            </noscript>
+        </div>
         <script type="module" src="/src/main.ts"></script>
     </body>
 </html>
