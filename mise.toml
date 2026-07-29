@@ -1,0 +1,7 @@
+# Exact rather than "lts" and "latest": a floating pin puts a different
+# toolchain on every machine, which is the problem this file exists to stop.
+# The global config was handing this project node 22 and pnpm 9 while the
+# lockfile was written by pnpm 10.
+[tools]
+node = "24.18.0"
+pnpm = "11.17.0"
