@@ -319,12 +319,44 @@ describe('counter threat', () => {
     expect(breakdown.counter_threat).toBe(0)
   })
 
+  // counter_threat only moves a score when a banned hero actually counters a
+  // candidate, so the shelved set is chosen by relationship. Picking it by
+  // position - pool.slice(10, 14) - asserted nothing on a roster ordered by
+  // score: it passed while those four happened to counter someone and went
+  // quietly vacant the week the meta reshuffled them out.
+  const enemies = pool.slice(0, 3)
+  const enemyIds = new Set(enemies.map(hero => hero.id))
+
+  const baseline = recommendJunglers(pool, [], enemies, [], 'Mythic')
+  const roster = new Map((heroData.heroes as unknown as Hero[]).map(hero => [hero.id, hero]))
+
+  // Anchored to a hero the engine actually returns, and the whole counter list
+  // goes on the board rather than a slice of it. Two earlier versions of this
+  // test asserted nothing: one banned heroes chosen by list position, the other
+  // banned counters that were never among the top two the term actually reads.
+  const { anchor, threats } = (() => {
+    for (const result of baseline) {
+      const live = (result.hero.counters ?? [])
+        .map(relation => roster.get(relation.id))
+        .filter((hero): hero is Hero => hero !== undefined)
+        .filter(hero => !enemyIds.has(hero.id) && hero.id !== result.hero.id)
+      if (live.length > 0) return { anchor: result.hero, threats: live }
+    }
+    return { anchor: null as Hero | null, threats: [] as Hero[] }
+  })()
+
+  // Junglers only, so that personal-banning them actually removes candidates.
+  const shelved = pool.filter(hero => !enemyIds.has(hero.id)).slice(0, 4)
+
+  it('finds a suggested hero whose counters are still on the board', () => {
+    expect(anchor).not.toBeNull()
+    expect(threats.length).toBeGreaterThan(0)
+    expect(shelved.length).toBeGreaterThan(0)
+  })
+
   // Refusing to play a hero says nothing about what the other team can pick.
   // Only a match ban takes it off the board for both sides.
   it('leaves every score alone when heroes are only on the personal ban list', () => {
-    const enemies = pool.slice(0, 3)
-    const shelved = pool.slice(10, 14)
-
     const scores = new Map(
       recommendJunglers(pool, [], enemies, [], 'Mythic').map(r => [r.hero.id, r.total_score])
     )
@@ -338,17 +370,15 @@ describe('counter threat', () => {
     }
   })
 
-  it('moves scores when the same heroes are banned in the match instead', () => {
-    const enemies = pool.slice(0, 3)
-    const shelved = pool.slice(10, 14)
+  it('drops the threat term to zero once every counter is off the board', () => {
+    const before = baseline.find(result => result.hero.id === anchor!.id)!
+    const after = recommendJunglers(pool, [], enemies, [], 'Mythic', threats)
+      .find(result => result.hero.id === anchor!.id)
 
-    const scores = new Map(
-      recommendJunglers(pool, [], enemies, [], 'Mythic').map(r => [r.hero.id, r.total_score])
-    )
-    const moved = recommendJunglers(pool, [], enemies, [], 'Mythic', shelved)
-      .filter(result => result.total_score !== scores.get(result.hero.id))
-
-    expect(moved.length).toBeGreaterThan(0)
+    expect(before.breakdown.counter_threat, anchor!.hero_name).toBeLessThan(0)
+    expect(after, anchor!.hero_name).toBeDefined()
+    expect(after!.breakdown.counter_threat).toBe(0)
+    expect(after!.total_score).toBeGreaterThan(before.total_score)
   })
 })
 
