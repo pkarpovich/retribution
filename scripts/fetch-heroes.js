@@ -2,6 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import { computeCapabilities, computeStatProfiles } from './lib/capabilities.js';
 import { deriveJungleAdditions } from './lib/pro-meta.js';
+import { validateHeroes } from './lib/validate-heroes.js';
 
 const API_SECRET = process.env.MLBB_API_SECRET;
 const LIQUIPEDIA_PATH = './src/data/liquipedia-heroes.json';
@@ -223,6 +224,19 @@ async function main() {
     }
     dataDegraded = true;
   }
+
+  // Structural checks on what the parsers built. These abort instead of
+  // degrading: a roster with no matchup data or unreadable statistics is not
+  // partial data, it is wrong data, and --allow-partial must not wave it
+  // through into a commit.
+  const { errors, checked } = validateHeroes(enrichedHeroes);
+  if (errors.length > 0) {
+    console.error(`\nABORTING: the parsed data failed ${errors.length} structural check(s):`);
+    for (const error of errors) console.error(`  - ${error}`);
+    console.error('\nNothing was written. This is a parser or API-shape problem, not a meta shift.');
+    process.exit(1);
+  }
+  console.log(`\nStructural checks passed on ${checked} heroes.`);
 
   const outputDir = './src/data';
   if (!fs.existsSync(outputDir)) {
