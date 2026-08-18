@@ -65,10 +65,6 @@
     )
   )
 
-  // The roster is the board, not the shortlist. A personal ban says "do not
-  // suggest this to me" and nothing else, so it must not reach this list: both
-  // teams can still take the hero, and the enemy taking it is exactly the fact
-  // the engine needs. It reaches the suggestions through bannedList instead.
   const roster = $derived(heroes.filter(hero => !drafted.has(hero.id)))
   const bannedIds = $derived(new Set(bans.ids))
 

@@ -8,13 +8,9 @@ import { byName, heroes, textOf } from '../components/__tests__/fixtures'
 
 const cells = (root: ParentNode) => [...root.querySelectorAll('.cell')] as HTMLButtonElement[]
 
-// By name rather than by index: the roster now keeps banned heroes, so which
-// hero sits in a given cell depends on the ban list.
 const cellFor = (root: ParentNode, name: string) =>
   cells(root).find(cell => cell.querySelector('.cell-name')?.textContent?.trim() === name)!
 
-// Every suggestion has a dot on the fit axis whichever way the list is shown,
-// so this reads all eight without depending on the expanded view.
 const shortlist = (root: ParentNode) =>
   [...root.querySelectorAll('.axis-line .dot')]
     .map(dot => dot.getAttribute('aria-label')?.replace(/, fit .*$/, '') ?? '')
@@ -292,10 +288,6 @@ describe('App match bans', () => {
 })
 
 describe('App pool', () => {
-  // The whole of RAL-82. A ban used to be taken off the roster, and the roster
-  // is the board both teams draft from - so refusing to play a hero also meant
-  // being unable to record the enemy taking it, which is the one fact the
-  // engine most needs. The ban may only reach the shortlist.
   it('keeps a banned hero on the board while dropping it from my suggestions', async () => {
     const { container } = render(App)
     await draft(container, 1)

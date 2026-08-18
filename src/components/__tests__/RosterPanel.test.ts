@@ -104,9 +104,6 @@ describe('RosterPanel', () => {
     expect(onPick).toHaveBeenCalledWith(heroes[0])
   })
 
-  // A personal ban is a note to self, not a rule of the match. The panel marks
-  // the hero and keeps it tappable: the enemy taking a hero you refuse to play
-  // is a thing that happens, and the app has to be able to hear about it.
   it('marks a personally banned hero without taking it off the board', async () => {
     const onPick = vi.fn()
     const banned = new Set([heroes[0].id])
