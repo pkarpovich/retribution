@@ -65,8 +65,12 @@
     )
   )
 
-  const roster = $derived(heroes.filter(hero => !drafted.has(hero.id) && !bans.has(hero.id)))
-  const hiddenByBans = $derived(bannedList.filter(hero => !drafted.has(hero.id)).length)
+  // The roster is the board, not the shortlist. A personal ban says "do not
+  // suggest this to me" and nothing else, so it must not reach this list: both
+  // teams can still take the hero, and the enemy taking it is exactly the fact
+  // the engine needs. It reaches the suggestions through bannedList instead.
+  const roster = $derived(heroes.filter(hero => !drafted.has(hero.id)))
+  const bannedIds = $derived(new Set(bans.ids))
 
   function flash(message: string) {
     toast = message
@@ -227,10 +231,9 @@
     <RosterPanel
       heroes={roster}
       {mode}
-      {hiddenByBans}
+      banned={bannedIds}
       onModeChange={next => (mode = next)}
       onPick={pick}
-      onOpenBans={() => (bansOpen = true)}
     />
 
     {#if bansOpen}

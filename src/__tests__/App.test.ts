@@ -4,9 +4,20 @@ import { render, screen, fireEvent } from '@testing-library/svelte'
 import App from '../App.svelte'
 import { bans, signatures } from '../lib/pool.svelte'
 import { matches } from '../lib/matches.svelte'
-import { heroes, textOf } from '../components/__tests__/fixtures'
+import { byName, heroes, textOf } from '../components/__tests__/fixtures'
 
 const cells = (root: ParentNode) => [...root.querySelectorAll('.cell')] as HTMLButtonElement[]
+
+// By name rather than by index: the roster now keeps banned heroes, so which
+// hero sits in a given cell depends on the ban list.
+const cellFor = (root: ParentNode, name: string) =>
+  cells(root).find(cell => cell.querySelector('.cell-name')?.textContent?.trim() === name)!
+
+// Every suggestion has a dot on the fit axis whichever way the list is shown,
+// so this reads all eight without depending on the expanded view.
+const shortlist = (root: ParentNode) =>
+  [...root.querySelectorAll('.axis-line .dot')]
+    .map(dot => dot.getAttribute('aria-label')?.replace(/, fit .*$/, '') ?? '')
 
 async function draft(root: ParentNode, times: number) {
   for (let i = 0; i < times; i++) await fireEvent.click(cells(root)[0])
@@ -281,16 +292,39 @@ describe('App match bans', () => {
 })
 
 describe('App pool', () => {
-  it('hides banned heroes from the roster and accounts for them', () => {
-    bans.toggle(heroes[0].id)
-    bans.toggle(heroes[1].id)
+  // The whole of RAL-82. A ban used to be taken off the roster, and the roster
+  // is the board both teams draft from - so refusing to play a hero also meant
+  // being unable to record the enemy taking it, which is the one fact the
+  // engine most needs. The ban may only reach the shortlist.
+  it('keeps a banned hero on the board while dropping it from my suggestions', async () => {
+    const { container } = render(App)
+    await draft(container, 1)
+
+    const target = shortlist(container)[0]
+    expect(target).toBeTruthy()
+
+    bans.toggle(byName(target).id)
+    await tick()
+
+    expect(shortlist(container)).not.toContain(target)
+    expect(textOf(container, '.cell-name')).toContain(target)
+    expect(cellFor(container, target).querySelector('.strike')).toBeTruthy()
+
+    await fireEvent.click(cellFor(container, target))
+    expect(screen.getByRole('button', { name: `Remove ${target} from the enemy team` })).toBeTruthy()
+  })
+
+  it('lets my own team take a hero I refuse to play myself', async () => {
+    const banned = heroes[0]
+    bans.toggle(banned.id)
 
     const { container } = render(App)
-    const listed = textOf(container, '.cell-name')
+    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
+    await fireEvent.click(cellFor(container, banned.hero_name))
 
-    expect(listed).not.toContain(heroes[0].hero_name)
-    expect(listed).not.toContain(heroes[1].hero_name)
-    expect(screen.getByRole('button', { name: '2 heroes hidden by bans' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: `Remove ${banned.hero_name} from your team` })
+    ).toBeTruthy()
   })
 
   // A ban symbol carrying the sum said "3 banned" when it was two mains and
@@ -328,11 +362,11 @@ describe('App pool', () => {
     expect(screen.getByRole('button', { name: 'Your pool, 1 main and 1 banned' })).toBeTruthy()
   })
 
-  it('opens the ban list from the roster note and closes it again', async () => {
+  it('opens the ban list from the header and closes it again', async () => {
     bans.toggle(heroes[0].id)
     render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: '1 hero hidden by bans' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'Your pool, 0 mains and 1 banned' }))
     expect(screen.getByText('Your pool')).toBeTruthy()
 
     await fireEvent.click(screen.getByRole('button', { name: 'DRAFT' }))

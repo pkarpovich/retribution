@@ -6,10 +6,9 @@ import { heroes, textOf } from './fixtures'
 const props = {
   heroes,
   mode: 'enemy' as const,
-  hiddenByBans: 0,
+  banned: new Set<number>(),
   onModeChange: () => {},
   onPick: () => {},
-  onOpenBans: () => {},
 }
 
 const tanks = heroes.filter(hero => hero.role.includes('Tank'))
@@ -105,16 +104,20 @@ describe('RosterPanel', () => {
     expect(onPick).toHaveBeenCalledWith(heroes[0])
   })
 
-  it('accounts for heroes the ban list is holding back', async () => {
-    const onOpenBans = vi.fn()
-    const { rerender } = render(RosterPanel, { ...props, hiddenByBans: 1, onOpenBans })
-    expect(screen.getByRole('button', { name: '1 hero hidden by bans' })).toBeTruthy()
+  // A personal ban is a note to self, not a rule of the match. The panel marks
+  // the hero and keeps it tappable: the enemy taking a hero you refuse to play
+  // is a thing that happens, and the app has to be able to hear about it.
+  it('marks a personally banned hero without taking it off the board', async () => {
+    const onPick = vi.fn()
+    const banned = new Set([heroes[0].id])
+    const { container } = render(RosterPanel, { ...props, banned, onPick })
 
-    await rerender({ ...props, hiddenByBans: 3, onOpenBans })
-    await fireEvent.click(screen.getByRole('button', { name: '3 heroes hidden by bans' }))
-    expect(onOpenBans).toHaveBeenCalledOnce()
+    const cells = [...container.querySelectorAll('.cell')]
+    expect(cells).toHaveLength(heroes.length)
+    expect(cells[0].querySelector('.strike')).toBeTruthy()
+    expect(cells[1].querySelector('.strike')).toBeNull()
 
-    await rerender({ ...props, hiddenByBans: 0, onOpenBans })
-    expect(screen.queryByRole('button', { name: /hidden by bans/ })).toBeNull()
+    await fireEvent.click(cells[0])
+    expect(onPick).toHaveBeenCalledWith(heroes[0])
   })
 })

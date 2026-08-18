@@ -13,13 +13,12 @@
   interface Props {
     heroes: Hero[]
     mode: Mode
-    hiddenByBans: number
+    banned: Set<number>
     onModeChange: (mode: Mode) => void
     onPick: (hero: Hero) => void
-    onOpenBans: () => void
   }
 
-  const { heroes, mode, hiddenByBans, onModeChange, onPick, onOpenBans }: Props = $props()
+  const { heroes, mode, banned, onModeChange, onPick }: Props = $props()
 
   const ROLES: HeroRole[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support']
 
@@ -86,17 +85,11 @@
     <div class="grid">
       {#each heroes as hero (hero.id)}
         <button class="cell" hidden={!visible.has(hero.id)} onclick={() => onPick(hero)}>
-          <HeroAvatar {hero} size={44} />
+          <HeroAvatar {hero} size={44} struck={banned.has(hero.id)} />
           <span class="cell-name">{hero.hero_name}</span>
         </button>
       {/each}
     </div>
-
-    {#if hiddenByBans > 0}
-      <button class="hidden-note" onclick={onOpenBans}>
-        {hiddenByBans} hero{hiddenByBans === 1 ? '' : 'es'} hidden by bans
-      </button>
-    {/if}
   </div>
 </div>
 
@@ -279,20 +272,5 @@
     font-family: var(--font-serif);
     font-style: italic;
     color: var(--color-ink-faint);
-  }
-
-  .hidden-note {
-    max-inline-size: var(--measure);
-    inline-size: 100%;
-    margin-block-start: var(--space-lg);
-    padding-block: var(--space-xs);
-    background: none;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: var(--font-size-sm);
-    color: var(--color-ink-mute);
   }
 </style>
