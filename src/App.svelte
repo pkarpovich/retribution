@@ -65,8 +65,8 @@
     )
   )
 
-  const roster = $derived(heroes.filter(hero => !drafted.has(hero.id) && !bans.has(hero.id)))
-  const hiddenByBans = $derived(bannedList.filter(hero => !drafted.has(hero.id)).length)
+  const roster = $derived(heroes.filter(hero => !drafted.has(hero.id)))
+  const bannedIds = $derived(new Set(bans.ids))
 
   function flash(message: string) {
     toast = message
@@ -227,10 +227,9 @@
     <RosterPanel
       heroes={roster}
       {mode}
-      {hiddenByBans}
+      banned={bannedIds}
       onModeChange={next => (mode = next)}
       onPick={pick}
-      onOpenBans={() => (bansOpen = true)}
     />
 
     {#if bansOpen}

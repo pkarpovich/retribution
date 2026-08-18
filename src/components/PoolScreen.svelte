@@ -56,7 +56,8 @@
     <p class="lede">
       A <strong>main</strong> is a hero you play well: it is scored a little higher,
       enough to move it a few places but never to the front on its own.
-      A <strong>ban</strong> is never suggested and stays out of the draft roster.
+      A <strong>ban</strong> is never suggested to you, and nothing more: the hero
+      stays on the board, and either team can still take it.
       A hero can be one or the other, not both.
     </p>
     <p class="tally">
