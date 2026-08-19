@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { MatchRecord } from '../types/match'
   import { matches } from '../lib/matches.svelte'
+  import { rankLabel } from '../utils/matchStats'
 
   interface Props {
     record: MatchRecord
@@ -17,9 +18,7 @@
     <span class="kicker">HOW DID IT GO</span>
     <span class="what">
       <strong>{record.pick.name}</strong>
-      <span class="when">
-        {#if record.rank}#{record.rank} of {record.shown}{/if} · {when}
-      </span>
+      <span class="when">{rankLabel(record)} · {when}</span>
     </span>
   </span>
 

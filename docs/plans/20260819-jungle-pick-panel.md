@@ -432,17 +432,17 @@ That guard alone breaks what the screen shows. `summarise` increments `settled` 
 
 The export carries the same misreading in prose. `ABOUT` (`src/utils/matchStats.ts:67-77`) tells a reading agent that "followedAdvice is rank === 1", and CLAUDE.md says the export is meant to be handed to an agent with no other context - so the text is contract, not commentary. It has to say that a null rank means no suggestion list was on screen, that `shown + 1` means the pick was below the displayed list, and that only null-rank records are blind.
 
-- [ ] guard the followed/overrode split on `rank !== null` and count those records into a new `blind` tally
-- [ ] add `blind` to `MatchSummary` and show it in the SETTLED kicker beside the open count
-- [ ] label the below-list and blind shapes in `MatchBanner.svelte` and `StatsScreen.svelte`, and stop the separator leading when there is no rank
-- [ ] extend `ABOUT` to explain a null rank, the `shown + 1` convention, and the blind category
-- [ ] check the rest of `matchStats.ts` for other places a null rank would distort a figure, and fix any found
-- [ ] write a test that a blind-pick record lands in `blind` and in neither `followed` nor `overrode`
-- [ ] write a test that a `rank: shown + 1` record lands in `overrode`, not in `blind`
-- [ ] write a test for the invariant `followed + overrode + blind === settled` on a mix of records, won and lost
-- [ ] write a `StatsScreen` test that a settled blind record shows the blind count in the SETTLED kicker
-- [ ] write `MatchBanner` and `StatsScreen` tests that a `rank: shown + 1` record never prints "#9 of 8", that a blind record prints no leading separator, and that an in-list record still prints "#3 of 8" as before
-- [ ] run `pnpm test` - must pass before Task 8
+- [x] guard the followed/overrode split on `rank !== null` and count those records into a new `blind` tally
+- [x] add `blind` to `MatchSummary` and show it in the SETTLED kicker beside the open count
+- [x] label the below-list and blind shapes in `MatchBanner.svelte` and `StatsScreen.svelte`, and stop the separator leading when there is no rank
+- [x] extend `ABOUT` to explain a null rank, the `shown + 1` convention, and the blind category
+- [x] check the rest of `matchStats.ts` for other places a null rank would distort a figure, and fix any found
+- [x] write a test that a blind-pick record lands in `blind` and in neither `followed` nor `overrode`
+- [x] write a test that a `rank: shown + 1` record lands in `overrode`, not in `blind`
+- [x] write a test for the invariant `followed + overrode + blind === settled` on a mix of records, won and lost
+- [x] write a `StatsScreen` test that a settled blind record shows the blind count in the SETTLED kicker
+- [x] write `MatchBanner` and `StatsScreen` tests that a `rank: shown + 1` record never prints "#9 of 8", that a blind record prints no leading separator, and that an in-list record still prints "#3 of 8" as before
+- [x] run `pnpm test` - must pass before Task 8
 
 ### Task 8: The acceptance scenario, and proving the tests bite
 
