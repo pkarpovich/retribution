@@ -6,7 +6,13 @@
   import type { DraftMode } from './lib/draftStorage'
   import { draftFromRecord, loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
-  import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
+  import {
+    MAX_ALLIES,
+    MAX_ENEMIES,
+    calculateJunglerRecommendation,
+    getJunglers,
+    recommendJunglers,
+  } from './utils/heroUtils'
   import { chosen, pickReadout, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import PoolScreen from './components/PoolScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
@@ -86,7 +92,7 @@
 
   function pick(hero: Hero) {
     if (mode === 'pick') {
-      myPick = hero
+      take(hero)
       mode = 'enemy'
       return
     }
@@ -105,35 +111,39 @@
 
   // Built from the draft as it stands before the lock: once myPick is set the
   // hero leaves the candidate list and its evaluation is gone.
-  function lock(hero: Hero) {
-    const index = suggestions.findIndex(suggestion => suggestion.hero.id === hero.id)
-    const suggestion = suggestions[index]
+  function take(hero: Hero) {
+    const shown = hasDraft ? suggestions : []
+    const index = shown.findIndex(suggestion => suggestion.hero.id === hero.id)
     const named = (list: Hero[]) => list.map(one => ({ id: one.id, name: one.hero_name }))
 
-    if (suggestion) {
-      matches.log({
-        id: newMatchId(),
-        at: new Date().toISOString(),
-        dataVersion: heroData.lastUpdated,
-        outcome: 'pending',
-        note: '',
-        enemies: named(enemies),
-        allies: named(allies),
-        matchBans: named(matchBans),
-        pick: { id: hero.id, name: hero.hero_name, tier: hero.tier },
-        rank: index + 1,
-        shown: suggestions.length,
-        followedAdvice: index === 0,
-        top: suggestions[0] ? { id: suggestions[0].hero.id, name: suggestions[0].hero.hero_name } : null,
-        totalScore: suggestion.result.total_score,
-        breakdown: suggestion.result.breakdown,
-        warnings: suggestion.result.warnings,
-        strengths: suggestion.result.strengths,
-        build: suggestion.result.bootRecommendation,
-        needs: teamNeeds([...allies, hero], enemies)
-          .map(need => ({ key: need.key, name: need.name, evidence: need.evidence })),
+    const result = shown[index]?.result
+      ?? calculateJunglerRecommendation(hero, allies, enemies, 'Mythic', {
+        matchBans,
+        signatures: signatures.ids,
       })
-    }
+
+    matches.log({
+      id: newMatchId(),
+      at: new Date().toISOString(),
+      dataVersion: heroData.lastUpdated,
+      outcome: 'pending',
+      note: '',
+      enemies: named(enemies),
+      allies: named(allies),
+      matchBans: named(matchBans),
+      pick: { id: hero.id, name: hero.hero_name, tier: hero.tier },
+      rank: shown.length === 0 ? null : index >= 0 ? index + 1 : shown.length + 1,
+      shown: shown.length,
+      followedAdvice: index === 0,
+      top: shown[0] ? { id: shown[0].hero.id, name: shown[0].hero.hero_name } : null,
+      totalScore: result.total_score,
+      breakdown: result.breakdown,
+      warnings: result.warnings,
+      strengths: result.strengths,
+      build: result.bootRecommendation,
+      needs: teamNeeds([...allies, hero], enemies)
+        .map(need => ({ key: need.key, name: need.name, evidence: need.evidence })),
+    })
 
     myPick = hero
     flash('Jungle pick locked')
@@ -229,7 +239,7 @@
         {myPick}
         {hasDraft}
         {pickRead}
-        onLock={lock}
+        onLock={take}
         onUnlock={() => {
           myPick = null
           flash('Pick unlocked')

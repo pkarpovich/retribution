@@ -406,13 +406,13 @@ calculateJunglerRecommendation(hero, allies, enemies, 'Mythic', { matchBans, sig
 
 `needs` is the one thing computed against the pick-inclusive team, as `lock()` already does. Do not let that line pull the evaluation call along with it.
 
-- [ ] merge `lock()` and the Task 5 path into one pick-taking function in `src/App.svelte`
-- [ ] implement the three record cases, passing `allies` and `signatures.ids` to the direct evaluation
-- [ ] write a test for the ticket's opening scenario: with no enemies revealed, mark a hero through the jungle slot and confirm the panel appears with an index of 0
-- [ ] write a test that a pick marked with no suggestions on screen writes a record with `rank: null` and `shown: 0`
-- [ ] write a test that a hero picked from the roster while suggestions are on screen but outside them writes `rank: shown + 1` with `top` preserved
-- [ ] write a test that locking from a suggestion card is unchanged - same rank, same `followedAdvice`
-- [ ] run `pnpm test` - must pass before Task 7
+- [x] merge `lock()` and the Task 5 path into one pick-taking function in `src/App.svelte`
+- [x] implement the three record cases, passing `allies` and `signatures.ids` to the direct evaluation
+- [x] write a test for the ticket's opening scenario: with no enemies revealed, mark a hero through the jungle slot and confirm the panel appears with an index of 0
+- [x] write a test that a pick marked with no suggestions on screen writes a record with `rank: null` and `shown: 0`
+- [x] write a test that a hero picked from the roster while suggestions are on screen but outside them writes `rank: shown + 1` with `top` preserved
+- [x] write a test that locking from a suggestion card is unchanged - same rank, same `followedAdvice`
+- [x] run `pnpm test` - must pass before Task 7
 
 ### Task 7: Teach the statistics, the screens and the export what rank means now
 

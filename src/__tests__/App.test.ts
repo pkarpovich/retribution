@@ -221,6 +221,75 @@ describe('App pick readout', () => {
   })
 })
 
+describe('App picking outside the suggestions', () => {
+  it('reads the pick from the moment it is marked, before any enemy is revealed', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Ling'))
+
+    const read = container.querySelector('.read')!
+    expect(read).toBeTruthy()
+    expect(read.querySelector('.index')?.textContent).toBe('+0')
+    expect(screen.queryByText('Start with the enemy team')).toBeNull()
+  })
+
+  it('writes a blind record when there was no advice on screen to agree with', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Ling'))
+
+    const record = matches.pending!
+    expect(record.pick.name).toBe('Ling')
+    expect(record.rank).toBeNull()
+    expect(record.shown).toBe(0)
+    expect(record.top).toBeNull()
+    expect(record.followedAdvice).toBe(false)
+    expect(record.breakdown.base).toBeGreaterThan(0)
+    expect(record.build.boots).toBeTruthy()
+  })
+
+  it('records a hero taken while advice was on screen as sitting below the list', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    const listed = textOf(container, '.row-name')
+    const top = container.querySelector('.card .name')?.textContent
+    const outside = textOf(container, '.cell-name').find(name => !listed.includes(name))!
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, outside))
+
+    const record = matches.pending!
+    expect(record.pick.name).toBe(outside)
+    expect(record.shown).toBe(listed.length)
+    expect(record.rank).toBe(record.shown + 1)
+    expect(record.followedAdvice).toBe(false)
+    expect(record.top!.name).toBe(top)
+  })
+
+  it('leaves a pick locked from a suggestion card exactly as it was', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    const rows = [...container.querySelectorAll('.row')]
+    const shown = rows.length
+    const top = container.querySelector('.card .name')?.textContent
+
+    await fireEvent.click(rows[2])
+    const taken = container.querySelector('.card .name')?.textContent
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    const record = matches.pending!
+    expect(record.pick.name).toBe(taken)
+    expect(record.rank).toBe(3)
+    expect(record.shown).toBe(shown)
+    expect(record.followedAdvice).toBe(false)
+    expect(record.top!.name).toBe(top)
+  })
+})
+
 describe('App marking your own hero', () => {
   it('takes a hero from the roster into the jungle slot without touching the enemy team', async () => {
     const { container } = render(App)
