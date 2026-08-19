@@ -493,9 +493,9 @@ Then the honesty pass, as in RAL-82. The perturbation point is `matchupIndex` in
 
 ### Task 10: Update documentation
 
-- [ ] update `CLAUDE.md` where it describes what the locked view shows and how the match log treats rank
-- [ ] record that the panel's index is the raw uncapped matchup pair, that zero-weight relations are dropped from both the number and the lists, and that it is deliberately not the engine's situational score - with one line on why, so a later session does not "upgrade" it back
-- [ ] move this plan to `docs/plans/completed/`
+- [x] update `CLAUDE.md` where it describes what the locked view shows and how the match log treats rank
+- [x] record that the panel's index is the raw uncapped matchup pair, that zero-weight relations are dropped from both the number and the lists, and that it is deliberately not the engine's situational score - with one line on why, so a later session does not "upgrade" it back
+- [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
 
