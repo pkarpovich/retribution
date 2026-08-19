@@ -9,11 +9,17 @@
 
   const { readout }: Props = $props()
 
-  const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
+  // Sign and magnitude both come off the rounded value: taken from the raw one,
+  // anything in (-0.5, 0) prints as "-0".
+  const signed = (value: number) => {
+    const rounded = Math.round(value)
+    return `${rounded < 0 ? '-' : '+'}${Math.abs(rounded)}`
+  }
 
   function tone(value: number) {
-    if (value > 0) return 'pos'
-    if (value < 0) return 'neg'
+    const rounded = Math.round(value)
+    if (rounded > 0) return 'pos'
+    if (rounded < 0) return 'neg'
     return 'flat'
   }
 

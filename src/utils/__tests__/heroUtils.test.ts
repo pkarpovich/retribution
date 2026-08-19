@@ -580,3 +580,81 @@ describe('liveCounterThreats', () => {
     expect(liveCounterThreats(hero, [], [], []).map(threat => threat.hero_name)).toContain('BullyA')
   })
 })
+
+// matchupIndex reads the raw bodies on purpose; the engine's own two components
+// still clip at 120. Nothing else pins that clip, so a later hand pointing the
+// engine at the exported raw functions would reorder every heavy-counter board
+// with the suite green.
+describe('engine matchup caps', () => {
+  const enemy = () => makeHero({ id: 70, hero_name: 'Enemy', lane: ['Gold Lane'] })
+
+  const total = (relation: 'counters' | 'weakAgainst', weight: number) =>
+    calculateJunglerRecommendation(
+      makeHero({ [relation]: [makeRelation(70, 'Enemy', weight)] }),
+      [],
+      [enemy()],
+      'Mythic',
+    ).total_score
+
+  it('stops charging counter_penalty past 120', () => {
+    const weights = getDefaultWeights('Mythic')
+    const overCap = makeHero({ counters: [makeRelation(70, 'Enemy', 40)] })
+    const wayOverCap = makeHero({ counters: [makeRelation(70, 'Enemy', 90)] })
+
+    expect(counterPenaltyRaw(overCap, [enemy()], weights)).toBeGreaterThan(120)
+    expect(counterPenaltyRaw(wayOverCap, [enemy()], weights))
+      .toBeGreaterThan(counterPenaltyRaw(overCap, [enemy()], weights))
+    expect(total('counters', 90)).toBe(total('counters', 40))
+  })
+
+  it('stops paying strong_against past 120', () => {
+    const weights = getDefaultWeights('Mythic')
+    const overCap = makeHero({ weakAgainst: [makeRelation(70, 'Enemy', 150)] })
+    const wayOverCap = makeHero({ weakAgainst: [makeRelation(70, 'Enemy', 400)] })
+
+    expect(strongAgainstRaw(overCap, [enemy()], weights)).toBeGreaterThan(120)
+    expect(strongAgainstRaw(wayOverCap, [enemy()], weights))
+      .toBeGreaterThan(strongAgainstRaw(overCap, [enemy()], weights))
+    expect(total('weakAgainst', 400)).toBe(total('weakAgainst', 150))
+  })
+
+  it('still moves below the cap, so the caps are not hiding a constant', () => {
+    expect(total('counters', 4)).toBeGreaterThan(total('counters', 20))
+    expect(total('weakAgainst', 20)).toBeGreaterThan(total('weakAgainst', 4))
+  })
+})
+
+// The relation weights are copied verbatim from the API and nothing between it
+// and the engine checks their sign. Without the `> 0` guards a negative weight
+// makes rawScore negative, and Math.sqrt of that is NaN - which propagates
+// through the squash into total_score and sorts the whole list on NaN.
+describe('negative relation weights', () => {
+  const weights = getDefaultWeights('Mythic')
+  const enemy = makeHero({ id: 70, hero_name: 'Enemy', lane: ['Gold Lane'] })
+  const negative = (relation: 'counters' | 'weakAgainst') =>
+    makeHero({ [relation]: [makeRelation(70, 'Enemy', -3)] })
+
+  it('leaves a negative counters weight out of the penalty', () => {
+    const hero = negative('counters')
+
+    expect(counterPenaltyRaw(hero, [enemy], weights)).toBe(0)
+    expect(matchupIndex(hero, [enemy])).toBe(0)
+  })
+
+  it('leaves a negative weakAgainst weight out of the bonus', () => {
+    const hero = negative('weakAgainst')
+
+    expect(strongAgainstRaw(hero, [enemy], weights)).toBe(0)
+    expect(matchupIndex(hero, [enemy])).toBe(0)
+  })
+
+  it('keeps the recommendation finite and equal to a board without the hero', () => {
+    for (const relation of ['counters', 'weakAgainst'] as const) {
+      const scored = calculateJunglerRecommendation(negative(relation), [], [enemy], 'Mythic')
+      const bare = calculateJunglerRecommendation(makeHero(), [], [enemy], 'Mythic')
+
+      expect(Number.isFinite(scored.total_score)).toBe(true)
+      expect(scored.total_score).toBe(bare.total_score)
+    }
+  })
+})

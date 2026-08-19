@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { CONFIDENT_AT, exportMatches, rankLabel, summarise, winRate } from '../matchStats'
 import { makeRecord } from './matchFixtures'
+import type { MatchRecord } from '../../types/match'
 
 const settled = (outcome: 'won' | 'lost', followedAdvice: boolean, pick = 10, name = 'Guinevere') =>
   makeRecord({ outcome, followedAdvice, pick: { id: pick, name, tier: 'S' } })
@@ -49,6 +50,16 @@ describe('summary', () => {
     expect(summary.blind).toEqual({ won: 1, lost: 0 })
     expect(summary.followed).toEqual({ won: 0, lost: 0 })
     expect(summary.overrode).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('counts a record with no rank at all as blind, keeping the three-way split whole', () => {
+    const legacy = { ...makeRecord({ id: 'legacy', outcome: 'won' }), rank: undefined } as unknown as MatchRecord
+    const summary = summarise([legacy])
+
+    expect(summary.blind).toEqual({ won: 1, lost: 0 })
+    expect(summary.followed).toEqual({ won: 0, lost: 0 })
+    expect(summary.overrode).toEqual({ won: 0, lost: 0 })
+    expect(summary.followed.won + summary.overrode.won + summary.blind.won).toBe(summary.settled.won)
   })
 
   it('counts a pick from below the list as an override, not a blind one', () => {
@@ -102,6 +113,14 @@ describe('rank label', () => {
 
   it('says plainly that there was no list to stand in', () => {
     expect(rankLabel({ rank: null, shown: 0 })).toBe('blind pick')
+  })
+
+  // The log's loader checks id and outcome and nothing else, so a record
+  // written before rank existed reaches this function with the field missing.
+  it('reads a record with no rank at all as blind rather than as #undefined', () => {
+    const legacy = { rank: undefined, shown: undefined } as unknown as Pick<MatchRecord, 'rank' | 'shown'>
+
+    expect(rankLabel(legacy)).toBe('blind pick')
   })
 })
 

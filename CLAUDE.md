@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Retribution is a Mobile Legends: Bang Bang (MLBB) jungler recommendation app built with React, TypeScript, and Vite. It helps players select optimal jungler heroes based on enemy team composition using tier rankings, win rates, and counter-play logic.
+Retribution is a Mobile Legends: Bang Bang (MLBB) jungler recommendation app built with Svelte 5 (runes mode), TypeScript, and Vite. It helps players select optimal jungler heroes based on enemy team composition using tier rankings, win rates, and counter-play logic.
 
 ## Development Commands
 
 ```bash
 pnpm dev              # Start dev server on port 50200
-pnpm build            # TypeScript compilation + Vite build
+pnpm build            # svelte-check + Vite build
+pnpm check            # svelte-check on its own
 pnpm lint             # Run ESLint
 pnpm test             # Run unit tests (vitest)
 pnpm preview          # Preview production build
@@ -44,7 +45,7 @@ The script fetches all 130+ heroes with statistics, counter/synergy/weakAgainst 
 
 ### Match Log (`src/lib/matches.svelte.ts`, `src/utils/matchStats.ts`)
 - A record is written every time a pick is taken, by whichever route, and carries the draft plus everything the engine saw and said: the 13-component breakdown, warnings, strengths, the boot recommendation, the team needs, where the pick ranked among the suggestions and whether the top suggestion was taken
-- `rank` has three shapes, because the roster offers every undrafted hero while the engine shows only eight suggestions: the position in the list when the hero is in it (`shown` = list length, `followedAdvice` = `rank === 1`); `shown + 1` when suggestions were on screen and the hero was not among them, meaning "below the displayed list", which is an override and not a blind pick; and `null` with `shown: 0` when no suggestions were on screen at all - the pick was marked blind. `MatchBanner` and `StatsScreen` must never render `shown + 1` as a literal position ("#9 of 8") and must not emit a leading separator for a null rank
+- `rank` has three shapes, because the roster offers every undrafted hero while the engine shows only eight suggestions: the position in the list when the hero is in it (`shown` = list length, `followedAdvice` = `rank === 1`); `shown + 1` when suggestions were on screen and the hero was not among them, meaning "below the displayed list", which is an override and not a blind pick; and `null` with `shown: 0` when no suggestions were on screen at all - the pick was marked blind. `MatchBanner` and `StatsScreen` must never render `shown + 1` as a literal position ("#9 of 8") and must not emit a leading separator for a null rank. Both go through `rankLabel()` in `matchStats.ts`; that is the only place the three shapes become text. It reads anything that is not a pair of numbers as blind, because the log's loader checks `id` and `outcome` and nothing else, so a record written before this shape existed arrives with the field missing rather than `null` - `summarise()` tallies it the same way, keeping `followed + overrode + blind === settled` whole
 - `matchStats.ts` splits settled games three ways, not two: `followed` and `overrode` only count records with a rank, and blind picks land in their own `blind` tally, so `followed + overrode + blind === settled`. The engine never advised on a blind pick, so counting it as disagreement would be a lie about the engine. `ABOUT` in the export explains all three to a reading agent
 - Records are self-contained on purpose - `heroes.json` moves twice a week, so a log that only named heroes would stop being readable
 - One pending record at a time: locking again replaces it. A pending record survives RESET because the result arrives long after the draft is cleared
@@ -88,6 +89,9 @@ Once a pick is locked the engine stops evaluating it - `recommendJunglers()` dro
 
 The pick can also be set before any enemy is revealed, which is the pick-first case the suggestion cards cannot serve. The empty jungle slot in `TeamsStrip` enters `mode = 'pick'`, `RosterPanel` swaps its tab row for YOUR JUNGLE PICK / CANCEL, and a tapped hero becomes `myPick` before the mode returns to `'enemy'`. Both entry points go through one pick-taking function in `App.svelte` so the match record cannot drift between them.
 
+- The return to `'enemy'` lives **inside** that shared function, not in the roster branch. The two entry points are live at the same time - the empty JG slot puts the roster in pick mode while the suggestion card keeps its LOCK THIS PICK button - so a lock taken from the card while pick mode is on has to leave pick mode too. Left on, the roster's next tap replaces the pick and overwrites the pending record instead of adding an enemy, and `mode` is persisted, so the stuck state survives a reload
+- That function is passed `allies`, never `myTeam`: `calculateTeamBalance` counts damage dealers and tanks in `yourTeam`, so a hero present in its own team list depresses its own `damageNeed`. `needs` on the next line **is** computed against the pick-inclusive team, on purpose - the two lines are not a copy-paste slip
+
 ### Component Structure
 Components follow a co-located pattern (component + CSS in same directory):
 - `EnemyPicker`: Grid of all heroes for enemy selection
@@ -130,7 +134,7 @@ All types defined in `src/types/hero.ts`:
 
 - Hero data loaded as static JSON import (not async)
 - Latest stats prioritize "Past 7 days" timeframe with rank-specific data (defaults to Mythic)
-- Recommendations recalculated via `useMemo` when enemy or team selection changes
+- Recommendations recalculated by a `$derived` in `App.svelte` when enemy or team selection changes
 - Hero selection limited to 5 enemies and 4 allies (standard MLBB team size)
 - Scoring weights are tuned per user rank (Epic through Mythical Glory+)
 - Search is case-insensitive hero name matching

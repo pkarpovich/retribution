@@ -57,6 +57,16 @@ describe('StatsScreen', () => {
     expect(figures).toEqual(['1-1', '1-0', '0-0'])
   })
 
+  it('carries the unsettled count in the kicker alongside the blind one', () => {
+    matches.log(makeRecord({ id: 'a', outcome: 'won', followedAdvice: true }))
+    matches.log(makeRecord({ id: 'b', outcome: 'lost', rank: null, shown: 0, followedAdvice: false }))
+    matches.log(makeRecord({ id: 'c', outcome: 'pending' }))
+
+    const { container } = render(StatsScreen, props)
+
+    expect(container.querySelector('.kicker')?.textContent).toBe('SETTLED · 1 BLIND · 1 OPEN')
+  })
+
   it('names the two shapes a rank can take besides a place in the list', () => {
     matches.log(makeRecord({ id: 'below', rank: 9, shown: 8 }))
     const below = render(StatsScreen, props)

@@ -84,7 +84,12 @@
     }
   }
 
-  const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
+  // Sign and magnitude both come off the rounded value: taken from the raw one,
+  // anything in (-0.5, 0) prints as "-0".
+  const signed = (value: number) => {
+    const rounded = Math.round(value)
+    return `${rounded < 0 ? '-' : '+'}${Math.abs(rounded)}`
+  }
 
   // Left and right step through the dots as drawn, which is fit order, not
   // list order.

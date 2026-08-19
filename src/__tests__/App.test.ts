@@ -355,6 +355,43 @@ describe('App picking outside the suggestions', () => {
     expect(record.followedAdvice).toBe(false)
     expect(record.top!.name).toBe(top)
   })
+
+  // Both entry points stay reachable at once: the empty JG slot puts the roster
+  // in pick mode while the suggestion card keeps its lock button. Taking the
+  // card must still leave pick mode, or the next roster tap replaces the pick
+  // instead of adding the enemy it was aimed at.
+  it('leaves pick mode when the lock comes from the card instead of the roster', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    const locked = matches.pending!.pick.name
+
+    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
+
+    await fireEvent.click(cells(container)[0])
+
+    expect(matches.pending!.pick.name).toBe(locked)
+    expect(container.querySelectorAll('.side')[1].querySelectorAll('.slot.filled')).toHaveLength(3)
+  })
+
+  it('marks a pick blind when allies are on the board but no enemy is', async () => {
+    const { container } = render(App)
+    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
+    await draft(container, 1)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Ling'))
+
+    const record = matches.pending!
+    expect(record.allies).toHaveLength(1)
+    expect(record.rank).toBeNull()
+    expect(record.shown).toBe(0)
+    expect(record.top).toBeNull()
+  })
 })
 
 describe('App marking your own hero', () => {

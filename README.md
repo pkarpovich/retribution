@@ -65,6 +65,17 @@ explanation cannot drift from the calculation.
 whose counters are all still available is a riskier pick than one whose counters are
 gone. Mark the heroes banned in the match and the risk drops accordingly.
 
+**Keeps reading the pick after you lock it.** The engine stops scoring a hero the
+moment it is on the board, so the locked view carries a number of its own: a matchup
+index against the enemy team, the movement since you locked, and the heroes behind it
+named — taken against you with how hard they hit, ones you beat, ones you work with,
+and the counters they can still take. It is deliberately not the engine's situational
+score: that score moves when *any* hero appears, so a harmless reveal would read as
+the draft turning. This one moves only when a hero the data actually prices as a
+matchup lands on their side. You can also mark your hero before a single enemy is
+revealed — tap the empty JG slot — which is the case the suggestion list cannot serve,
+since there are no suggestions on a blank board.
+
 **Answers what to buy.** Once a pick is locked: boots and Retribution blessing against
 this enemy composition.
 
@@ -90,8 +101,12 @@ suggested.
 
 **Keeps a log.** Every locked pick is written down with the whole draft and everything
 the engine said about it, including where your pick ranked and whether you took the
-top one. Mark won or lost afterwards, add a note, export it as JSON for an agent to
-read. This is the only feedback loop that measures *you* rather than the meta.
+top one. A pick marked before any suggestions existed is logged as blind and counted
+apart from both — the engine never advised on it, so counting it as disagreement would
+misreport the engine — and a hero taken from the roster while a list was up but below
+it counts as an override. Mark won or lost afterwards, add a note, export it as JSON
+for an agent to read. This is the only feedback loop that measures *you* rather than
+the meta.
 
 ## The data
 
@@ -159,7 +174,7 @@ and pnpm 11.17.0 — and `packageManager` in `package.json` holds CI to the same
 so a machine with mise needs nothing else.
 
 ```fish
-pnpm test      # 272 tests: engine, invariants, benchmark, components
+pnpm test      # 361 tests: engine, invariants, benchmark, components
 pnpm check     # svelte-check
 pnpm lint
 pnpm build
