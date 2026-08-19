@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import type { Hero } from '../../types/hero'
+import type { PickReadout } from '../../utils/presentation'
 import SuggestionBlock from '../SuggestionBlock.svelte'
 import { getCCScore, recommendBoots, situationalBudget } from '../../utils/heroUtils'
 import { teamNeeds } from '../../utils/presentation'
@@ -25,9 +26,20 @@ const props = {
   picksLeft: 4,
   myPick: null,
   hasDraft: true,
+  pickRead: null as PickReadout | null,
   onLock: () => {},
   onUnlock: () => {},
   onBan: () => {},
+}
+
+const emptyReadout: PickReadout = {
+  index: 0,
+  sinceLock: null,
+  taken: [],
+  beaten: [],
+  worksWith: [],
+  live: [],
+  openSlots: 5,
 }
 
 const names = (root: ParentNode) => textOf(root, '.row-name')
@@ -68,6 +80,37 @@ describe('SuggestionBlock states', () => {
     expect(textOf(container, '.line-name')).toContain(build.boots)
     expect(textOf(container, '.line-name')).toContain(`${build.blessing} Retribution`)
     expect(textOf(container, '.line-why')).toContain(build.bootsReason)
+  })
+
+  it('reads the pick against the board when given a readout, and omits the panel without one', () => {
+    const pick = byName('Ling')
+    const withRead = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      myTeam: [pick],
+      pickRead: { ...emptyReadout, index: -31, taken: [{ hero: byName('Natan'), severity: 'HIGH' }] },
+    })
+
+    expect(withRead.container.querySelector('.read')).toBeTruthy()
+    expect(textOf(withRead.container, '.group.taken .row-name')).toEqual(['Natan'])
+    withRead.unmount()
+
+    const without = render(SuggestionBlock, { ...props, myPick: pick, myTeam: [pick] })
+    expect(without.container.querySelector('.read')).toBeNull()
+  })
+
+  it('shows the locked pick on an otherwise blank board rather than the onboarding prompt', () => {
+    const pick = byName('Ling')
+    render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      myTeam: [pick],
+      hasDraft: false,
+      pickRead: emptyReadout,
+    })
+
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+    expect(screen.queryByText('Start with the enemy team')).toBeNull()
   })
 
   it('says nothing about the team when the draft leaves nothing to say', () => {

@@ -201,6 +201,26 @@ describe('App match log', () => {
   })
 })
 
+describe('App pick readout', () => {
+  it('measures the delta against the enemies revealed at the lock, not against an empty board', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(cellFor(container, 'Gord'))
+
+    const rows = [...container.querySelectorAll('.row')] as HTMLElement[]
+    const ling = rows.find(row => row.querySelector('.row-name')?.textContent?.trim() === 'Ling')!
+    await fireEvent.click(ling)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    expect(matches.pending!.pick.name).toBe('Ling')
+    expect(matches.pending!.enemies.map(enemy => enemy.name)).toEqual(['Gord'])
+
+    const read = container.querySelector('.read')!
+    expect(read.querySelector('.index')?.textContent).not.toBe('+0')
+    expect(read.querySelector('.delta')?.textContent).toBe('+0 since lock')
+  })
+})
+
 describe('App reopening a logged game', () => {
   it('puts the draft back on the board and scores it again', async () => {
     const first = render(App)

@@ -7,7 +7,7 @@
   import { draftFromRecord, loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
   import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
-  import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
+  import { chosen, pickReadout, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import PoolScreen from './components/PoolScreen.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
   import MatchBanner from './components/MatchBanner.svelte'
@@ -67,6 +67,12 @@
 
   const roster = $derived(heroes.filter(hero => !drafted.has(hero.id)))
   const bannedIds = $derived(new Set(bans.ids))
+
+  const pickRead = $derived(
+    myPick
+      ? pickReadout(myPick, { myTeam, enemies, matchBans, roster: heroes }, matches.pending)
+      : null
+  )
 
   function flash(message: string) {
     toast = message
@@ -212,6 +218,7 @@
         picksLeft={MAX_ALLIES - allies.length}
         {myPick}
         {hasDraft}
+        {pickRead}
         onLock={lock}
         onUnlock={() => {
           myPick = null

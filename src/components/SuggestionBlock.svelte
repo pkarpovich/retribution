@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Hero } from '../types/hero'
-  import type { Suggestion } from '../utils/presentation'
+  import type { PickReadout, Suggestion } from '../utils/presentation'
   import { HEAVY_CC_AT, recommendBoots, situationalBudget } from '../utils/heroUtils'
   import { capabilitiesFor, teamNeeds, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
+  import PickRead from './PickRead.svelte'
   import TierBadge from './TierBadge.svelte'
 
   interface Props {
@@ -13,6 +14,7 @@
     picksLeft: number
     myPick: Hero | null
     hasDraft: boolean
+    pickRead: PickReadout | null
     onLock: (hero: Hero) => void
     onUnlock: () => void
     onBan: (hero: Hero) => void
@@ -25,6 +27,7 @@
     picksLeft,
     myPick,
     hasDraft,
+    pickRead,
     onLock,
     onUnlock,
     onBan,
@@ -148,12 +151,7 @@
 </script>
 
 <section class="block">
-  {#if !hasDraft}
-    <div class="prompt">
-      <p class="prompt-title">Start with the enemy team</p>
-      <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
-    </div>
-  {:else if myPick}
+  {#if myPick}
     {@const build = recommendBoots(myPick, enemies)}
     <div class="locked">
       <HeroAvatar hero={myPick} size={42} selected />
@@ -166,6 +164,10 @@
       </div>
       <button class="change" onclick={onUnlock}>CHANGE</button>
     </div>
+
+    {#if pickRead}
+      <PickRead readout={pickRead} />
+    {/if}
 
     <div class="panel">
       <span class="kicker">WHAT TO BUY</span>
@@ -199,6 +201,11 @@
         </div>
       </div>
     {/if}
+  {:else if !hasDraft}
+    <div class="prompt">
+      <p class="prompt-title">Start with the enemy team</p>
+      <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
+    </div>
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}
     {@const bar = barOf(focus)}

@@ -348,14 +348,14 @@ This task also reorders the template so the locked branch is tested before the o
 
 `App.test.ts` is in this task's files because the roster choice cannot be tested anywhere else: `pickReadout`'s own tests pass a roster directly, and a blind lock has an empty baseline where both readings agree. The test that discriminates has to lock a hero that already has a priced relation to a revealed enemy.
 
-- [ ] reorder `src/components/SuggestionBlock.svelte` so `{#if myPick}` is the first branch and the `!hasDraft` prompt is the second; leave `hasDraft` itself alone
-- [ ] derive `pickRead` in `src/App.svelte` from `heroes`, and pass it to `SuggestionBlock`
-- [ ] add the `pickRead` prop to `SuggestionBlock` and render `PickRead` in the locked branch, above WHAT TO BUY
-- [ ] update the existing `SuggestionBlock` tests for the new prop and confirm none of them depended on the old branch order
-- [ ] write a test that the locked branch renders the panel when given a readout and omits it when given null
-- [ ] write a test that a pick with an otherwise blank board renders the locked view and not the "Start with the enemy team" prompt
-- [ ] write the roster test in `App.test.ts`: reveal an enemy the pick has a priced relation to, lock the pick, and assert `sinceLock` reads `+0` with a non-zero index - it reads the whole index if the filtered roster was passed
-- [ ] run `pnpm test` - must pass before Task 5
+- [x] reorder `src/components/SuggestionBlock.svelte` so `{#if myPick}` is the first branch and the `!hasDraft` prompt is the second; leave `hasDraft` itself alone
+- [x] derive `pickRead` in `src/App.svelte` from `heroes`, and pass it to `SuggestionBlock`
+- [x] add the `pickRead` prop to `SuggestionBlock` and render `PickRead` in the locked branch, above WHAT TO BUY
+- [x] update the existing `SuggestionBlock` tests for the new prop and confirm none of them depended on the old branch order
+- [x] write a test that the locked branch renders the panel when given a readout and omits it when given null
+- [x] write a test that a pick with an otherwise blank board renders the locked view and not the "Start with the enemy team" prompt
+- [x] write the roster test in `App.test.ts`: reveal an enemy the pick has a priced relation to, lock the pick, and assert `sinceLock` reads `+0` with a non-zero index - it reads the whole index if the filtered roster was passed
+- [x] run `pnpm test` - must pass before Task 5
 
 ### Task 5: A fourth draft mode for marking your own hero
 
