@@ -1,14 +1,20 @@
-import type { Hero, RecommendationResult, UserRank } from '../types/hero'
+import type { Hero, RecommendationResult, RecommendationWarning, UserRank } from '../types/hero'
+import type { MatchRecord } from '../types/match'
 import type { EnemyRuleReadout } from './heroUtils'
 import {
   HEAVY_CC_AT,
   HIGH_CC_SHARE,
+  MAX_ENEMIES,
+  counterSeverity,
   enemyRuleReadout,
   getCCScore,
+  getDefaultWeights,
   getMobilityScore,
   isDamageDealer,
   isPrimarilyMagic,
   isPrimarilyPhysical,
+  liveCounterThreats,
+  matchupIndex,
 } from './heroUtils'
 
 export type AxisKey = 'phys' | 'magic' | 'burst' | 'cc' | 'sustain' | 'mobility'
@@ -584,4 +590,66 @@ export function tieGroups(suggestions: Suggestion[]): string[][] {
     buckets.set(key, [...(buckets.get(key) ?? []), suggestion.hero.hero_name])
   }
   return [...buckets.values()].filter(names => names.length > 1)
+}
+
+export interface PickBoard {
+  myTeam: Hero[]
+  enemies: Hero[]
+  matchBans: Hero[]
+  roster: Hero[]
+}
+
+export interface PickThreat {
+  hero: Hero
+  severity: RecommendationWarning['severity']
+}
+
+export interface PickReadout {
+  index: number
+  sinceLock: number | null
+  taken: PickThreat[]
+  beaten: Hero[]
+  worksWith: Hero[]
+  live: Hero[]
+  openSlots: number
+}
+
+const pricedIds = (relations: { id: number; weighted_score: number }[] | undefined) =>
+  new Map((relations ?? []).filter(relation => relation.weighted_score > 0).map(relation => [relation.id, relation.weighted_score]))
+
+export function pickReadout(
+  pick: Hero,
+  board: PickBoard,
+  baseline: MatchRecord | null,
+  userRank: UserRank = 'Mythic',
+): PickReadout {
+  const weights = getDefaultWeights(userRank)
+  const rosterById = new Map(board.roster.map(hero => [hero.id, hero]))
+
+  const matchups = matchupsFor(pick, board.enemies, board.myTeam)
+  const counters = pricedIds(pick.counters)
+  const victims = pricedIds(pick.weakAgainst)
+  const partners = pricedIds(pick.synergies)
+
+  const index = matchupIndex(pick, board.enemies, userRank)
+
+  const sameLock = baseline !== null && baseline.pick.id === pick.id
+  const lockedEnemies = sameLock
+    ? baseline.enemies.map(enemy => rosterById.get(enemy.id)).filter((found): found is Hero => Boolean(found))
+    : []
+
+  return {
+    index,
+    sinceLock: sameLock ? index - matchupIndex(pick, lockedEnemies, userRank) : null,
+    taken: matchups.weak
+      .filter(hero => counters.has(hero.id))
+      .map(hero => ({ hero, severity: counterSeverity(counters.get(hero.id)!, weights) })),
+    beaten: matchups.strong.filter(hero => victims.has(hero.id)),
+    worksWith: matchups.synergy.filter(hero => partners.has(hero.id)),
+    live: liveCounterThreats(pick, board.myTeam, board.enemies, board.matchBans)
+      .filter(threat => threat.exposure > 0)
+      .map(threat => rosterById.get(threat.id))
+      .filter((found): found is Hero => Boolean(found)),
+    openSlots: MAX_ENEMIES - board.enemies.length,
+  }
 }

@@ -302,14 +302,14 @@ Four extractions, none of which may change a number the engine produces.
 
 `sinceLock` is `index` minus the index recomputed against the enemies named in `baseline.enemies`, resolved against `board.roster`. It is `null` when `baseline` is null or `baseline.pick.id` differs from the pick, and `0` when the board's priced relations are unchanged since the lock.
 
-- [ ] add `PickBoard`, `PickThreat`, `PickReadout` and `pickReadout` to `src/utils/presentation.ts`
-- [ ] write tests: names the counter among revealed enemies and carries its severity; names the victim; names the ally in `worksWith`; `live` is capped by open slots and empty at five enemies
-- [ ] write the load-bearing test: adding an enemy with no priced relation to the pick leaves `index` **exactly** unchanged
-- [ ] write the zero-weight test with Ling and Masha from the frozen snapshot: the relation exists, its `weighted_score` is 0, so Masha appears in **neither** `taken` nor the index, and the two agree
-- [ ] write tests that neither an added ally, nor an added match ban, nor any change of enemy team composition moves `index`
-- [ ] write tests for the baseline: same pick yields the movement since the recorded enemies; a record for a different pick yields `null`; a null baseline yields `null`; an enemy removed after the lock returns the delta to 0
-- [ ] write a test that a pick with no enemies revealed produces a readout with `index` exactly 0 and the first two groups empty
-- [ ] run `pnpm test` - must pass before Task 3
+- [x] add `PickBoard`, `PickThreat`, `PickReadout` and `pickReadout` to `src/utils/presentation.ts`
+- [x] write tests: names the counter among revealed enemies and carries its severity; names the victim; names the ally in `worksWith`; `live` is capped by open slots and empty at five enemies
+- [x] write the load-bearing test: adding an enemy with no priced relation to the pick leaves `index` **exactly** unchanged
+- [x] write the zero-weight test with Ling and Masha from the frozen snapshot: the relation exists, its `weighted_score` is 0, so Masha appears in **neither** `taken` nor the index, and the two agree
+- [x] write tests that neither an added ally, nor an added match ban, nor any change of enemy team composition moves `index`
+- [x] write tests for the baseline: same pick yields the movement since the recorded enemies; a record for a different pick yields `null`; a null baseline yields `null`; an enemy removed after the lock returns the delta to 0
+- [x] write a test that a pick with no enemies revealed produces a readout with `index` exactly 0 and the first two groups empty
+- [x] run `pnpm test` - must pass before Task 3
 
 ### Task 3: PickRead component
 

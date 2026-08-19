@@ -3,7 +3,9 @@ import heroData from '../../data/heroes.json'
 import draftData from '../../data/pro-drafts.json'
 import type { Hero } from '../../types/hero'
 import { getJunglers, recommendJunglers } from '../heroUtils'
-import { AXES, axisContributors, axisDeltas, heroAxes, matchupsFor, teamNeeds, teamProfile, toSuggestions } from '../presentation'
+import type { PickBoard } from '../presentation'
+import { AXES, axisContributors, axisDeltas, heroAxes, matchupsFor, pickReadout, teamNeeds, teamProfile, toSuggestions } from '../presentation'
+import { makeRecord } from './matchFixtures'
 
 const allHeroes = heroData.heroes as unknown as Hero[]
 const junglers = getJunglers(allHeroes)
@@ -165,5 +167,114 @@ describe('suggestions', () => {
   it('falls back to a blind-pick reason with no draft', () => {
     const blind = toSuggestions(recommendJunglers(junglers, [], junglers.slice(0, 1), [], 'Mythic'), [], [])
     expect(blind.every(suggestion => suggestion.reasons.length > 0)).toBe(true)
+  })
+})
+
+describe('pick readout', () => {
+  const sun = byName('Sun')
+  const board = (over: Partial<PickBoard> = {}): PickBoard => ({
+    myTeam: [sun],
+    enemies: [],
+    matchBans: [],
+    roster: allHeroes,
+    ...over,
+  })
+  const names = (heroes: Hero[]) => heroes.map(hero => hero.hero_name)
+
+  it('names the counters, the victims and the allies it works with', () => {
+    const readout = pickReadout(sun, board({
+      myTeam: [sun, byName('Akai')],
+      enemies: [byName('Natan'), byName('Masha')],
+    }), null)
+
+    expect(names(readout.taken.map(threat => threat.hero))).toEqual(['Natan'])
+    expect(readout.taken[0].severity).toBe('HIGH')
+    expect(names(readout.beaten)).toEqual(['Masha'])
+    expect(names(readout.worksWith)).toEqual(['Akai'])
+  })
+
+  it('caps the live threats by the open slots and drops them at five enemies', () => {
+    const four = [byName('Gord'), byName('Miya'), byName('Hanabi'), byName('Layla')]
+
+    expect(pickReadout(sun, board({ enemies: [byName('Gord')] }), null).openSlots).toBe(4)
+    expect(pickReadout(sun, board({ enemies: [byName('Gord')] }), null).live.length).toBe(3)
+    expect(pickReadout(sun, board({ enemies: four }), null).live.length).toBe(1)
+
+    const full = pickReadout(sun, board({ enemies: [...four, byName('Estes')] }), null)
+    expect(full.live).toEqual([])
+    expect(full.openSlots).toBe(0)
+  })
+
+  it('leaves the index bit-identical when an enemy with no priced relation appears', () => {
+    const before = pickReadout(sun, board({ enemies: [byName('Masha'), byName('Natan')] }), null)
+    const after = pickReadout(sun, board({
+      enemies: [byName('Masha'), byName('Natan'), byName('Gord'), byName('Miya'), byName('Hanabi')],
+    }), null)
+
+    expect(after.index).toBe(before.index)
+    expect(before.index).not.toBe(0)
+  })
+
+  it('drops a zero-weight relation from both the group and the number', () => {
+    const ling = byName('Ling')
+    expect(ling.counters!.find(relation => relation.hero_name === 'Masha')!.weighted_score).toBe(0)
+
+    const readout = pickReadout(ling, { myTeam: [ling], enemies: [byName('Masha')], matchBans: [], roster: allHeroes }, null)
+
+    expect(readout.taken).toEqual([])
+    expect(readout.index).toBe(0)
+  })
+
+  it('moves for nothing but the enemy team', () => {
+    const enemies = [byName('Natan')]
+    const plain = pickReadout(sun, board({ enemies }), null)
+
+    expect(pickReadout(sun, board({ enemies, myTeam: [sun, byName('Akai'), byName('X.Borg')] }), null).index).toBe(plain.index)
+    expect(pickReadout(sun, board({ enemies, matchBans: [byName('Aldous'), byName('Masha')] }), null).index).toBe(plain.index)
+
+    const tanky = pickReadout(sun, board({ enemies: [...enemies, byName('Tigreal'), byName('Gord')] }), null)
+    expect(tanky.index).toBe(plain.index)
+  })
+
+  it('reports the movement since the recorded enemies', () => {
+    const locked = makeRecord({
+      pick: { id: sun.id, name: sun.hero_name, tier: sun.tier },
+      enemies: [{ id: byName('Masha').id, name: 'Masha' }],
+    })
+    const atLock = pickReadout(sun, board({ enemies: [byName('Masha')] }), locked)
+    expect(atLock.sinceLock).toBe(0)
+
+    const later = pickReadout(sun, board({ enemies: [byName('Masha'), byName('Natan')] }), locked)
+    expect(later.sinceLock).toBeCloseTo(later.index - atLock.index, 10)
+    expect(later.sinceLock).toBeLessThan(0)
+
+    const neutral = pickReadout(sun, board({ enemies: [byName('Masha'), byName('Gord')] }), locked)
+    expect(neutral.sinceLock).toBe(0)
+  })
+
+  it('returns the delta to zero when an enemy is taken back off the board', () => {
+    const locked = makeRecord({
+      pick: { id: sun.id, name: sun.hero_name, tier: sun.tier },
+      enemies: [{ id: byName('Masha').id, name: 'Masha' }, { id: byName('Natan').id, name: 'Natan' }],
+    })
+
+    expect(pickReadout(sun, board({ enemies: [byName('Masha'), byName('Natan')] }), locked).sinceLock).toBe(0)
+    expect(pickReadout(sun, board({ enemies: [byName('Masha')] }), locked).sinceLock).toBeGreaterThan(0)
+  })
+
+  it('has no delta without a baseline for this pick', () => {
+    const enemies = [byName('Natan')]
+    expect(pickReadout(sun, board({ enemies }), null).sinceLock).toBeNull()
+
+    const other = makeRecord({ pick: { id: byName('Ling').id, name: 'Ling', tier: byName('Ling').tier } })
+    expect(pickReadout(sun, board({ enemies }), other).sinceLock).toBeNull()
+  })
+
+  it('reads zero on a board with nothing revealed', () => {
+    const readout = pickReadout(sun, board(), null)
+
+    expect(readout.index).toBe(0)
+    expect(readout.taken).toEqual([])
+    expect(readout.beaten).toEqual([])
   })
 })
