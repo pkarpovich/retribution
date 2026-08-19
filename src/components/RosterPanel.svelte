@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Hero, HeroRole } from '../types/hero'
+  import type { DraftMode } from '../lib/draftStorage'
   import HeroAvatar from './HeroAvatar.svelte'
 
-  type Mode = 'ally' | 'enemy' | 'ban'
-
-  const TABS: { id: Mode; label: string }[] = [
+  const TABS: { id: DraftMode; label: string }[] = [
     { id: 'ally', label: 'Add ally' },
     { id: 'enemy', label: 'Add enemy' },
     { id: 'ban', label: 'Ban' },
@@ -12,13 +11,15 @@
 
   interface Props {
     heroes: Hero[]
-    mode: Mode
+    mode: DraftMode
     banned: Set<number>
-    onModeChange: (mode: Mode) => void
+    onModeChange: (mode: DraftMode) => void
     onPick: (hero: Hero) => void
   }
 
   const { heroes, mode, banned, onModeChange, onPick }: Props = $props()
+
+  const cancelPickMode = () => onModeChange('enemy')
 
   const ROLES: HeroRole[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support']
 
@@ -39,18 +40,25 @@
 </script>
 
 <div class="panel">
-  <div class="tabs" role="tablist" aria-label="Draft side">
-    {#each TABS as tab (tab.id)}
-      <button
-        class="tab"
-        class:on={mode === tab.id}
-        data-side={tab.id}
-        role="tab"
-        aria-selected={mode === tab.id}
-        onclick={() => onModeChange(tab.id)}
-      >{tab.label}</button>
-    {/each}
-  </div>
+  {#if mode === 'pick'}
+    <div class="picking">
+      <span class="picking-label">YOUR JUNGLE PICK</span>
+      <button class="cancel" onclick={cancelPickMode}>CANCEL</button>
+    </div>
+  {:else}
+    <div class="tabs" role="tablist" aria-label="Draft side">
+      {#each TABS as tab (tab.id)}
+        <button
+          class="tab"
+          class:on={mode === tab.id}
+          data-side={tab.id}
+          role="tab"
+          aria-selected={mode === tab.id}
+          onclick={() => onModeChange(tab.id)}
+        >{tab.label}</button>
+      {/each}
+    </div>
+  {/if}
 
   <label class="search">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
@@ -137,6 +145,35 @@
     &.on[data-side='ban'] {
       border-color: var(--color-ink-mute);
     }
+  }
+
+  .picking {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding-block: var(--space-sm);
+    border-block-end: 2px solid var(--color-accent);
+  }
+
+  .picking-label {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-mono);
+    color: var(--color-accent);
+  }
+
+  .cancel {
+    padding: var(--space-2xs) var(--space-xs);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-mono);
+    color: var(--color-ink-faint);
   }
 
   .search {

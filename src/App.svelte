@@ -80,7 +80,16 @@
     toastTimer = setTimeout(() => (toast = null), 1600)
   }
 
+  function choosePick() {
+    mode = 'pick'
+  }
+
   function pick(hero: Hero) {
+    if (mode === 'pick') {
+      myPick = hero
+      mode = 'enemy'
+      return
+    }
     if (mode === 'ban') {
       matchBans = [...matchBans, hero]
       return
@@ -192,6 +201,7 @@
         onRemoveAlly={hero => (allies = allies.filter(ally => ally.id !== hero.id))}
         onRemoveEnemy={hero => (enemies = enemies.filter(enemy => enemy.id !== hero.id))}
         onClearPick={() => (myPick = null)}
+        onChoosePick={choosePick}
       />
 
       <MatchBanStrip

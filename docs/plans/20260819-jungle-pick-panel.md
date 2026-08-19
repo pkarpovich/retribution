@@ -377,16 +377,16 @@ The inert jungle `<span>` in `TeamsStrip` becomes a button with a new `onChooseP
 
 At the end of this task the `'pick'` branch sets `myPick` and logs nothing; Task 6 gives it the match record.
 
-- [ ] add `'pick'` to `DraftMode` and `MODES` in `src/lib/draftStorage.ts`
-- [ ] replace the local union in `src/components/RosterPanel.svelte` with an import of `DraftMode`
-- [ ] turn the empty jungle slot in `src/components/TeamsStrip.svelte` into a button with an `onChoosePick` callback
-- [ ] replace the tab row in `src/components/RosterPanel.svelte` with the pick-mode row while the mode is active
-- [ ] wire it up in `src/App.svelte`: pass `onChoosePick` to set `mode = 'pick'`, and add the `'pick'` branch to `pick()` so a tapped hero becomes the pick and the mode returns to `'enemy'`
-- [ ] write tests: the empty jungle slot calls its callback; the filled slot still clears the pick
-- [ ] write tests: pick mode hides the tabs and shows the cancel control, cancel asks for `'enemy'`, the roster grid still renders and still hands tapped heroes back
-- [ ] write the App-level wiring test: tapping the empty jungle slot enters pick mode, tapping a roster hero fills `myPick`, the mode returns to `'enemy'`, and no enemy was added - without it the component tests stay green while `App` never passes the callback or routes the tap to the enemy team
-- [ ] write a test that a stored draft with an unknown mode still loads with the default
-- [ ] run `pnpm test` and `pnpm build` - both must pass before Task 6
+- [x] add `'pick'` to `DraftMode` and `MODES` in `src/lib/draftStorage.ts`
+- [x] replace the local union in `src/components/RosterPanel.svelte` with an import of `DraftMode`
+- [x] turn the empty jungle slot in `src/components/TeamsStrip.svelte` into a button with an `onChoosePick` callback
+- [x] replace the tab row in `src/components/RosterPanel.svelte` with the pick-mode row while the mode is active
+- [x] wire it up in `src/App.svelte`: pass `onChoosePick` to set `mode = 'pick'`, and add the `'pick'` branch to `pick()` so a tapped hero becomes the pick and the mode returns to `'enemy'`
+- [x] write tests: the empty jungle slot calls its callback; the filled slot still clears the pick
+- [x] write tests: pick mode hides the tabs and shows the cancel control, cancel asks for `'enemy'`, the roster grid still renders and still hands tapped heroes back
+- [x] write the App-level wiring test: tapping the empty jungle slot enters pick mode, tapping a roster hero fills `myPick`, the mode returns to `'enemy'`, and no enemy was added - without it the component tests stay green while `App` never passes the callback or routes the tap to the enemy team
+- [x] write a test that a stored draft with an unknown mode still loads with the default
+- [x] run `pnpm test` and `pnpm build` - both must pass before Task 6
 
 ### Task 6: One writer for the pick, three kinds of record
 

@@ -117,4 +117,28 @@ describe('RosterPanel', () => {
     await fireEvent.click(cells[0])
     expect(onPick).toHaveBeenCalledWith(heroes[0])
   })
+
+  it('swaps the tabs for a cancellable row while a jungle pick is being marked', async () => {
+    const onModeChange = vi.fn()
+    const { container } = render(RosterPanel, { ...props, mode: 'pick', onModeChange })
+
+    expect(screen.queryByRole('tab', { name: 'Add enemy' })).toBeNull()
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+    expect(container.querySelectorAll('.cell')).toHaveLength(heroes.length)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'CANCEL' }))
+    expect(onModeChange).toHaveBeenCalledWith('enemy')
+  })
+
+  it('still hands the tapped hero back while marking a jungle pick', async () => {
+    const onPick = vi.fn()
+    const { container } = render(RosterPanel, { ...props, mode: 'pick', onPick })
+
+    await fireEvent.input(screen.getByLabelText('Search heroes'), {
+      target: { value: tanks[0].hero_name },
+    })
+    await fireEvent.click(container.querySelector('.cell:not([hidden])')!)
+
+    expect(onPick).toHaveBeenCalledWith(tanks[0])
+  })
 })

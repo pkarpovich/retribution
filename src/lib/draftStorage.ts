@@ -2,7 +2,7 @@ import type { Hero } from '../types/hero'
 import type { MatchRecord } from '../types/match'
 import { MAX_ALLIES, MAX_ENEMIES } from '../utils/heroUtils'
 
-export type DraftMode = 'ally' | 'enemy' | 'ban'
+export type DraftMode = 'ally' | 'enemy' | 'ban' | 'pick'
 
 export interface Draft {
   allies: Hero[]
@@ -19,7 +19,7 @@ const STORAGE_KEY = 'retribution.draft'
 // look ready and quietly answer the wrong enemy team.
 export const DRAFT_TTL_MS = 3 * 60 * 60 * 1000
 
-const MODES: DraftMode[] = ['ally', 'enemy', 'ban']
+const MODES: DraftMode[] = ['ally', 'enemy', 'ban', 'pick']
 
 export const emptyDraft = (): Draft => ({
   allies: [],

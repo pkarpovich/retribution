@@ -221,6 +221,37 @@ describe('App pick readout', () => {
   })
 })
 
+describe('App marking your own hero', () => {
+  it('takes a hero from the roster into the jungle slot without touching the enemy team', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+    expect(screen.queryByRole('tab', { name: 'Add enemy' })).toBeNull()
+
+    await fireEvent.click(cellFor(container, 'Ling'))
+
+    expect(screen.getByRole('button', { name: 'Clear your jungle pick' })).toBeTruthy()
+    expect(container.querySelectorAll('.slot.filled')).toHaveLength(1)
+    expect(screen.getByText('1/10')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('leaves the board alone when the marking is cancelled', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'CANCEL' }))
+
+    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
+
+    await fireEvent.click(cellFor(container, 'Ling'))
+
+    expect(screen.queryByRole('button', { name: 'Clear your jungle pick' })).toBeNull()
+    expect(container.querySelectorAll('.slot.filled')).toHaveLength(1)
+  })
+})
+
 describe('App reopening a logged game', () => {
   it('puts the draft back on the board and scores it again', async () => {
     const first = render(App)

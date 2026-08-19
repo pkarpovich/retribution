@@ -12,6 +12,7 @@ const props = {
   onRemoveAlly: () => {},
   onRemoveEnemy: () => {},
   onClearPick: () => {},
+  onChoosePick: () => {},
 }
 
 describe('TeamsStrip', () => {
@@ -55,5 +56,25 @@ describe('TeamsStrip', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Clear your jungle pick' }))
     expect(onClearPick).toHaveBeenCalledOnce()
+  })
+
+  it('offers the empty jungle slot as the way in to marking your own hero', async () => {
+    const onChoosePick = vi.fn()
+    render(TeamsStrip, { ...props, onChoosePick })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    expect(onChoosePick).toHaveBeenCalledOnce()
+  })
+
+  it('turns the jungle slot back into a clear control once a pick is marked', async () => {
+    const onChoosePick = vi.fn()
+    const onClearPick = vi.fn()
+    render(TeamsStrip, { ...props, myPick: third, onChoosePick, onClearPick })
+
+    expect(screen.queryByRole('button', { name: 'Mark your jungle pick' })).toBeNull()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear your jungle pick' }))
+    expect(onClearPick).toHaveBeenCalledOnce()
+    expect(onChoosePick).not.toHaveBeenCalled()
   })
 })

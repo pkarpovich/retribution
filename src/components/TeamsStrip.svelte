@@ -9,9 +9,11 @@
     onRemoveAlly: (hero: Hero) => void
     onRemoveEnemy: (hero: Hero) => void
     onClearPick: () => void
+    onChoosePick: () => void
   }
 
-  const { allies, enemies, myPick, onRemoveAlly, onRemoveEnemy, onClearPick }: Props = $props()
+  const { allies, enemies, myPick, onRemoveAlly, onRemoveEnemy, onClearPick, onChoosePick }: Props =
+    $props()
 
   const allySlots = $derived(Array.from({ length: 4 }, (_, i) => allies[i] ?? null))
   const enemySlots = $derived(Array.from({ length: 5 }, (_, i) => enemies[i] ?? null))
@@ -36,7 +38,7 @@
         <HeroAvatar hero={myPick} size="var(--slot)" selected />
       </button>
     {:else}
-      <span class="slot jungle-empty">JG</span>
+      <button class="slot jungle-empty" onclick={onChoosePick} aria-label="Mark your jungle pick">JG</button>
     {/if}
   </div>
 
@@ -114,6 +116,8 @@
 
   .jungle-empty {
     display: grid;
+    padding: 0;
+    cursor: pointer;
     place-items: center;
     border: 1.5px solid var(--color-accent);
     border-radius: var(--radius-sm);

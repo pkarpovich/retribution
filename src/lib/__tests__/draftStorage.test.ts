@@ -77,7 +77,13 @@ describe('draft storage', () => {
     const restored = loadDraft(heroes, NOW)
 
     expect(restored.enemies, label).toEqual([])
-    expect(['ally', 'enemy', 'ban']).toContain(restored.mode)
+    expect(restored.mode, label).toBe(emptyDraft().mode)
+  })
+
+  it('brings back the mode for marking your own hero', () => {
+    saveDraft({ ...emptyDraft(), mode: 'pick' }, NOW)
+
+    expect(loadDraft(heroes, NOW).mode).toBe('pick')
   })
 
   it('keeps working when storage refuses to write', () => {
