@@ -1,6 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { getJunglers, recommendBoots, calculateJunglerRecommendation, recommendJunglers } from '../heroUtils'
+import heroData from '../../data/heroes.json'
+import {
+  counterPenaltyRaw,
+  counterSeverity,
+  getDefaultWeights,
+  getJunglers,
+  liveCounterThreats,
+  matchupIndex,
+  recommendBoots,
+  strongAgainstRaw,
+  calculateJunglerRecommendation,
+  recommendJunglers,
+} from '../heroUtils'
 import type { Hero, HeroCapabilities } from '../../types/hero'
+
+const snapshotHeroes = heroData.heroes as unknown as Hero[]
+const snapshotJunglers = getJunglers(snapshotHeroes)
+const snapshotHero = (name: string) => snapshotHeroes.find(hero => hero.hero_name === name)!
 
 function makeCapabilities(overrides: Partial<HeroCapabilities> = {}): HeroCapabilities {
   return {
@@ -402,5 +418,165 @@ describe('regression: Aamon-vs-counters scenario', () => {
     const counterStrengths = result.strengths.filter(s => s.startsWith('Counters '))
     expect(counterStrengths.length).toBeGreaterThan(0)
     expect(counterStrengths[0]).toContain('Lolita')
+  })
+})
+
+describe('counterSeverity', () => {
+  const legend = getDefaultWeights('Legend')
+  const glory = getDefaultWeights('Mythical Glory+')
+  const mythic = getDefaultWeights('Mythic')
+
+  it('grades a relation sitting exactly on a scaled threshold as the lower band', () => {
+    expect(counterSeverity(2, legend)).toBe('LOW')
+    expect(counterSeverity(5, legend)).toBe('MEDIUM')
+    expect(counterSeverity(1, glory)).toBe('LOW')
+    expect(counterSeverity(2.5, glory)).toBe('MEDIUM')
+  })
+
+  it('grades a relation above a scaled threshold as the higher band', () => {
+    expect(counterSeverity(2.01, legend)).toBe('MEDIUM')
+    expect(counterSeverity(5.01, legend)).toBe('HIGH')
+    expect(counterSeverity(1.01, glory)).toBe('MEDIUM')
+    expect(counterSeverity(2.51, glory)).toBe('HIGH')
+  })
+
+  it('applies the rank scale once, inside', () => {
+    expect(counterSeverity(3.55, mythic)).toBe('HIGH')
+    expect(counterSeverity(2.5, mythic)).toBe('MEDIUM')
+    expect(counterSeverity(3.55, legend)).toBe('MEDIUM')
+  })
+})
+
+describe('generateWarnings severity parity', () => {
+  it('grades Sun against Faramis HIGH at Mythic', () => {
+    const sun = snapshotHero('Sun')
+    const faramis = snapshotHero('Faramis')
+    const relation = sun.counters!.find(counter => counter.hero_name === 'Faramis')!
+
+    expect(relation.weighted_score).toBeCloseTo(3.55, 10)
+
+    const result = calculateJunglerRecommendation(sun, [], [faramis], 'Mythic')
+    const warning = result.warnings.find(w => w.type === 'WEAK_AGAINST' && w.hero === 'Faramis')!
+
+    expect(warning.severity).toBe('HIGH')
+  })
+})
+
+describe('matchupIndex', () => {
+  it('is exactly 0 for every jungler against a board with no priced relation to it', () => {
+    for (const jungler of snapshotJunglers) {
+      const priced = new Set([
+        ...(jungler.counters ?? []).filter(r => r.weighted_score > 0).map(r => r.id),
+        ...(jungler.weakAgainst ?? []).filter(r => r.weighted_score > 0).map(r => r.id),
+      ])
+      const board = snapshotHeroes.filter(hero => hero.id !== jungler.id && !priced.has(hero.id)).slice(0, 5)
+
+      expect(board).toHaveLength(5)
+      expect(matchupIndex(jungler, board), jungler.hero_name).toBe(0)
+    }
+  })
+
+  it('rises on a priced victim, falls on a priced counter, and ignores an unrelated hero', () => {
+    const sun = snapshotHero('Sun')
+    const masha = snapshotHero('Masha')
+    const natan = snapshotHero('Natan')
+    const gord = snapshotHero('Gord')
+
+    const empty = matchupIndex(sun, [])
+    const neutral = matchupIndex(sun, [gord])
+    const victim = matchupIndex(sun, [gord, masha])
+    const counter = matchupIndex(sun, [gord, masha, natan])
+
+    expect(empty).toBe(0)
+    expect(neutral).toBe(0)
+    expect(victim).toBeCloseTo(37.18, 2)
+    expect(counter).toBeCloseTo(-30.82, 2)
+    expect(matchupIndex(sun, [gord, masha, natan, snapshotHero('Miya')])).toBe(counter)
+    expect(matchupIndex(sun, [gord, masha, natan, snapshotHero('Miya'), snapshotHero('Hanabi')])).toBe(counter)
+  })
+
+  it('leaves a zero-weight relation out of the number', () => {
+    const ling = snapshotHero('Ling')
+    const zeroWeight = ling.counters!.find(counter => counter.weighted_score === 0)!
+    const masha = snapshotHeroes.find(hero => hero.id === zeroWeight.id)!
+
+    expect(matchupIndex(ling, [masha])).toBe(matchupIndex(ling, []))
+  })
+
+  it('keeps moving past the point the engine cap would have clipped', () => {
+    const sun = snapshotHero('Sun')
+    const four = ['Natan', 'Aldous', 'Alucard', 'Ruby'].map(snapshotHero)
+    const fourDeep = matchupIndex(sun, four)
+    const fiveDeep = matchupIndex(sun, [...four, snapshotHero('Faramis')])
+
+    expect(counterPenaltyRaw(sun, four, getDefaultWeights('Mythic'))).toBeGreaterThan(120)
+    expect(fiveDeep).toBeLessThan(fourDeep)
+  })
+})
+
+describe('liveCounterThreats', () => {
+  const threatened = () => makeHero({
+    id: 60,
+    hero_name: 'Threatened',
+    weakAgainst: [makeRelation(70, 'Victim', 4.0)],
+    counters: [
+      makeRelation(71, 'BullyA', 6.0),
+      makeRelation(72, 'BullyB', 5.0),
+      makeRelation(73, 'BullyC', 4.0),
+      makeRelation(74, 'BullyD', 3.0),
+    ],
+  })
+
+  it('reproduces the counter_threat the score charged', () => {
+    const hero = threatened()
+    const victim = makeHero({ id: 70, hero_name: 'Victim' })
+    const weights = getDefaultWeights('Mythic')
+
+    const threats = liveCounterThreats(hero, [], [victim], [])
+    const exposure = threats.reduce((sum, threat) => sum + threat.exposure, 0)
+    const expectedThreat = -Math.sqrt(exposure) * 15 * (weights.counter_penalty / 10)
+    const expectedStrong = strongAgainstRaw(hero, [victim], weights)
+
+    const { breakdown } = calculateJunglerRecommendation(hero, [], [victim], 'Mythic')
+
+    expect(threats).toHaveLength(3)
+    expect(breakdown.counter_threat / breakdown.strong_against).toBeCloseTo(expectedThreat / expectedStrong, 10)
+  })
+
+  it('returns the highest exposures first', () => {
+    const threats = liveCounterThreats(threatened(), [], [], [])
+    expect(threats.map(threat => threat.hero_name)).toEqual(['BullyA', 'BullyB', 'BullyC'])
+  })
+
+  it('returns nothing when the enemy has no open slots', () => {
+    const enemies = [10, 11, 12, 13, 14].map(id => makeHero({ id }))
+    expect(liveCounterThreats(threatened(), [], enemies, [])).toEqual([])
+  })
+
+  it('drops a counter that is already drafted or match banned', () => {
+    const hero = threatened()
+    const drafted = liveCounterThreats(hero, [makeHero({ id: 71, hero_name: 'BullyA' })], [], [])
+    const enemyHeld = liveCounterThreats(hero, [], [makeHero({ id: 72, hero_name: 'BullyB' })], [])
+    const banned = liveCounterThreats(hero, [], [], [makeHero({ id: 73, hero_name: 'BullyC' })])
+
+    expect(drafted.map(threat => threat.hero_name)).not.toContain('BullyA')
+    expect(enemyHeld.map(threat => threat.hero_name)).not.toContain('BullyB')
+    expect(banned.map(threat => threat.hero_name)).not.toContain('BullyC')
+  })
+
+  it('keeps a counter the player has personally banned, since that does not stop the enemy taking it', () => {
+    const hero = threatened()
+    const bully = makeHero({ id: 71, hero_name: 'BullyA', lane: ['Jungle'] })
+
+    const enemies = [makeHero({ id: 90, hero_name: 'Neutral' })]
+
+    const open = recommendJunglers([hero, bully], [], enemies, [], 'Mythic')
+    const banned = recommendJunglers([hero, bully], [], enemies, [bully], 'Mythic')
+
+    const before = open.find(result => result.hero.id === hero.id)!
+    const after = banned.find(result => result.hero.id === hero.id)!
+
+    expect(after.total_score).toBe(before.total_score)
+    expect(liveCounterThreats(hero, [], [], []).map(threat => threat.hero_name)).toContain('BullyA')
   })
 })

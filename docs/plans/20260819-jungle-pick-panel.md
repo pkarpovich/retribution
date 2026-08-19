@@ -277,18 +277,18 @@ Four extractions, none of which may change a number the engine produces.
 
 "The existing tests pass untouched" proves purity for the wrappers and for `liveCounterThreats`, whose numbers are pinned below. It proves **nothing** for `counterSeverity`: no test in this repository asserts a warning's severity today, so a transposed threshold or a double-applied scale stays green. Its own tests are therefore not optional, and its blast radius reaches `buildReasons` in `presentation.ts`, which puts the first HIGH warning on the pre-lock suggestion card that this plan lists as a non-goal.
 
-- [ ] split `strongAgainstRaw` / `counterPenaltyRaw` out of the two helpers, leaving the capped wrappers in place
-- [ ] extract `counterSeverity` and call it from `generateWarnings`, passing the raw `weighted_score`
-- [ ] extract `liveCounterThreats` from `calculateCounterThreat` and sum `exposure` in the caller
-- [ ] add `matchupIndex`, dropping relations whose `weighted_score` is 0
-- [ ] confirm every existing test in `heroUtils.test.ts` and `invariants.test.ts` passes with **no edits at all**
-- [ ] write `counterSeverity` tests directly below, exactly at and above both scaled thresholds, across two ranks, asserting the scale is applied once and inside
-- [ ] write a parity test through `generateWarnings` for a relation that straddles the scaled and unscaled bands - Sun against Faramis, `weighted_score` 3.55, must come out HIGH
-- [ ] write a test that `matchupIndex` is exactly 0 for every jungler against a board carrying no positive-weight relation to it
-- [ ] write a test that a priced victim raises it, a priced counter lowers it, and an unrelated hero leaves it bit-identical
-- [ ] write a test that four counters plus a fifth still move the index, since the cap is gone - Sun against Natan, Aldous, Alucard, Ruby, then Faramis
-- [ ] write a test that the summed `exposure` reproduces the component the score charged, plus the edge cases: no open slots returns empty, a drafted or match-banned counter is absent, a personally banned counter is still present
-- [ ] run `pnpm test` - must pass before Task 2
+- [x] split `strongAgainstRaw` / `counterPenaltyRaw` out of the two helpers, leaving the capped wrappers in place
+- [x] extract `counterSeverity` and call it from `generateWarnings`, passing the raw `weighted_score`
+- [x] extract `liveCounterThreats` from `calculateCounterThreat` and sum `exposure` in the caller
+- [x] add `matchupIndex`, dropping relations whose `weighted_score` is 0
+- [x] confirm every existing test in `heroUtils.test.ts` and `invariants.test.ts` passes with **no edits at all**
+- [x] write `counterSeverity` tests directly below, exactly at and above both scaled thresholds, across two ranks, asserting the scale is applied once and inside
+- [x] write a parity test through `generateWarnings` for a relation that straddles the scaled and unscaled bands - Sun against Faramis, `weighted_score` 3.55, must come out HIGH
+- [x] write a test that `matchupIndex` is exactly 0 for every jungler against a board carrying no positive-weight relation to it
+- [x] write a test that a priced victim raises it, a priced counter lowers it, and an unrelated hero leaves it bit-identical
+- [x] write a test that four counters plus a fifth still move the index, since the cap is gone - Sun against Natan, Aldous, Alucard, Ruby, then Faramis
+- [x] write a test that the summed `exposure` reproduces the component the score charged, plus the edge cases: no open slots returns empty, a drafted or match-banned counter is absent, a personally banned counter is still present
+- [x] run `pnpm test` - must pass before Task 2
 
 ### Task 2: pickReadout in the presentation layer
 
