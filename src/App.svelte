@@ -145,9 +145,6 @@
     })
 
     myPick = hero
-    // Both entry points land here, and the roster's pick row must not outlive
-    // the lock: left on, the next roster tap would silently replace the pick
-    // instead of adding the enemy the player meant to add.
     if (mode === 'pick') mode = 'enemy'
     flash('Jungle pick locked')
   }

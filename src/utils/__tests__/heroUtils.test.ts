@@ -564,6 +564,17 @@ describe('liveCounterThreats', () => {
     expect(banned.map(threat => threat.hero_name)).not.toContain('BullyC')
   })
 
+  it('drops a counter the data does not price, keeping the score a number', () => {
+    const hero = makeHero({
+      id: 61,
+      hero_name: 'Unpriced',
+      counters: [makeRelation(75, 'BullyE', -3.0), makeRelation(76, 'BullyF', 0)],
+    })
+
+    expect(liveCounterThreats(hero, [], [], [])).toEqual([])
+    expect(calculateJunglerRecommendation(hero, [], [], 'Mythic').total_score).not.toBeNaN()
+  })
+
   it('keeps a counter the player has personally banned, since that does not stop the enemy taking it', () => {
     const hero = threatened()
     const bully = makeHero({ id: 71, hero_name: 'BullyA', lane: ['Jungle'] })
@@ -581,11 +592,7 @@ describe('liveCounterThreats', () => {
   })
 })
 
-// matchupIndex reads the raw bodies on purpose; the engine's own two components
-// still clip at 120. Nothing else pins that clip, so a later hand pointing the
-// engine at the exported raw functions would reorder every heavy-counter board
-// with the suite green.
-describe('engine matchup caps', () => {
+describe('engine matchup caps over uncapped raw bodies', () => {
   const enemy = () => makeHero({ id: 70, hero_name: 'Enemy', lane: ['Gold Lane'] })
 
   const total = (relation: 'counters' | 'weakAgainst', weight: number) =>
@@ -624,10 +631,6 @@ describe('engine matchup caps', () => {
   })
 })
 
-// The relation weights are copied verbatim from the API and nothing between it
-// and the engine checks their sign. Without the `> 0` guards a negative weight
-// makes rawScore negative, and Math.sqrt of that is NaN - which propagates
-// through the squash into total_score and sorts the whole list on NaN.
 describe('negative relation weights', () => {
   const weights = getDefaultWeights('Mythic')
   const enemy = makeHero({ id: 70, hero_name: 'Enemy', lane: ['Gold Lane'] })

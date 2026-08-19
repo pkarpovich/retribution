@@ -498,49 +498,49 @@ export function teamNeeds(
   userRank: UserRank = 'Mythic',
 ): TeamNeed[] {
   const read = enemyRuleReadout(enemies, userRank)
-  if (!read) return []
-
   const nobody = (predicate: (hero: Hero) => boolean) => !allies.some(predicate)
   const needs: TeamNeed[] = []
 
-  if (read.antiHealPoints >= MATERIAL_POINTS && nobody(hero => Boolean(hero.capabilities?.antiHeal))) {
-    needs.push({
-      key: 'antiHeal',
-      name: 'Anti-heal',
-      points: read.antiHealPoints,
-      evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
-      gap: 'nobody on your side carries it',
-    })
-  }
+  if (read) {
+    if (read.antiHealPoints >= MATERIAL_POINTS && nobody(hero => Boolean(hero.capabilities?.antiHeal))) {
+      needs.push({
+        key: 'antiHeal',
+        name: 'Anti-heal',
+        points: read.antiHealPoints,
+        evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
+        gap: 'nobody on your side carries it',
+      })
+    }
 
-  if (read.catchPoints >= SWITCHED_OFF_BELOW && nobody(hero => getCCScore(hero) >= HEAVY_CC_AT)) {
-    needs.push({
-      key: 'cc',
-      name: 'Lockdown',
-      points: read.catchPoints,
-      evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
-      gap: 'nothing on your side holds anyone still',
-    })
-  }
+    if (read.catchPoints >= SWITCHED_OFF_BELOW && nobody(hero => getCCScore(hero) >= HEAVY_CC_AT)) {
+      needs.push({
+        key: 'cc',
+        name: 'Lockdown',
+        points: read.catchPoints,
+        evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
+        gap: 'nothing on your side holds anyone still',
+      })
+    }
 
-  if (read.armourBreakPoints >= MATERIAL_POINTS && nobody(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)) {
-    needs.push({
-      key: 'armour',
-      name: 'Damage their armour cannot stop',
-      points: read.armourBreakPoints,
-      evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
-      gap: 'everything you have has to go through it',
-    })
-  }
+    if (read.armourBreakPoints >= MATERIAL_POINTS && nobody(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)) {
+      needs.push({
+        key: 'armour',
+        name: 'Damage their armour cannot stop',
+        points: read.armourBreakPoints,
+        evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
+        gap: 'everything you have has to go through it',
+      })
+    }
 
-  if (read.heavyCcCount / read.revealed >= HIGH_CC_SHARE && nobody(hero => Boolean(hero.capabilities?.hasImmunity))) {
-    needs.push({
-      key: 'immune',
-      name: 'A way out of their control',
-      points: null,
-      evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
-      gap: 'nobody on your side can shrug it off',
-    })
+    if (read.heavyCcCount / read.revealed >= HIGH_CC_SHARE && nobody(hero => Boolean(hero.capabilities?.hasImmunity))) {
+      needs.push({
+        key: 'immune',
+        name: 'A way out of their control',
+        points: null,
+        evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
+        gap: 'nobody on your side can shrug it off',
+      })
+    }
   }
 
   if (allies.length > 0 && allies.every(hero => !isDamageDealer(hero))) {

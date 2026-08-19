@@ -88,8 +88,16 @@ describe('team needs', () => {
   const healers = allHeroes.filter(hero =>
     hero.capabilities?.selfSustain || hero.capabilities?.allySustain).slice(0, 5)
 
-  it('has nothing to say before an enemy is revealed', () => {
-    expect(teamNeeds(junglers.slice(0, 2), [])).toEqual([])
+  it('keeps the enemy-derived needs quiet before an enemy is revealed', () => {
+    const keys = teamNeeds(junglers.slice(0, 2), []).map(need => need.key)
+
+    for (const key of ['antiHeal', 'cc', 'armour', 'immune']) expect(keys).not.toContain(key)
+  })
+
+  it('still says what your own side is missing before an enemy is revealed', () => {
+    const tankless = junglers.filter(hero => !hero.role.includes('Tank')).slice(0, 2)
+
+    expect(teamNeeds(tankless, []).map(need => need.key)).toContain('frontline')
   })
 
   it('drops a need as soon as somebody on your side covers it', () => {

@@ -117,9 +117,6 @@ describe('PickRead', () => {
     expect(flat.container.querySelector('.index')?.getAttribute('data-tone')).toBe('flat')
   })
 
-  // Taking the sign off the unrounded value and the magnitude off the rounded
-  // one prints "-0" for anything in (-0.5, 0), in the colour that means the
-  // draft turned against you - on a panel where +0 means nothing has moved.
   it('reads a hair below zero as flat, not as a negative', () => {
     const { container } = render(PickRead, { readout: readout({ index: -0.064, sinceLock: -0.49 }) })
 

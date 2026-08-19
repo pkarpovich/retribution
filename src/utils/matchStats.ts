@@ -30,9 +30,6 @@ export function winRate(tally: Tally): number | null {
   return Math.round((tally.won / played) * 100)
 }
 
-// A record written before this shape existed carries no rank at all, and the
-// log's loader does not police the field. Anything that is not a pair of
-// numbers reads as blind rather than as "#undefined of undefined".
 export function rankLabel(record: Pick<MatchRecord, 'rank' | 'shown'>): string {
   if (typeof record.rank !== 'number' || typeof record.shown !== 'number') return 'blind pick'
   if (record.rank > record.shown) return `below #${record.shown}`

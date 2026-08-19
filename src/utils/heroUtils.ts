@@ -677,7 +677,7 @@ export function liveCounterThreats(
   const gone = new Set([...yourTeam, ...enemyTeam, ...matchBans].map(h => h.id));
 
   return hero.counters
-    .filter(counter => !gone.has(counter.id))
+    .filter(counter => !gone.has(counter.id) && counter.weighted_score > 0)
     .map(counter => ({
       id: counter.id,
       hero_name: counter.hero_name,

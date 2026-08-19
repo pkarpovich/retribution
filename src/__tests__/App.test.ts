@@ -356,10 +356,6 @@ describe('App picking outside the suggestions', () => {
     expect(record.top!.name).toBe(top)
   })
 
-  // Both entry points stay reachable at once: the empty JG slot puts the roster
-  // in pick mode while the suggestion card keeps its lock button. Taking the
-  // card must still leave pick mode, or the next roster tap replaces the pick
-  // instead of adding the enemy it was aimed at.
   it('leaves pick mode when the lock comes from the card instead of the roster', async () => {
     const { container } = render(App)
     await draft(container, 2)

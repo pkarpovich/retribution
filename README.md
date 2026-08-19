@@ -174,7 +174,7 @@ and pnpm 11.17.0 — and `packageManager` in `package.json` holds CI to the same
 so a machine with mise needs nothing else.
 
 ```fish
-pnpm test      # 361 tests: engine, invariants, benchmark, components
+pnpm test      # engine, invariants, benchmark, components
 pnpm check     # svelte-check
 pnpm lint
 pnpm build

@@ -115,8 +115,6 @@ describe('rank label', () => {
     expect(rankLabel({ rank: null, shown: 0 })).toBe('blind pick')
   })
 
-  // The log's loader checks id and outcome and nothing else, so a record
-  // written before rank existed reaches this function with the field missing.
   it('reads a record with no rank at all as blind rather than as #undefined', () => {
     const legacy = { rank: undefined, shown: undefined } as unknown as Pick<MatchRecord, 'rank' | 'shown'>
 
