@@ -250,6 +250,22 @@ describe('App reading a blind pick as the enemies reveal', () => {
     expect(reading(container)).toEqual(['-31', '-31 since lock'])
   })
 
+  it('names an ally it works with, holds the number still and says on screen why', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Sun'))
+    await fireEvent.click(cellFor(container, 'Masha'))
+    const before = reading(container)
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
+    await fireEvent.click(cellFor(container, 'Akai'))
+
+    expect(textOf(container, '.read .works .row-name')).toEqual(['Akai'])
+    expect(reading(container)).toEqual(before)
+    expect(screen.getByText('Reads their side only - an ally never moves this number.')).toBeTruthy()
+  })
+
   it('names the counter with its severity as the index falls', async () => {
     const { container } = render(App)
 

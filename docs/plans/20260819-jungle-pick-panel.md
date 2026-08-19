@@ -469,15 +469,27 @@ Then the honesty pass, as in RAL-82. The perturbation point is `matchupIndex` in
 
 ### Task 9: Verify acceptance criteria
 
-- [ ] verify the ticket's first half: the index moves on every priced matchup and stays exactly put otherwise, including after four counters where the old cap would have clipped it
-- [ ] verify the ticket's ally clause: revealing an ally the pick has a synergy with puts it in WORKS WITH YOU, the index correctly does not move, and the panel's own copy explains why - the pairing is only readable if the explanation is on screen and not just in this plan
-- [ ] verify the ticket's second half: appearing counterpicks are named with their severity, and a zero-weight relation appears in neither the list nor the number
-- [ ] verify the opening scenario: a hero can be marked before any enemy is revealed, the locked view renders on an otherwise blank board, and the panel reads from that moment
-- [ ] verify the delta is present from the first reveal after a lock and reports the movement since the recorded enemies
-- [ ] run the full suite: `pnpm test`
-- [ ] run `pnpm lint` and `pnpm build`
-- [ ] grep the diff for comments added to new code and remove any found
-- [ ] check the panel in a browser on `pnpm dev` (port 50200) at phone width and past the 46rem split, using `agent-browser`; if the screenshot command is still broken on this machine, verify through DOM eval and say plainly that no screenshot exists
+- [x] verify the ticket's first half: the index moves on every priced matchup and stays exactly put otherwise, including after four counters where the old cap would have clipped it
+- [x] verify the ticket's ally clause: revealing an ally the pick has a synergy with puts it in WORKS WITH YOU, the index correctly does not move, and the panel's own copy explains why - the pairing is only readable if the explanation is on screen and not just in this plan
+- [x] verify the ticket's second half: appearing counterpicks are named with their severity, and a zero-weight relation appears in neither the list nor the number
+- [x] verify the opening scenario: a hero can be marked before any enemy is revealed, the locked view renders on an otherwise blank board, and the panel reads from that moment
+- [x] verify the delta is present from the first reveal after a lock and reports the movement since the recorded enemies
+- [x] run the full suite: `pnpm test`
+- [x] run `pnpm lint` and `pnpm build`
+- [x] grep the diff for comments added to new code and remove any found
+- [x] check the panel in a browser on `pnpm dev` (port 50200) at phone width and past the 46rem split, using `agent-browser` (skipped - no browser exists on this machine, see below)
+
+**What each verification rests on.**
+
+- First half: `matchupIndex` moves on the priced victim and the priced counter and is bit-identical across Gord, Miya and Hanabi (`heroUtils.test.ts`, "rises on a priced victim, falls on a priced counter, and ignores an unrelated hero"); it keeps falling on a fifth counter after `counterPenaltyRaw` has already passed 120, where the old cap would have clipped ("keeps moving past the point the engine cap would have clipped"). At the readout level the same property holds through `pickReadout` ("leaves the index bit-identical when an enemy with no priced relation appears") and through the running app, reveal by reveal ("moves only on the priced reveals and holds exactly still on the rest").
+- Ally clause: a new App-level test, "names an ally it works with, holds the number still and says on screen why" - marks Sun blind, reveals Masha so the index sits at a non-zero `+37`, then adds Akai as an ally and asserts Akai appears under WORKS WITH YOU, that the index and the delta are byte-identical to what they read before, and that the scoping line is on screen. Written at App level on purpose: the three pieces were each covered separately already, and the criterion is about them being readable together.
+- Second half: `.taken` carries Natan with a HIGH tag as the index falls ("names the counter with its severity as the index falls"), and Ling's zero-weight relation to Masha is absent from both the group and the number (`presentation.test.ts`, "drops a zero-weight relation from both the group and the number"; `heroUtils.test.ts`, "leaves a zero-weight relation out of the number").
+- Opening scenario: "reads the pick from the moment it is marked, before any enemy is revealed" - the panel renders with `+0` on a blank board and the "Start with the enemy team" prompt is gone.
+- Delta: "measures the delta against the enemies revealed at the lock, not against an empty board" pins a non-zero index against a `+0 since lock` at the moment of the lock, and the blind-pick scenario shows the delta tracking the index from the first priced reveal onward.
+- Suite, lint and build: 349 tests in 23 files pass, `eslint .` is clean, `svelte-check` reports 0 errors and 0 warnings across 198 files, and `vite build` succeeds. `pnpm` itself segfaults on this machine, so each was run through its binary directly (`node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js .`, `node node_modules/svelte-check/bin/svelte-check --tsconfig ./tsconfig.app.json`, `node node_modules/vite/bin/vite.js build`). One of those segfaults had dropped a 1.4MB `core` dump into the repository and an earlier iteration committed it; it is removed here and `core` is now ignored.
+- Comments: `git diff master...HEAD -- src/` has no added line carrying `//`, `/*` or `<!--`.
+
+**No screenshot exists.** The machine is `aarch64`; Chrome for Testing publishes no Linux ARM64 build, no system Chromium is installed, and there is no `sudo` to install one, so `agent-browser install` fails and there is no browser to run a DOM eval in either. The panel has therefore never been rendered with a layout engine - the widest-figure test in `PickRead.test.ts` proves the strings, not that they fit. What can be said from the CSS is that `.head` gives the figure an `auto` column against a `minmax(0, 1fr)` copy column with `min-inline-size: 0`, so the copy is what shrinks, and both figures are `white-space: nowrap` with tabular numerals. Both widths put the panel in a similar space - `.draft` is the full viewport below the split and a fixed `24rem` above it - so there is one layout to check, not two. The real check moves to Post-Completion.
 
 ### Task 10: Update documentation
 
