@@ -221,6 +221,57 @@ describe('App pick readout', () => {
   })
 })
 
+describe('App reading a blind pick as the enemies reveal', () => {
+  const reading = (root: ParentNode) => {
+    const read = root.querySelector('.read')!
+    return [read.querySelector('.index')?.textContent, read.querySelector('.delta')?.textContent]
+  }
+
+  it('moves only on the priced reveals and holds exactly still on the rest', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Sun'))
+    expect(reading(container)).toEqual(['+0', '+0 since lock'])
+
+    await fireEvent.click(cellFor(container, 'Gord'))
+    expect(reading(container)).toEqual(['+0', '+0 since lock'])
+
+    await fireEvent.click(cellFor(container, 'Masha'))
+    expect(reading(container)).toEqual(['+37', '+37 since lock'])
+
+    await fireEvent.click(cellFor(container, 'Natan'))
+    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+
+    await fireEvent.click(cellFor(container, 'Miya'))
+    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+
+    await fireEvent.click(cellFor(container, 'Hanabi'))
+    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+  })
+
+  it('names the counter with its severity as the index falls', async () => {
+    const { container } = render(App)
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Sun'))
+
+    await fireEvent.click(cellFor(container, 'Gord'))
+    expect(container.querySelector('.read .taken')).toBeNull()
+    expect(screen.getByText('Nothing on their board cuts either way.')).toBeTruthy()
+
+    await fireEvent.click(cellFor(container, 'Masha'))
+    expect(textOf(container, '.read .beaten .row-name')).toEqual(['Masha'])
+    expect(container.querySelector('.read .taken')).toBeNull()
+
+    await fireEvent.click(cellFor(container, 'Natan'))
+    expect(textOf(container, '.read .taken .row-name')).toEqual(['Natan'])
+    expect(textOf(container, '.read .taken .severity')).toEqual(['HIGH'])
+    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+    expect(screen.queryByText('Nothing on their board cuts either way.')).toBeNull()
+  })
+})
+
 describe('App picking outside the suggestions', () => {
   it('reads the pick from the moment it is marked, before any enemy is revealed', async () => {
     const { container } = render(App)

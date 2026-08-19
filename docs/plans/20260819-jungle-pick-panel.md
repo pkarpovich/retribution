@@ -460,11 +460,12 @@ Written against the frozen snapshot so a data refresh cannot move it. If those h
 
 Then the honesty pass, as in RAL-82. The perturbation point is `matchupIndex` in `src/utils/heroUtils.ts`: rebuild it from the post-squash `breakdown.strong_against` and `breakdown.counter_penalty` instead of the raw functions, run the suite, and confirm the neutral-reveal test goes red - those values drift whenever any enemy is added because `scale` moves. This is a temporary edit to production code, which is why the file is listed above; restore it and confirm `git diff` on it is empty before closing the task. Record both outcomes in the PR description later.
 
-- [ ] write the scenario end to end in `src/__tests__/App.test.ts`, asserting that each neutral reveal leaves both the index and the delta exactly as they were - `+0` before anything priced appears, held at the current value afterwards
-- [ ] extend it: the counter is named with its severity and the index falls
-- [ ] deliberately rebuild `matchupIndex` from the post-squash breakdown, run the suite, and record that the neutral-reveal assertion fails
-- [ ] restore `src/utils/heroUtils.ts`, confirm `git diff` on it is empty, and confirm the suite is green again
-- [ ] run `pnpm test` - must pass before Task 9
+- [x] write the scenario end to end in `src/__tests__/App.test.ts`, asserting that each neutral reveal leaves both the index and the delta exactly as they were - `+0` before anything priced appears, held at the current value afterwards
+- [x] extend it: the counter is named with its severity and the index falls
+- [x] deliberately rebuild `matchupIndex` from the post-squash breakdown, run the suite, and record that the neutral-reveal assertion fails
+- [x] restore `src/utils/heroUtils.ts`, confirm `git diff` on it is empty, and confirm the suite is green again
+- [x] run `pnpm test` - must pass before Task 9
+- Recorded: with `matchupIndex` rebuilt from `breakdown.strong_against - breakdown.counter_penalty`, the neutral reveal of Hanabi moved the index from `+47` to `+46` and the scenario went red; restoring `src/utils/heroUtils.ts` left `git diff` on it empty and all 348 tests green.
 
 ### Task 9: Verify acceptance criteria
 
