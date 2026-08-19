@@ -325,14 +325,14 @@ Sizing, since two figures live here and they have different widths. `signed()` (
 
 The panel also needs one short line the player can read saying the number looks at the enemy board only. Without it the `WORKS WITH YOU` group produces a confusing pairing on a real draft - a named ally appears while the headline sits still - and the kicker `AGAINST THIS BOARD` reads as covering both sides. A caption on the figure or on that group's header is enough; the kicker itself stays as it is.
 
-- [ ] create `src/components/PickRead.svelte` with the header, the four groups and the fallback line
-- [ ] add the copy scoping the number to the enemy board
-- [ ] style it to match the existing panels, using the project's custom properties for every colour and space value
-- [ ] write tests: all four groups render with their heroes and the severity tag appears on a taken row
-- [ ] write tests: an empty group is absent; the fallback line appears with the first two empty while the others still render; the delta is absent when `sinceLock` is null and prints `+0` when it is 0
-- [ ] write a test that the widest index and the widest delta render as expected strings - `-140` and a four-digit delta - since jsdom has no layout and cannot decide clipping; the real no-clipping check is Task 9's browser pass
-- [ ] write a test that the enemy-board copy renders
-- [ ] run `pnpm test` - must pass before Task 4
+- [x] create `src/components/PickRead.svelte` with the header, the four groups and the fallback line
+- [x] add the copy scoping the number to the enemy board
+- [x] style it to match the existing panels, using the project's custom properties for every colour and space value
+- [x] write tests: all four groups render with their heroes and the severity tag appears on a taken row
+- [x] write tests: an empty group is absent; the fallback line appears with the first two empty while the others still render; the delta is absent when `sinceLock` is null and prints `+0` when it is 0
+- [x] write a test that the widest index and the widest delta render as expected strings - `-140` and a four-digit delta - since jsdom has no layout and cannot decide clipping; the real no-clipping check is Task 9's browser pass
+- [x] write a test that the enemy-board copy renders
+- [x] run `pnpm test` - must pass before Task 4
 
 ### Task 4: Show the panel in the locked view
 
