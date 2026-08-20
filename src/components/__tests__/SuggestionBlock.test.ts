@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
-import type { Hero } from '../../types/hero'
+import type { BootRecommendation, Hero } from '../../types/hero'
+import type { MatchRecord } from '../../types/match'
+import type { PickReadout, TeamNeed } from '../../utils/presentation'
 import SuggestionBlock from '../SuggestionBlock.svelte'
 import { getCCScore, recommendBoots, situationalBudget } from '../../utils/heroUtils'
 import { teamNeeds } from '../../utils/presentation'
@@ -20,14 +22,27 @@ const spread = [
 
 const props = {
   suggestions: spread,
-  enemies: [],
-  myTeam: [] as Hero[],
-  picksLeft: 4,
-  myPick: null,
+  enemies: [] as Hero[],
+  myPick: null as Hero | null,
   hasDraft: true,
+  pickRead: null as PickReadout | null,
+  build: null as BootRecommendation | null,
+  needs: [] as TeamNeed[],
+  unlogged: null as { record: MatchRecord; hero: Hero | null } | null,
   onLock: () => {},
   onUnlock: () => {},
   onBan: () => {},
+  onOpenPlan: () => {},
+}
+
+const emptyReadout: PickReadout = {
+  index: 0,
+  sinceLock: null,
+  taken: [],
+  beaten: [],
+  worksWith: [],
+  live: [],
+  openSlots: 5,
 }
 
 const names = (root: ParentNode) => textOf(root, '.row-name')
@@ -37,7 +52,7 @@ describe('SuggestionBlock states', () => {
   it('asks for a draft before anything is picked', () => {
     render(SuggestionBlock, { ...props, hasDraft: false })
 
-    expect(screen.getByText('Start with the enemy team')).toBeTruthy()
+    expect(screen.getByText('Add their team, or take the jungle now')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'LOCK THIS PICK' })).toBeNull()
   })
 
@@ -54,65 +69,92 @@ describe('SuggestionBlock states', () => {
 
   // The engine has computed boots and a blessing for every candidate since
   // before the Svelte rewrite, and nothing rendered them until now.
-  it('answers what to build once the pick is locked', () => {
+  it('merges the pick and its board reading into one card', () => {
     const pick = byName('Ling')
     const { container } = render(SuggestionBlock, {
       ...props,
       myPick: pick,
-      myTeam: [pick],
-      enemies: drySlow.slice(0, 5),
-    })
-    const build = recommendBoots(pick, drySlow.slice(0, 5))
-
-    expect(screen.getByText('WHAT TO BUY')).toBeTruthy()
-    expect(textOf(container, '.line-name')).toContain(build.boots)
-    expect(textOf(container, '.line-name')).toContain(`${build.blessing} Retribution`)
-    expect(textOf(container, '.line-why')).toContain(build.bootsReason)
-  })
-
-  it('says nothing about the team when the draft leaves nothing to say', () => {
-    const covered = junglers.find(hero =>
-      hero.capabilities?.antiHeal && getCCScore(hero) >= 4)!
-
-    render(SuggestionBlock, {
-      ...props,
-      myPick: covered,
-      myTeam: [covered],
-      enemies: [],
+      pickRead: { ...emptyReadout, index: -31, taken: [{ hero: byName('Natan'), severity: 'HIGH' }] },
     })
 
-    expect(screen.queryByText('TELL YOUR TEAM')).toBeNull()
+    expect(container.querySelector('.live')).toBeTruthy()
+    expect(textOf(container, '.serif')).toContain('Ling')
+    expect(container.querySelector('.index')?.textContent).toBe('-31')
+    expect(textOf(container, '.chip-name')).toEqual(['Natan'])
   })
 
-  it('tells the team what the draft still needs, and how many picks are left', () => {
+  it('folds the plan into one line that names the boots', () => {
     const pick = byName('Ling')
+    const enemies = drySlow.slice(0, 5)
+    const build = recommendBoots(pick, enemies)
+    const needs = teamNeeds([pick], enemies)
+
     const { container } = render(SuggestionBlock, {
       ...props,
       myPick: pick,
-      myTeam: [pick],
-      enemies: sustainers.slice(0, 5),
-      picksLeft: 2,
+      enemies,
+      pickRead: emptyReadout,
+      build,
+      needs,
     })
 
-    const needs = teamNeeds([pick], sustainers.slice(0, 5))
-    expect(needs.length).toBeGreaterThan(0)
-
-    expect(screen.getByText('TELL YOUR TEAM')).toBeTruthy()
-    expect(screen.getByText('2 picks left')).toBeTruthy()
-    expect(textOf(container, '.need .line-name')).toContain(needs[0].name)
+    const bar = container.querySelector('.plan')
+    expect(bar?.textContent).toContain('YOUR PLAN')
+    expect(bar?.textContent).toContain(build.boots)
+    expect(bar?.textContent).toContain('2 items')
+    expect(screen.queryByText('WHAT TO BUY')).toBeNull()
   })
 
-  it('calls a gap an item problem when there is nobody left to pick', () => {
+  it('counts the calls for the team on the plan line, and says nothing when there are none', () => {
+    const pick = byName('Ling')
+    const build = recommendBoots(pick, [])
+
+    const withCalls = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      pickRead: emptyReadout,
+      build,
+      needs: teamNeeds([pick], sustainers.slice(0, 5)),
+    })
+    expect(withCalls.container.querySelector('.plan')?.textContent).toMatch(/calls? for the team/)
+    withCalls.unmount()
+
+    const quiet = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      pickRead: emptyReadout,
+      build,
+      needs: [],
+    })
+    expect(quiet.container.querySelector('.plan')?.textContent).not.toMatch(/for the team/)
+  })
+
+  it('opens the plan when the line is tapped', async () => {
+    const pick = byName('Ling')
+    const onOpenPlan = vi.fn()
+    const { container } = render(SuggestionBlock, {
+      ...props,
+      myPick: pick,
+      pickRead: emptyReadout,
+      build: recommendBoots(pick, []),
+      onOpenPlan,
+    })
+
+    await fireEvent.click(container.querySelector('.plan')!)
+    expect(onOpenPlan).toHaveBeenCalledOnce()
+  })
+
+  it('shows the locked pick on an otherwise blank board rather than the onboarding prompt', () => {
     const pick = byName('Ling')
     render(SuggestionBlock, {
       ...props,
       myPick: pick,
-      myTeam: [pick],
-      enemies: sustainers.slice(0, 5),
-      picksLeft: 0,
+      hasDraft: false,
+      pickRead: emptyReadout,
     })
 
-    expect(screen.getByText('items only now')).toBeTruthy()
+    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
+    expect(screen.queryByText('Add their team, or take the jungle now')).toBeNull()
   })
 
   it('sends the hero in focus to the match ban list', async () => {

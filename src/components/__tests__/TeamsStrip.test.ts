@@ -56,4 +56,10 @@ describe('TeamsStrip', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Clear your jungle pick' }))
     expect(onClearPick).toHaveBeenCalledOnce()
   })
+
+  it('keeps the empty jungle slot as a marker, not a control', () => {
+    const { container } = render(TeamsStrip, props)
+
+    expect(container.querySelector('.jungle-empty')?.tagName).toBe('SPAN')
+  })
 })

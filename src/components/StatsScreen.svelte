@@ -3,7 +3,7 @@
   import type { Tally } from '../utils/matchStats'
   import heroData from '../data/heroes.json'
   import { matches } from '../lib/matches.svelte'
-  import { CONFIDENT_AT, exportMatches, summarise, winRate } from '../utils/matchStats'
+  import { CONFIDENT_AT, exportMatches, rankLabel, summarise, winRate } from '../utils/matchStats'
 
   interface Props {
     onClose: () => void
@@ -21,6 +21,13 @@
 
   const summary = $derived(summarise(matches.all))
   const played = (tally: Tally) => tally.won + tally.lost
+
+  const asides = $derived(
+    [
+      played(summary.blind) > 0 ? `${played(summary.blind)} BLIND` : null,
+      summary.pending > 0 ? `${summary.pending} OPEN` : null,
+    ].filter(Boolean),
+  )
 
   function score(tally: Tally) {
     const rate = winRate(tally)
@@ -76,7 +83,7 @@
       <div class="summary">
         <div class="figure">
           <span class="figure-value">{score(summary.settled)}</span>
-          <span class="kicker">SETTLED{summary.pending > 0 ? ` · ${summary.pending} OPEN` : ''}</span>
+          <span class="kicker">SETTLED{asides.length > 0 ? ` · ${asides.join(' · ')}` : ''}</span>
         </div>
 
         <div class="split">
@@ -126,8 +133,7 @@
             <div class="game-head">
               <span class="game-pick">{record.pick.name}</span>
               <span class="game-meta">
-                {#if record.rank}#{record.rank} of {record.shown}{/if}
-                · {new Date(record.at).toLocaleDateString()}
+                {rankLabel(record)} · {new Date(record.at).toLocaleDateString()}
               </span>
             </div>
 

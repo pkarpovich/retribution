@@ -46,6 +46,45 @@ describe('StatsScreen', () => {
     expect(figures).toEqual(['1-1', '1-0', '0-1'])
   })
 
+  it('reconciles blind picks with the settled count in the kicker', () => {
+    matches.log(makeRecord({ id: 'a', outcome: 'won', followedAdvice: true }))
+    matches.log(makeRecord({ id: 'b', outcome: 'lost', rank: null, shown: 0, followedAdvice: false }))
+
+    const { container } = render(StatsScreen, props)
+
+    expect(container.querySelector('.kicker')?.textContent).toBe('SETTLED · 1 BLIND')
+    const figures = [...container.querySelectorAll('.figure-value')].map(node => node.textContent)
+    expect(figures).toEqual(['1-1', '1-0', '0-0'])
+  })
+
+  it('carries the unsettled count in the kicker alongside the blind one', () => {
+    matches.log(makeRecord({ id: 'a', outcome: 'won', followedAdvice: true }))
+    matches.log(makeRecord({ id: 'b', outcome: 'lost', rank: null, shown: 0, followedAdvice: false }))
+    matches.log(makeRecord({ id: 'c', outcome: 'pending' }))
+
+    const { container } = render(StatsScreen, props)
+
+    expect(container.querySelector('.kicker')?.textContent).toBe('SETTLED · 1 BLIND · 1 OPEN')
+  })
+
+  it('names the two shapes a rank can take besides a place in the list', () => {
+    matches.log(makeRecord({ id: 'below', rank: 9, shown: 8 }))
+    const below = render(StatsScreen, props)
+    expect(below.container.querySelector('.game-meta')?.textContent).toContain('below #8')
+    expect(below.container.querySelector('.game-meta')?.textContent).not.toContain('#9 of 8')
+
+    matches.clear()
+    matches.log(makeRecord({ id: 'blind', rank: null, shown: 0 }))
+    const blind = render(StatsScreen, props)
+    expect(blind.container.querySelector('.game-meta')?.textContent?.trim()).not.toMatch(/^·/)
+    expect(blind.container.querySelector('.game-meta')?.textContent).toContain('blind pick')
+
+    matches.clear()
+    matches.log(makeRecord({ id: 'third', rank: 3, shown: 8 }))
+    const listed = render(StatsScreen, props)
+    expect(listed.container.querySelector('.game-meta')?.textContent).toContain('#3 of 8')
+  })
+
   // A percentage on eight games is theatre; the fraction carries its own n.
   it('withholds a percentage until the sample can carry one', () => {
     for (let i = 0; i < CONFIDENT_AT - 1; i++) {

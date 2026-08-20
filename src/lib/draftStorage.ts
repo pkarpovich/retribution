@@ -2,14 +2,11 @@ import type { Hero } from '../types/hero'
 import type { MatchRecord } from '../types/match'
 import { MAX_ALLIES, MAX_ENEMIES } from '../utils/heroUtils'
 
-export type DraftMode = 'ally' | 'enemy' | 'ban'
-
 export interface Draft {
   allies: Hero[]
   enemies: Hero[]
   matchBans: Hero[]
   myPick: Hero | null
-  mode: DraftMode
 }
 
 const STORAGE_KEY = 'retribution.draft'
@@ -19,14 +16,11 @@ const STORAGE_KEY = 'retribution.draft'
 // look ready and quietly answer the wrong enemy team.
 export const DRAFT_TTL_MS = 3 * 60 * 60 * 1000
 
-const MODES: DraftMode[] = ['ally', 'enemy', 'ban']
-
 export const emptyDraft = (): Draft => ({
   allies: [],
   enemies: [],
   matchBans: [],
   myPick: null,
-  mode: 'enemy',
 })
 
 // Puts a logged game back on the board so it can be scored against today's
@@ -46,7 +40,6 @@ export function draftFromRecord(record: MatchRecord, heroes: Hero[]): Draft {
     enemies: resolve(record.enemies, MAX_ENEMIES),
     matchBans: resolve(record.matchBans, heroes.length),
     myPick: null,
-    mode: 'enemy',
   }
 }
 
@@ -56,7 +49,6 @@ interface StoredDraft {
   enemies: number[]
   matchBans: number[]
   myPick: number | null
-  mode: DraftMode
 }
 
 // Ids, not heroes: the roster is refreshed twice a week and the board should
@@ -70,7 +62,6 @@ export function saveDraft(draft: Draft, now: number) {
     enemies: ids(draft.enemies),
     matchBans: ids(draft.matchBans),
     myPick: draft.myPick?.id ?? null,
-    mode: draft.mode,
   }
 
   try {
@@ -108,6 +99,5 @@ export function loadDraft(heroes: Hero[], now: number): Draft {
     enemies: resolve(stored.enemies, MAX_ENEMIES),
     matchBans: resolve(stored.matchBans, heroes.length),
     myPick: (stored.myPick !== null && byId.get(stored.myPick as number)) || null,
-    mode: MODES.includes(stored.mode as DraftMode) ? (stored.mode as DraftMode) : empty.mode,
   }
 }

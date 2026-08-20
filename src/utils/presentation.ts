@@ -1,14 +1,20 @@
-import type { Hero, RecommendationResult, UserRank } from '../types/hero'
+import type { Hero, RecommendationResult, RecommendationWarning, UserRank } from '../types/hero'
+import type { MatchRecord } from '../types/match'
 import type { EnemyRuleReadout } from './heroUtils'
 import {
   HEAVY_CC_AT,
   HIGH_CC_SHARE,
+  MAX_ENEMIES,
+  counterSeverity,
   enemyRuleReadout,
   getCCScore,
+  getDefaultWeights,
   getMobilityScore,
   isDamageDealer,
   isPrimarilyMagic,
   isPrimarilyPhysical,
+  liveCounterThreats,
+  matchupIndex,
 } from './heroUtils'
 
 export type AxisKey = 'phys' | 'magic' | 'burst' | 'cc' | 'sustain' | 'mobility'
@@ -492,49 +498,49 @@ export function teamNeeds(
   userRank: UserRank = 'Mythic',
 ): TeamNeed[] {
   const read = enemyRuleReadout(enemies, userRank)
-  if (!read) return []
-
   const nobody = (predicate: (hero: Hero) => boolean) => !allies.some(predicate)
   const needs: TeamNeed[] = []
 
-  if (read.antiHealPoints >= MATERIAL_POINTS && nobody(hero => Boolean(hero.capabilities?.antiHeal))) {
-    needs.push({
-      key: 'antiHeal',
-      name: 'Anti-heal',
-      points: read.antiHealPoints,
-      evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
-      gap: 'nobody on your side carries it',
-    })
-  }
+  if (read) {
+    if (read.antiHealPoints >= MATERIAL_POINTS && nobody(hero => Boolean(hero.capabilities?.antiHeal))) {
+      needs.push({
+        key: 'antiHeal',
+        name: 'Anti-heal',
+        points: read.antiHealPoints,
+        evidence: `${read.sustainCount} of ${read.revealed} of them heal`,
+        gap: 'nobody on your side carries it',
+      })
+    }
 
-  if (read.catchPoints >= SWITCHED_OFF_BELOW && nobody(hero => getCCScore(hero) >= HEAVY_CC_AT)) {
-    needs.push({
-      key: 'cc',
-      name: 'Lockdown',
-      points: read.catchPoints,
-      evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
-      gap: 'nothing on your side holds anyone still',
-    })
-  }
+    if (read.catchPoints >= SWITCHED_OFF_BELOW && nobody(hero => getCCScore(hero) >= HEAVY_CC_AT)) {
+      needs.push({
+        key: 'cc',
+        name: 'Lockdown',
+        points: read.catchPoints,
+        evidence: `their mobility is ${Math.round(read.mobilityShare * 100)}%`,
+        gap: 'nothing on your side holds anyone still',
+      })
+    }
 
-  if (read.armourBreakPoints >= MATERIAL_POINTS && nobody(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)) {
-    needs.push({
-      key: 'armour',
-      name: 'Damage their armour cannot stop',
-      points: read.armourBreakPoints,
-      evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
-      gap: 'everything you have has to go through it',
-    })
-  }
+    if (read.armourBreakPoints >= MATERIAL_POINTS && nobody(hero => (hero.capabilities?.armorAgnostic ?? 0) > 0)) {
+      needs.push({
+        key: 'armour',
+        name: 'Damage their armour cannot stop',
+        points: read.armourBreakPoints,
+        evidence: `their mitigation is ${read.mitigation.toFixed(2)}`,
+        gap: 'everything you have has to go through it',
+      })
+    }
 
-  if (read.heavyCcCount / read.revealed >= HIGH_CC_SHARE && nobody(hero => Boolean(hero.capabilities?.hasImmunity))) {
-    needs.push({
-      key: 'immune',
-      name: 'A way out of their control',
-      points: null,
-      evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
-      gap: 'nobody on your side can shrug it off',
-    })
+    if (read.heavyCcCount / read.revealed >= HIGH_CC_SHARE && nobody(hero => Boolean(hero.capabilities?.hasImmunity))) {
+      needs.push({
+        key: 'immune',
+        name: 'A way out of their control',
+        points: null,
+        evidence: `${read.heavyCcCount} of ${read.revealed} of them carry heavy control`,
+        gap: 'nobody on your side can shrug it off',
+      })
+    }
   }
 
   if (allies.length > 0 && allies.every(hero => !isDamageDealer(hero))) {
@@ -584,4 +590,66 @@ export function tieGroups(suggestions: Suggestion[]): string[][] {
     buckets.set(key, [...(buckets.get(key) ?? []), suggestion.hero.hero_name])
   }
   return [...buckets.values()].filter(names => names.length > 1)
+}
+
+export interface PickBoard {
+  myTeam: Hero[]
+  enemies: Hero[]
+  matchBans: Hero[]
+  roster: Hero[]
+}
+
+export interface PickThreat {
+  hero: Hero
+  severity: RecommendationWarning['severity']
+}
+
+export interface PickReadout {
+  index: number
+  sinceLock: number | null
+  taken: PickThreat[]
+  beaten: Hero[]
+  worksWith: Hero[]
+  live: Hero[]
+  openSlots: number
+}
+
+const pricedIds = (relations: { id: number; weighted_score: number }[] | undefined) =>
+  new Map((relations ?? []).filter(relation => relation.weighted_score > 0).map(relation => [relation.id, relation.weighted_score]))
+
+export function pickReadout(
+  pick: Hero,
+  board: PickBoard,
+  baseline: MatchRecord | null,
+  userRank: UserRank = 'Mythic',
+): PickReadout {
+  const weights = getDefaultWeights(userRank)
+  const rosterById = new Map(board.roster.map(hero => [hero.id, hero]))
+
+  const matchups = matchupsFor(pick, board.enemies, board.myTeam)
+  const counters = pricedIds(pick.counters)
+  const victims = pricedIds(pick.weakAgainst)
+  const partners = pricedIds(pick.synergies)
+
+  const index = matchupIndex(pick, board.enemies, userRank)
+
+  const sameLock = baseline !== null && baseline.pick.id === pick.id
+  const lockedEnemies = sameLock
+    ? baseline.enemies.map(enemy => rosterById.get(enemy.id)).filter((found): found is Hero => Boolean(found))
+    : []
+
+  return {
+    index,
+    sinceLock: sameLock ? index - matchupIndex(pick, lockedEnemies, userRank) : null,
+    taken: matchups.weak
+      .filter(hero => counters.has(hero.id))
+      .map(hero => ({ hero, severity: counterSeverity(counters.get(hero.id)!, weights) })),
+    beaten: matchups.strong.filter(hero => victims.has(hero.id)),
+    worksWith: matchups.synergy.filter(hero => partners.has(hero.id)),
+    live: liveCounterThreats(pick, board.myTeam, board.enemies, board.matchBans)
+      .filter(threat => threat.exposure > 0)
+      .map(threat => rosterById.get(threat.id))
+      .filter((found): found is Hero => Boolean(found)),
+    openSlots: MAX_ENEMIES - board.enemies.length,
+  }
 }

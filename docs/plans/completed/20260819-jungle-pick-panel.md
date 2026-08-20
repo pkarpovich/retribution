@@ -277,18 +277,18 @@ Four extractions, none of which may change a number the engine produces.
 
 "The existing tests pass untouched" proves purity for the wrappers and for `liveCounterThreats`, whose numbers are pinned below. It proves **nothing** for `counterSeverity`: no test in this repository asserts a warning's severity today, so a transposed threshold or a double-applied scale stays green. Its own tests are therefore not optional, and its blast radius reaches `buildReasons` in `presentation.ts`, which puts the first HIGH warning on the pre-lock suggestion card that this plan lists as a non-goal.
 
-- [ ] split `strongAgainstRaw` / `counterPenaltyRaw` out of the two helpers, leaving the capped wrappers in place
-- [ ] extract `counterSeverity` and call it from `generateWarnings`, passing the raw `weighted_score`
-- [ ] extract `liveCounterThreats` from `calculateCounterThreat` and sum `exposure` in the caller
-- [ ] add `matchupIndex`, dropping relations whose `weighted_score` is 0
-- [ ] confirm every existing test in `heroUtils.test.ts` and `invariants.test.ts` passes with **no edits at all**
-- [ ] write `counterSeverity` tests directly below, exactly at and above both scaled thresholds, across two ranks, asserting the scale is applied once and inside
-- [ ] write a parity test through `generateWarnings` for a relation that straddles the scaled and unscaled bands - Sun against Faramis, `weighted_score` 3.55, must come out HIGH
-- [ ] write a test that `matchupIndex` is exactly 0 for every jungler against a board carrying no positive-weight relation to it
-- [ ] write a test that a priced victim raises it, a priced counter lowers it, and an unrelated hero leaves it bit-identical
-- [ ] write a test that four counters plus a fifth still move the index, since the cap is gone - Sun against Natan, Aldous, Alucard, Ruby, then Faramis
-- [ ] write a test that the summed `exposure` reproduces the component the score charged, plus the edge cases: no open slots returns empty, a drafted or match-banned counter is absent, a personally banned counter is still present
-- [ ] run `pnpm test` - must pass before Task 2
+- [x] split `strongAgainstRaw` / `counterPenaltyRaw` out of the two helpers, leaving the capped wrappers in place
+- [x] extract `counterSeverity` and call it from `generateWarnings`, passing the raw `weighted_score`
+- [x] extract `liveCounterThreats` from `calculateCounterThreat` and sum `exposure` in the caller
+- [x] add `matchupIndex`, dropping relations whose `weighted_score` is 0
+- [x] confirm every existing test in `heroUtils.test.ts` and `invariants.test.ts` passes with **no edits at all**
+- [x] write `counterSeverity` tests directly below, exactly at and above both scaled thresholds, across two ranks, asserting the scale is applied once and inside
+- [x] write a parity test through `generateWarnings` for a relation that straddles the scaled and unscaled bands - Sun against Faramis, `weighted_score` 3.55, must come out HIGH
+- [x] write a test that `matchupIndex` is exactly 0 for every jungler against a board carrying no positive-weight relation to it
+- [x] write a test that a priced victim raises it, a priced counter lowers it, and an unrelated hero leaves it bit-identical
+- [x] write a test that four counters plus a fifth still move the index, since the cap is gone - Sun against Natan, Aldous, Alucard, Ruby, then Faramis
+- [x] write a test that the summed `exposure` reproduces the component the score charged, plus the edge cases: no open slots returns empty, a drafted or match-banned counter is absent, a personally banned counter is still present
+- [x] run `pnpm test` - must pass before Task 2
 
 ### Task 2: pickReadout in the presentation layer
 
@@ -302,14 +302,14 @@ Four extractions, none of which may change a number the engine produces.
 
 `sinceLock` is `index` minus the index recomputed against the enemies named in `baseline.enemies`, resolved against `board.roster`. It is `null` when `baseline` is null or `baseline.pick.id` differs from the pick, and `0` when the board's priced relations are unchanged since the lock.
 
-- [ ] add `PickBoard`, `PickThreat`, `PickReadout` and `pickReadout` to `src/utils/presentation.ts`
-- [ ] write tests: names the counter among revealed enemies and carries its severity; names the victim; names the ally in `worksWith`; `live` is capped by open slots and empty at five enemies
-- [ ] write the load-bearing test: adding an enemy with no priced relation to the pick leaves `index` **exactly** unchanged
-- [ ] write the zero-weight test with Ling and Masha from the frozen snapshot: the relation exists, its `weighted_score` is 0, so Masha appears in **neither** `taken` nor the index, and the two agree
-- [ ] write tests that neither an added ally, nor an added match ban, nor any change of enemy team composition moves `index`
-- [ ] write tests for the baseline: same pick yields the movement since the recorded enemies; a record for a different pick yields `null`; a null baseline yields `null`; an enemy removed after the lock returns the delta to 0
-- [ ] write a test that a pick with no enemies revealed produces a readout with `index` exactly 0 and the first two groups empty
-- [ ] run `pnpm test` - must pass before Task 3
+- [x] add `PickBoard`, `PickThreat`, `PickReadout` and `pickReadout` to `src/utils/presentation.ts`
+- [x] write tests: names the counter among revealed enemies and carries its severity; names the victim; names the ally in `worksWith`; `live` is capped by open slots and empty at five enemies
+- [x] write the load-bearing test: adding an enemy with no priced relation to the pick leaves `index` **exactly** unchanged
+- [x] write the zero-weight test with Ling and Masha from the frozen snapshot: the relation exists, its `weighted_score` is 0, so Masha appears in **neither** `taken` nor the index, and the two agree
+- [x] write tests that neither an added ally, nor an added match ban, nor any change of enemy team composition moves `index`
+- [x] write tests for the baseline: same pick yields the movement since the recorded enemies; a record for a different pick yields `null`; a null baseline yields `null`; an enemy removed after the lock returns the delta to 0
+- [x] write a test that a pick with no enemies revealed produces a readout with `index` exactly 0 and the first two groups empty
+- [x] run `pnpm test` - must pass before Task 3
 
 ### Task 3: PickRead component
 
@@ -325,14 +325,14 @@ Sizing, since two figures live here and they have different widths. `signed()` (
 
 The panel also needs one short line the player can read saying the number looks at the enemy board only. Without it the `WORKS WITH YOU` group produces a confusing pairing on a real draft - a named ally appears while the headline sits still - and the kicker `AGAINST THIS BOARD` reads as covering both sides. A caption on the figure or on that group's header is enough; the kicker itself stays as it is.
 
-- [ ] create `src/components/PickRead.svelte` with the header, the four groups and the fallback line
-- [ ] add the copy scoping the number to the enemy board
-- [ ] style it to match the existing panels, using the project's custom properties for every colour and space value
-- [ ] write tests: all four groups render with their heroes and the severity tag appears on a taken row
-- [ ] write tests: an empty group is absent; the fallback line appears with the first two empty while the others still render; the delta is absent when `sinceLock` is null and prints `+0` when it is 0
-- [ ] write a test that the widest index and the widest delta render as expected strings - `-140` and a four-digit delta - since jsdom has no layout and cannot decide clipping; the real no-clipping check is Task 9's browser pass
-- [ ] write a test that the enemy-board copy renders
-- [ ] run `pnpm test` - must pass before Task 4
+- [x] create `src/components/PickRead.svelte` with the header, the four groups and the fallback line
+- [x] add the copy scoping the number to the enemy board
+- [x] style it to match the existing panels, using the project's custom properties for every colour and space value
+- [x] write tests: all four groups render with their heroes and the severity tag appears on a taken row
+- [x] write tests: an empty group is absent; the fallback line appears with the first two empty while the others still render; the delta is absent when `sinceLock` is null and prints `+0` when it is 0
+- [x] write a test that the widest index and the widest delta render as expected strings - `-140` and a four-digit delta - since jsdom has no layout and cannot decide clipping; the real no-clipping check is Task 9's browser pass
+- [x] write a test that the enemy-board copy renders
+- [x] run `pnpm test` - must pass before Task 4
 
 ### Task 4: Show the panel in the locked view
 
@@ -348,14 +348,14 @@ This task also reorders the template so the locked branch is tested before the o
 
 `App.test.ts` is in this task's files because the roster choice cannot be tested anywhere else: `pickReadout`'s own tests pass a roster directly, and a blind lock has an empty baseline where both readings agree. The test that discriminates has to lock a hero that already has a priced relation to a revealed enemy.
 
-- [ ] reorder `src/components/SuggestionBlock.svelte` so `{#if myPick}` is the first branch and the `!hasDraft` prompt is the second; leave `hasDraft` itself alone
-- [ ] derive `pickRead` in `src/App.svelte` from `heroes`, and pass it to `SuggestionBlock`
-- [ ] add the `pickRead` prop to `SuggestionBlock` and render `PickRead` in the locked branch, above WHAT TO BUY
-- [ ] update the existing `SuggestionBlock` tests for the new prop and confirm none of them depended on the old branch order
-- [ ] write a test that the locked branch renders the panel when given a readout and omits it when given null
-- [ ] write a test that a pick with an otherwise blank board renders the locked view and not the "Start with the enemy team" prompt
-- [ ] write the roster test in `App.test.ts`: reveal an enemy the pick has a priced relation to, lock the pick, and assert `sinceLock` reads `+0` with a non-zero index - it reads the whole index if the filtered roster was passed
-- [ ] run `pnpm test` - must pass before Task 5
+- [x] reorder `src/components/SuggestionBlock.svelte` so `{#if myPick}` is the first branch and the `!hasDraft` prompt is the second; leave `hasDraft` itself alone
+- [x] derive `pickRead` in `src/App.svelte` from `heroes`, and pass it to `SuggestionBlock`
+- [x] add the `pickRead` prop to `SuggestionBlock` and render `PickRead` in the locked branch, above WHAT TO BUY
+- [x] update the existing `SuggestionBlock` tests for the new prop and confirm none of them depended on the old branch order
+- [x] write a test that the locked branch renders the panel when given a readout and omits it when given null
+- [x] write a test that a pick with an otherwise blank board renders the locked view and not the "Start with the enemy team" prompt
+- [x] write the roster test in `App.test.ts`: reveal an enemy the pick has a priced relation to, lock the pick, and assert `sinceLock` reads `+0` with a non-zero index - it reads the whole index if the filtered roster was passed
+- [x] run `pnpm test` - must pass before Task 5
 
 ### Task 5: A fourth draft mode for marking your own hero
 
@@ -377,16 +377,16 @@ The inert jungle `<span>` in `TeamsStrip` becomes a button with a new `onChooseP
 
 At the end of this task the `'pick'` branch sets `myPick` and logs nothing; Task 6 gives it the match record.
 
-- [ ] add `'pick'` to `DraftMode` and `MODES` in `src/lib/draftStorage.ts`
-- [ ] replace the local union in `src/components/RosterPanel.svelte` with an import of `DraftMode`
-- [ ] turn the empty jungle slot in `src/components/TeamsStrip.svelte` into a button with an `onChoosePick` callback
-- [ ] replace the tab row in `src/components/RosterPanel.svelte` with the pick-mode row while the mode is active
-- [ ] wire it up in `src/App.svelte`: pass `onChoosePick` to set `mode = 'pick'`, and add the `'pick'` branch to `pick()` so a tapped hero becomes the pick and the mode returns to `'enemy'`
-- [ ] write tests: the empty jungle slot calls its callback; the filled slot still clears the pick
-- [ ] write tests: pick mode hides the tabs and shows the cancel control, cancel asks for `'enemy'`, the roster grid still renders and still hands tapped heroes back
-- [ ] write the App-level wiring test: tapping the empty jungle slot enters pick mode, tapping a roster hero fills `myPick`, the mode returns to `'enemy'`, and no enemy was added - without it the component tests stay green while `App` never passes the callback or routes the tap to the enemy team
-- [ ] write a test that a stored draft with an unknown mode still loads with the default
-- [ ] run `pnpm test` and `pnpm build` - both must pass before Task 6
+- [x] add `'pick'` to `DraftMode` and `MODES` in `src/lib/draftStorage.ts`
+- [x] replace the local union in `src/components/RosterPanel.svelte` with an import of `DraftMode`
+- [x] turn the empty jungle slot in `src/components/TeamsStrip.svelte` into a button with an `onChoosePick` callback
+- [x] replace the tab row in `src/components/RosterPanel.svelte` with the pick-mode row while the mode is active
+- [x] wire it up in `src/App.svelte`: pass `onChoosePick` to set `mode = 'pick'`, and add the `'pick'` branch to `pick()` so a tapped hero becomes the pick and the mode returns to `'enemy'`
+- [x] write tests: the empty jungle slot calls its callback; the filled slot still clears the pick
+- [x] write tests: pick mode hides the tabs and shows the cancel control, cancel asks for `'enemy'`, the roster grid still renders and still hands tapped heroes back
+- [x] write the App-level wiring test: tapping the empty jungle slot enters pick mode, tapping a roster hero fills `myPick`, the mode returns to `'enemy'`, and no enemy was added - without it the component tests stay green while `App` never passes the callback or routes the tap to the enemy team
+- [x] write a test that a stored draft with an unknown mode still loads with the default
+- [x] run `pnpm test` and `pnpm build` - both must pass before Task 6
 
 ### Task 6: One writer for the pick, three kinds of record
 
@@ -406,13 +406,13 @@ calculateJunglerRecommendation(hero, allies, enemies, 'Mythic', { matchBans, sig
 
 `needs` is the one thing computed against the pick-inclusive team, as `lock()` already does. Do not let that line pull the evaluation call along with it.
 
-- [ ] merge `lock()` and the Task 5 path into one pick-taking function in `src/App.svelte`
-- [ ] implement the three record cases, passing `allies` and `signatures.ids` to the direct evaluation
-- [ ] write a test for the ticket's opening scenario: with no enemies revealed, mark a hero through the jungle slot and confirm the panel appears with an index of 0
-- [ ] write a test that a pick marked with no suggestions on screen writes a record with `rank: null` and `shown: 0`
-- [ ] write a test that a hero picked from the roster while suggestions are on screen but outside them writes `rank: shown + 1` with `top` preserved
-- [ ] write a test that locking from a suggestion card is unchanged - same rank, same `followedAdvice`
-- [ ] run `pnpm test` - must pass before Task 7
+- [x] merge `lock()` and the Task 5 path into one pick-taking function in `src/App.svelte`
+- [x] implement the three record cases, passing `allies` and `signatures.ids` to the direct evaluation
+- [x] write a test for the ticket's opening scenario: with no enemies revealed, mark a hero through the jungle slot and confirm the panel appears with an index of 0
+- [x] write a test that a pick marked with no suggestions on screen writes a record with `rank: null` and `shown: 0`
+- [x] write a test that a hero picked from the roster while suggestions are on screen but outside them writes `rank: shown + 1` with `top` preserved
+- [x] write a test that locking from a suggestion card is unchanged - same rank, same `followedAdvice`
+- [x] run `pnpm test` - must pass before Task 7
 
 ### Task 7: Teach the statistics, the screens and the export what rank means now
 
@@ -432,17 +432,17 @@ That guard alone breaks what the screen shows. `summarise` increments `settled` 
 
 The export carries the same misreading in prose. `ABOUT` (`src/utils/matchStats.ts:67-77`) tells a reading agent that "followedAdvice is rank === 1", and CLAUDE.md says the export is meant to be handed to an agent with no other context - so the text is contract, not commentary. It has to say that a null rank means no suggestion list was on screen, that `shown + 1` means the pick was below the displayed list, and that only null-rank records are blind.
 
-- [ ] guard the followed/overrode split on `rank !== null` and count those records into a new `blind` tally
-- [ ] add `blind` to `MatchSummary` and show it in the SETTLED kicker beside the open count
-- [ ] label the below-list and blind shapes in `MatchBanner.svelte` and `StatsScreen.svelte`, and stop the separator leading when there is no rank
-- [ ] extend `ABOUT` to explain a null rank, the `shown + 1` convention, and the blind category
-- [ ] check the rest of `matchStats.ts` for other places a null rank would distort a figure, and fix any found
-- [ ] write a test that a blind-pick record lands in `blind` and in neither `followed` nor `overrode`
-- [ ] write a test that a `rank: shown + 1` record lands in `overrode`, not in `blind`
-- [ ] write a test for the invariant `followed + overrode + blind === settled` on a mix of records, won and lost
-- [ ] write a `StatsScreen` test that a settled blind record shows the blind count in the SETTLED kicker
-- [ ] write `MatchBanner` and `StatsScreen` tests that a `rank: shown + 1` record never prints "#9 of 8", that a blind record prints no leading separator, and that an in-list record still prints "#3 of 8" as before
-- [ ] run `pnpm test` - must pass before Task 8
+- [x] guard the followed/overrode split on `rank !== null` and count those records into a new `blind` tally
+- [x] add `blind` to `MatchSummary` and show it in the SETTLED kicker beside the open count
+- [x] label the below-list and blind shapes in `MatchBanner.svelte` and `StatsScreen.svelte`, and stop the separator leading when there is no rank
+- [x] extend `ABOUT` to explain a null rank, the `shown + 1` convention, and the blind category
+- [x] check the rest of `matchStats.ts` for other places a null rank would distort a figure, and fix any found
+- [x] write a test that a blind-pick record lands in `blind` and in neither `followed` nor `overrode`
+- [x] write a test that a `rank: shown + 1` record lands in `overrode`, not in `blind`
+- [x] write a test for the invariant `followed + overrode + blind === settled` on a mix of records, won and lost
+- [x] write a `StatsScreen` test that a settled blind record shows the blind count in the SETTLED kicker
+- [x] write `MatchBanner` and `StatsScreen` tests that a `rank: shown + 1` record never prints "#9 of 8", that a blind record prints no leading separator, and that an in-list record still prints "#3 of 8" as before
+- [x] run `pnpm test` - must pass before Task 8
 
 ### Task 8: The acceptance scenario, and proving the tests bite
 
@@ -460,29 +460,42 @@ Written against the frozen snapshot so a data refresh cannot move it. If those h
 
 Then the honesty pass, as in RAL-82. The perturbation point is `matchupIndex` in `src/utils/heroUtils.ts`: rebuild it from the post-squash `breakdown.strong_against` and `breakdown.counter_penalty` instead of the raw functions, run the suite, and confirm the neutral-reveal test goes red - those values drift whenever any enemy is added because `scale` moves. This is a temporary edit to production code, which is why the file is listed above; restore it and confirm `git diff` on it is empty before closing the task. Record both outcomes in the PR description later.
 
-- [ ] write the scenario end to end in `src/__tests__/App.test.ts`, asserting that each neutral reveal leaves both the index and the delta exactly as they were - `+0` before anything priced appears, held at the current value afterwards
-- [ ] extend it: the counter is named with its severity and the index falls
-- [ ] deliberately rebuild `matchupIndex` from the post-squash breakdown, run the suite, and record that the neutral-reveal assertion fails
-- [ ] restore `src/utils/heroUtils.ts`, confirm `git diff` on it is empty, and confirm the suite is green again
-- [ ] run `pnpm test` - must pass before Task 9
+- [x] write the scenario end to end in `src/__tests__/App.test.ts`, asserting that each neutral reveal leaves both the index and the delta exactly as they were - `+0` before anything priced appears, held at the current value afterwards
+- [x] extend it: the counter is named with its severity and the index falls
+- [x] deliberately rebuild `matchupIndex` from the post-squash breakdown, run the suite, and record that the neutral-reveal assertion fails
+- [x] restore `src/utils/heroUtils.ts`, confirm `git diff` on it is empty, and confirm the suite is green again
+- [x] run `pnpm test` - must pass before Task 9
+- Recorded: with `matchupIndex` rebuilt from `breakdown.strong_against - breakdown.counter_penalty`, the neutral reveal of Hanabi moved the index from `+47` to `+46` and the scenario went red; restoring `src/utils/heroUtils.ts` left `git diff` on it empty and all 348 tests green.
 
 ### Task 9: Verify acceptance criteria
 
-- [ ] verify the ticket's first half: the index moves on every priced matchup and stays exactly put otherwise, including after four counters where the old cap would have clipped it
-- [ ] verify the ticket's ally clause: revealing an ally the pick has a synergy with puts it in WORKS WITH YOU, the index correctly does not move, and the panel's own copy explains why - the pairing is only readable if the explanation is on screen and not just in this plan
-- [ ] verify the ticket's second half: appearing counterpicks are named with their severity, and a zero-weight relation appears in neither the list nor the number
-- [ ] verify the opening scenario: a hero can be marked before any enemy is revealed, the locked view renders on an otherwise blank board, and the panel reads from that moment
-- [ ] verify the delta is present from the first reveal after a lock and reports the movement since the recorded enemies
-- [ ] run the full suite: `pnpm test`
-- [ ] run `pnpm lint` and `pnpm build`
-- [ ] grep the diff for comments added to new code and remove any found
-- [ ] check the panel in a browser on `pnpm dev` (port 50200) at phone width and past the 46rem split, using `agent-browser`; if the screenshot command is still broken on this machine, verify through DOM eval and say plainly that no screenshot exists
+- [x] verify the ticket's first half: the index moves on every priced matchup and stays exactly put otherwise, including after four counters where the old cap would have clipped it
+- [x] verify the ticket's ally clause: revealing an ally the pick has a synergy with puts it in WORKS WITH YOU, the index correctly does not move, and the panel's own copy explains why - the pairing is only readable if the explanation is on screen and not just in this plan
+- [x] verify the ticket's second half: appearing counterpicks are named with their severity, and a zero-weight relation appears in neither the list nor the number
+- [x] verify the opening scenario: a hero can be marked before any enemy is revealed, the locked view renders on an otherwise blank board, and the panel reads from that moment
+- [x] verify the delta is present from the first reveal after a lock and reports the movement since the recorded enemies
+- [x] run the full suite: `pnpm test`
+- [x] run `pnpm lint` and `pnpm build`
+- [x] grep the diff for comments added to new code and remove any found
+- [x] check the panel in a browser on `pnpm dev` (port 50200) at phone width and past the 46rem split, using `agent-browser` (skipped - no browser exists on this machine, see below)
+
+**What each verification rests on.**
+
+- First half: `matchupIndex` moves on the priced victim and the priced counter and is bit-identical across Gord, Miya and Hanabi (`heroUtils.test.ts`, "rises on a priced victim, falls on a priced counter, and ignores an unrelated hero"); it keeps falling on a fifth counter after `counterPenaltyRaw` has already passed 120, where the old cap would have clipped ("keeps moving past the point the engine cap would have clipped"). At the readout level the same property holds through `pickReadout` ("leaves the index bit-identical when an enemy with no priced relation appears") and through the running app, reveal by reveal ("moves only on the priced reveals and holds exactly still on the rest").
+- Ally clause: a new App-level test, "names an ally it works with, holds the number still and says on screen why" - marks Sun blind, reveals Masha so the index sits at a non-zero `+37`, then adds Akai as an ally and asserts Akai appears under WORKS WITH YOU, that the index and the delta are byte-identical to what they read before, and that the scoping line is on screen. Written at App level on purpose: the three pieces were each covered separately already, and the criterion is about them being readable together.
+- Second half: `.taken` carries Natan with a HIGH tag as the index falls ("names the counter with its severity as the index falls"), and Ling's zero-weight relation to Masha is absent from both the group and the number (`presentation.test.ts`, "drops a zero-weight relation from both the group and the number"; `heroUtils.test.ts`, "leaves a zero-weight relation out of the number").
+- Opening scenario: "reads the pick from the moment it is marked, before any enemy is revealed" - the panel renders with `+0` on a blank board and the "Start with the enemy team" prompt is gone.
+- Delta: "measures the delta against the enemies revealed at the lock, not against an empty board" pins a non-zero index against a `+0 since lock` at the moment of the lock, and the blind-pick scenario shows the delta tracking the index from the first priced reveal onward.
+- Suite, lint and build: 349 tests in 23 files pass, `eslint .` is clean, `svelte-check` reports 0 errors and 0 warnings across 198 files, and `vite build` succeeds. `pnpm` itself segfaults on this machine, so each was run through its binary directly (`node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js .`, `node node_modules/svelte-check/bin/svelte-check --tsconfig ./tsconfig.app.json`, `node node_modules/vite/bin/vite.js build`). One of those segfaults had dropped a 1.4MB `core` dump into the repository and an earlier iteration committed it; it is removed here and `core` is now ignored.
+- Comments: `git diff master...HEAD -- src/` has no added line carrying `//`, `/*` or `<!--`.
+
+**No screenshot exists.** The machine is `aarch64`; Chrome for Testing publishes no Linux ARM64 build, no system Chromium is installed, and there is no `sudo` to install one, so `agent-browser install` fails and there is no browser to run a DOM eval in either. The panel has therefore never been rendered with a layout engine - the widest-figure test in `PickRead.test.ts` proves the strings, not that they fit. What can be said from the CSS is that `.head` gives the figure an `auto` column against a `minmax(0, 1fr)` copy column with `min-inline-size: 0`, so the copy is what shrinks, and both figures are `white-space: nowrap` with tabular numerals. Both widths put the panel in a similar space - `.draft` is the full viewport below the split and a fixed `24rem` above it - so there is one layout to check, not two. The real check moves to Post-Completion.
 
 ### Task 10: Update documentation
 
-- [ ] update `CLAUDE.md` where it describes what the locked view shows and how the match log treats rank
-- [ ] record that the panel's index is the raw uncapped matchup pair, that zero-weight relations are dropped from both the number and the lists, and that it is deliberately not the engine's situational score - with one line on why, so a later session does not "upgrade" it back
-- [ ] move this plan to `docs/plans/completed/`
+- [x] update `CLAUDE.md` where it describes what the locked view shows and how the match log treats rank
+- [x] record that the panel's index is the raw uncapped matchup pair, that zero-weight relations are dropped from both the number and the lists, and that it is deliberately not the engine's situational score - with one line on why, so a later session does not "upgrade" it back
+- [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
 

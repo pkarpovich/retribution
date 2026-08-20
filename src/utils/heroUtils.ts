@@ -543,7 +543,7 @@ function calculateEnemyVulnerability(
   return score;
 }
 
-function calculateStrongAgainstBonus(
+export function strongAgainstRaw(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
@@ -554,14 +554,20 @@ function calculateStrongAgainstBonus(
   let rawScore = 0;
 
   for (const target of hero.weakAgainst) {
-    if (enemyIds.has(target.id)) {
+    if (enemyIds.has(target.id) && target.weighted_score > 0) {
       rawScore += target.weighted_score;
     }
   }
 
-  const totalBonus = Math.sqrt(rawScore) * 15 * (weights.strong_against / 10);
+  return Math.sqrt(rawScore) * 15 * (weights.strong_against / 10);
+}
 
-  return Math.min(totalBonus, 120);
+function calculateStrongAgainstBonus(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  return Math.min(strongAgainstRaw(hero, enemyTeam, weights), 120);
 }
 
 function calculateCCChainSynergy(
@@ -603,7 +609,7 @@ function calculateInvadeResistance(
   return (sustainBonus + mobilityBonus + fragilePenalty) * weights.invade_resistance;
 }
 
-function calculateCounterPenalty(
+export function counterPenaltyRaw(
   hero: Hero,
   enemyTeam: Hero[],
   weights: RecommendationWeights
@@ -613,15 +619,31 @@ function calculateCounterPenalty(
 
   if (hero.counters) {
     for (const counter of hero.counters) {
-      if (enemyIds.has(counter.id)) {
+      if (enemyIds.has(counter.id) && counter.weighted_score > 0) {
         weakScore += counter.weighted_score;
       }
     }
   }
 
-  const weakPenalty = Math.sqrt(weakScore) * 15 * (weights.counter_penalty / 10);
+  return Math.sqrt(weakScore) * 15 * (weights.counter_penalty / 10);
+}
 
-  return Math.min(weakPenalty, 120);
+function calculateCounterPenalty(
+  hero: Hero,
+  enemyTeam: Hero[],
+  weights: RecommendationWeights
+): number {
+  return Math.min(counterPenaltyRaw(hero, enemyTeam, weights), 120);
+}
+
+export function matchupIndex(
+  hero: Hero,
+  enemyTeam: Hero[],
+  userRank: UserRank = 'Mythic'
+): number {
+  const weights = getDefaultWeights(userRank);
+
+  return strongAgainstRaw(hero, enemyTeam, weights) - counterPenaltyRaw(hero, enemyTeam, weights);
 }
 
 // counter_penalty prices the counters the enemy already took. This prices the
@@ -636,6 +658,36 @@ function calculateCounterPenalty(
 //
 // There is no mirror bonus for victims left on the board. The enemy chooses
 // their picks: they will hunt for what beats us and avoid what we beat.
+export interface CounterThreat {
+  id: number;
+  hero_name: string;
+  tier: HeroTier;
+  exposure: number;
+}
+
+export function liveCounterThreats(
+  hero: Hero,
+  yourTeam: Hero[],
+  enemyTeam: Hero[],
+  matchBans: Hero[]
+): CounterThreat[] {
+  const openSlots = MAX_ENEMIES - enemyTeam.length;
+  if (openSlots <= 0 || !hero.counters) return [];
+
+  const gone = new Set([...yourTeam, ...enemyTeam, ...matchBans].map(h => h.id));
+
+  return hero.counters
+    .filter(counter => !gone.has(counter.id) && counter.weighted_score > 0)
+    .map(counter => ({
+      id: counter.id,
+      hero_name: counter.hero_name,
+      tier: counter.tier,
+      exposure: counter.weighted_score * (getTierScore(counter.tier) / getTierScore('SS'))
+    }))
+    .sort((a, b) => b.exposure - a.exposure)
+    .slice(0, Math.min(openSlots, THREAT_SLOTS));
+}
+
 function calculateCounterThreat(
   hero: Hero,
   yourTeam: Hero[],
@@ -643,18 +695,8 @@ function calculateCounterThreat(
   matchBans: Hero[],
   weights: RecommendationWeights
 ): number {
-  const openSlots = MAX_ENEMIES - enemyTeam.length;
-  if (openSlots <= 0 || !hero.counters) return 0;
-
-  const gone = new Set([...yourTeam, ...enemyTeam, ...matchBans].map(h => h.id));
-
-  const live = hero.counters
-    .filter(counter => !gone.has(counter.id))
-    .map(counter => counter.weighted_score * (getTierScore(counter.tier) / getTierScore('SS')))
-    .sort((a, b) => b - a)
-    .slice(0, Math.min(openSlots, THREAT_SLOTS));
-
-  const exposure = live.reduce((sum, value) => sum + value, 0);
+  const threats = liveCounterThreats(hero, yourTeam, enemyTeam, matchBans);
+  const exposure = threats.reduce((sum, threat) => sum + threat.exposure, 0);
 
   return Math.sqrt(exposure) * THREAT_SCALE * (weights.counter_penalty / 10);
 }
@@ -767,6 +809,17 @@ function getRelativeLevel(totalScore: number, bestScore: number): Recommendation
 // Warnings and strengths
 // ---------------------------------------------------------------------------
 
+export function counterSeverity(
+  weightedScore: number,
+  weights: RecommendationWeights
+): RecommendationWarning['severity'] {
+  const scaledScore = weightedScore * (weights.counter_penalty / 10);
+
+  if (scaledScore > 5) return 'HIGH';
+  if (scaledScore > 2) return 'MEDIUM';
+  return 'LOW';
+}
+
 function generateWarnings(
   hero: Hero,
   enemyTeam: Hero[],
@@ -774,18 +827,14 @@ function generateWarnings(
 ): RecommendationWarning[] {
   const warnings: RecommendationWarning[] = [];
   const enemyIds = new Set(enemyTeam.map(e => e.id));
-  const weakScale = weights.counter_penalty / 10;
 
   if (hero.counters) {
     for (const counter of hero.counters) {
       if (enemyIds.has(counter.id)) {
-        const scaledScore = counter.weighted_score * weakScale;
-        const severity = scaledScore > 5 ? 'HIGH' :
-                        scaledScore > 2 ? 'MEDIUM' : 'LOW';
         warnings.push({
           type: 'WEAK_AGAINST',
           hero: counter.hero_name,
-          severity,
+          severity: counterSeverity(counter.weighted_score, weights),
           message: `${hero.hero_name} is weak against ${counter.hero_name}`
         });
       }

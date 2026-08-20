@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { CONFIDENT_AT, exportMatches, summarise, winRate } from '../matchStats'
+import { CONFIDENT_AT, exportMatches, rankLabel, summarise, winRate } from '../matchStats'
 import { makeRecord } from './matchFixtures'
+import type { MatchRecord } from '../../types/match'
 
 const settled = (outcome: 'won' | 'lost', followedAdvice: boolean, pick = 10, name = 'Guinevere') =>
   makeRecord({ outcome, followedAdvice, pick: { id: pick, name, tier: 'S' } })
@@ -41,6 +42,54 @@ describe('summary', () => {
     expect(summary.heroes).toEqual([])
   })
 
+  it('keeps a blind pick out of both halves of the split', () => {
+    const summary = summarise([
+      makeRecord({ outcome: 'won', rank: null, shown: 0, followedAdvice: false }),
+    ])
+
+    expect(summary.blind).toEqual({ won: 1, lost: 0 })
+    expect(summary.followed).toEqual({ won: 0, lost: 0 })
+    expect(summary.overrode).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('counts a record with no rank at all as blind, keeping the three-way split whole', () => {
+    const legacy = { ...makeRecord({ id: 'legacy', outcome: 'won' }), rank: undefined } as unknown as MatchRecord
+    const summary = summarise([legacy])
+
+    expect(summary.blind).toEqual({ won: 1, lost: 0 })
+    expect(summary.followed).toEqual({ won: 0, lost: 0 })
+    expect(summary.overrode).toEqual({ won: 0, lost: 0 })
+    expect(summary.followed.won + summary.overrode.won + summary.blind.won).toBe(summary.settled.won)
+  })
+
+  it('counts a pick from below the list as an override, not a blind one', () => {
+    const summary = summarise([
+      makeRecord({ outcome: 'lost', rank: 9, shown: 8, followedAdvice: false }),
+    ])
+
+    expect(summary.overrode).toEqual({ won: 0, lost: 1 })
+    expect(summary.blind).toEqual({ won: 0, lost: 0 })
+  })
+
+  it('accounts for every settled game in exactly one of the three columns', () => {
+    const summary = summarise([
+      settled('won', true),
+      settled('lost', false),
+      makeRecord({ outcome: 'won', rank: 9, shown: 8, followedAdvice: false }),
+      makeRecord({ outcome: 'won', rank: null, shown: 0, followedAdvice: false }),
+      makeRecord({ outcome: 'lost', rank: null, shown: 0, followedAdvice: false }),
+      makeRecord({ outcome: 'pending' }),
+    ])
+
+    for (const side of ['won', 'lost'] as const) {
+      expect(summary.followed[side] + summary.overrode[side] + summary.blind[side])
+        .toBe(summary.settled[side])
+    }
+
+    expect(summary.settled).toEqual({ won: 3, lost: 2 })
+    expect(summary.blind).toEqual({ won: 1, lost: 1 })
+  })
+
   it('ranks heroes by how often they were taken', () => {
     const summary = summarise([
       settled('won', true, 1, 'Ling'),
@@ -50,6 +99,26 @@ describe('summary', () => {
 
     expect(summary.heroes.map(entry => entry.hero.name)).toEqual(['Ling', 'Baxia'])
     expect(summary.heroes[0].tally).toEqual({ won: 1, lost: 1 })
+  })
+})
+
+describe('rank label', () => {
+  it('reports where an in-list pick stood', () => {
+    expect(rankLabel({ rank: 3, shown: 8 })).toBe('#3 of 8')
+  })
+
+  it('refuses to print a rank past the end of the list', () => {
+    expect(rankLabel({ rank: 9, shown: 8 })).toBe('below #8')
+  })
+
+  it('says plainly that there was no list to stand in', () => {
+    expect(rankLabel({ rank: null, shown: 0 })).toBe('blind pick')
+  })
+
+  it('reads a record with no rank at all as blind rather than as #undefined', () => {
+    const legacy = { rank: undefined, shown: undefined } as unknown as Pick<MatchRecord, 'rank' | 'shown'>
+
+    expect(rankLabel(legacy)).toBe('blind pick')
   })
 })
 
@@ -74,5 +143,13 @@ describe('export', () => {
     expect(parsed.about).toContain('followedAdvice')
     expect(parsed.about).toContain('dataVersion')
     expect(parsed.about).toContain('breakdown')
+  })
+
+  it('tells the reader what a missing rank means', () => {
+    const parsed = JSON.parse(exportMatches([], '2026-07-26T19:00:00.000Z'))
+
+    expect(parsed.about).toContain('rank null')
+    expect(parsed.about).toContain('blind')
+    expect(parsed.about).toContain('shown + 1')
   })
 })

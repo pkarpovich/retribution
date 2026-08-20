@@ -12,6 +12,7 @@ export interface MatchSummary {
   settled: Tally
   followed: Tally
   overrode: Tally
+  blind: Tally
   heroes: { hero: MatchHero; tally: Tally }[]
 }
 
@@ -29,10 +30,17 @@ export function winRate(tally: Tally): number | null {
   return Math.round((tally.won / played) * 100)
 }
 
+export function rankLabel(record: Pick<MatchRecord, 'rank' | 'shown'>): string {
+  if (typeof record.rank !== 'number' || typeof record.shown !== 'number') return 'blind pick'
+  if (record.rank > record.shown) return `below #${record.shown}`
+  return `#${record.rank} of ${record.shown}`
+}
+
 export function summarise(records: MatchRecord[]): MatchSummary {
   const settled = empty()
   const followed = empty()
   const overrode = empty()
+  const blind = empty()
   const byHero = new Map<number, { hero: MatchHero; tally: Tally }>()
   let pending = 0
 
@@ -44,7 +52,9 @@ export function summarise(records: MatchRecord[]): MatchSummary {
 
     const side = record.outcome === 'won' ? 'won' : 'lost'
     settled[side] += 1
-    ;(record.followedAdvice ? followed : overrode)[side] += 1
+
+    if (typeof record.rank !== 'number') blind[side] += 1
+    else (record.followedAdvice ? followed : overrode)[side] += 1
 
     const entry = byHero.get(record.pick.id)
       ?? { hero: { id: record.pick.id, name: record.pick.name }, tally: empty() }
@@ -58,6 +68,7 @@ export function summarise(records: MatchRecord[]): MatchSummary {
     settled,
     followed,
     overrode,
+    blind,
     heroes: [...byHero.values()].sort((a, b) => games(b.tally) - games(a.tally)),
   }
 }
@@ -71,6 +82,10 @@ const ABOUT = [
   'meta_bonus are the hero on its own, everything else is this draft.',
   'rank is where the locked hero stood in the suggestions (1 is first),',
   'shown is how many were on screen, and followedAdvice is rank === 1.',
+  'rank null means no suggestion list was on screen when the pick was taken',
+  '(shown is 0): those games are blind picks and belong to neither the',
+  'followed nor the overrode column. rank === shown + 1 means the hero was',
+  'picked while a list was up but stood below it, which is an override.',
   'dataVersion is the hero dataset the score was computed against; it moves',
   'twice a week, so scores from different versions are not directly comparable.',
   'note is free text written by the player after the game.',

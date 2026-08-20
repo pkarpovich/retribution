@@ -3,14 +3,21 @@
   import type { Hero } from './types/hero'
   import { bans, signatures } from './lib/pool.svelte'
   import type { MatchRecord } from './types/match'
-  import type { DraftMode } from './lib/draftStorage'
   import { draftFromRecord, loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
-  import { MAX_ALLIES, MAX_ENEMIES, getJunglers, recommendJunglers } from './utils/heroUtils'
-  import { chosen, suggested, teamNeeds, toSuggestions } from './utils/presentation'
+  import {
+    MAX_ALLIES,
+    MAX_ENEMIES,
+    calculateJunglerRecommendation,
+    getJunglers,
+    recommendBoots,
+    recommendJunglers,
+  } from './utils/heroUtils'
+  import { chosen, pickReadout, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import PoolScreen from './components/PoolScreen.svelte'
+  import PlanSheet from './components/PlanSheet.svelte'
+  import DestinationSheet from './components/DestinationSheet.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
-  import MatchBanner from './components/MatchBanner.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
   import StatsScreen from './components/StatsScreen.svelte'
   import RosterPanel from './components/RosterPanel.svelte'
@@ -28,13 +35,15 @@
   let enemies = $state<Hero[]>(restored.enemies)
   let matchBans = $state<Hero[]>(restored.matchBans)
   let myPick = $state<Hero | null>(restored.myPick)
-  let mode = $state<DraftMode>(restored.mode)
+  let choosing = $state<Hero | null>(null)
+  let search = $state('')
 
   $effect(() => {
-    saveDraft({ allies, enemies, matchBans, myPick, mode }, Date.now())
+    saveDraft({ allies, enemies, matchBans, myPick }, Date.now())
   })
   let bansOpen = $state(false)
   let statsOpen = $state(false)
+  let planOpen = $state(false)
   let toast = $state<string | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -68,57 +77,74 @@
   const roster = $derived(heroes.filter(hero => !drafted.has(hero.id)))
   const bannedIds = $derived(new Set(bans.ids))
 
+  const pickRead = $derived(
+    myPick
+      ? pickReadout(myPick, { myTeam, enemies, matchBans, roster: heroes }, matches.pending)
+      : null
+  )
+
+  const NEEDS_SHOWN = 3
+
+  const build = $derived(myPick ? recommendBoots(myPick, enemies) : null)
+  const needs = $derived(myPick ? teamNeeds(myTeam, enemies).slice(0, NEEDS_SHOWN) : [])
+
+  const unlogged = $derived.by(() => {
+    const record = matches.pending
+    if (!record) return null
+    return { record, hero: heroes.find(hero => hero.id === record.pick.id) ?? null }
+  })
+
   function flash(message: string) {
     toast = message
     clearTimeout(toastTimer)
     toastTimer = setTimeout(() => (toast = null), 1600)
   }
 
-  function pick(hero: Hero) {
-    if (mode === 'ban') {
-      matchBans = [...matchBans, hero]
-      return
+  function route(act: (hero: Hero) => void) {
+    return () => {
+      const hero = choosing
+      choosing = null
+      if (!hero) return
+      act(hero)
+      search = ''
     }
-    if (mode === 'ally') {
-      if (allies.length >= MAX_ALLIES) return flash('Ally slots full')
-      allies = [...allies, hero]
-      return
-    }
-    if (enemies.length >= MAX_ENEMIES) return flash('Enemy slots full')
-    enemies = [...enemies, hero]
   }
 
   // Built from the draft as it stands before the lock: once myPick is set the
   // hero leaves the candidate list and its evaluation is gone.
-  function lock(hero: Hero) {
-    const index = suggestions.findIndex(suggestion => suggestion.hero.id === hero.id)
-    const suggestion = suggestions[index]
+  function take(hero: Hero) {
+    const shown = hasDraft ? suggestions : []
+    const index = shown.findIndex(suggestion => suggestion.hero.id === hero.id)
     const named = (list: Hero[]) => list.map(one => ({ id: one.id, name: one.hero_name }))
 
-    if (suggestion) {
-      matches.log({
-        id: newMatchId(),
-        at: new Date().toISOString(),
-        dataVersion: heroData.lastUpdated,
-        outcome: 'pending',
-        note: '',
-        enemies: named(enemies),
-        allies: named(allies),
-        matchBans: named(matchBans),
-        pick: { id: hero.id, name: hero.hero_name, tier: hero.tier },
-        rank: index + 1,
-        shown: suggestions.length,
-        followedAdvice: index === 0,
-        top: suggestions[0] ? { id: suggestions[0].hero.id, name: suggestions[0].hero.hero_name } : null,
-        totalScore: suggestion.result.total_score,
-        breakdown: suggestion.result.breakdown,
-        warnings: suggestion.result.warnings,
-        strengths: suggestion.result.strengths,
-        build: suggestion.result.bootRecommendation,
-        needs: teamNeeds([...allies, hero], enemies)
-          .map(need => ({ key: need.key, name: need.name, evidence: need.evidence })),
+    const result = shown[index]?.result
+      ?? calculateJunglerRecommendation(hero, allies, enemies, 'Mythic', {
+        matchBans,
+        signatures: signatures.ids,
       })
-    }
+
+    matches.log({
+      id: newMatchId(),
+      at: new Date().toISOString(),
+      dataVersion: heroData.lastUpdated,
+      outcome: 'pending',
+      note: '',
+      enemies: named(enemies),
+      allies: named(allies),
+      matchBans: named(matchBans),
+      pick: { id: hero.id, name: hero.hero_name, tier: hero.tier },
+      rank: shown.length === 0 ? null : index >= 0 ? index + 1 : shown.length + 1,
+      shown: shown.length,
+      followedAdvice: index === 0,
+      top: shown[0] ? { id: shown[0].hero.id, name: shown[0].hero.hero_name } : null,
+      totalScore: result.total_score,
+      breakdown: result.breakdown,
+      warnings: result.warnings,
+      strengths: result.strengths,
+      build: result.bootRecommendation,
+      needs: teamNeeds([...allies, hero], enemies)
+        .map(need => ({ key: need.key, name: need.name, evidence: need.evidence })),
+    })
 
     myPick = hero
     flash('Jungle pick locked')
@@ -132,7 +158,6 @@
     enemies = board.enemies
     matchBans = board.matchBans
     myPick = null
-    mode = board.mode
     statsOpen = false
     flash(`Reopened the draft you took ${record.pick.name} into`)
   }
@@ -144,7 +169,6 @@
     enemies = []
     matchBans = []
     myPick = null
-    mode = 'enemy'
   }
 </script>
 
@@ -193,26 +217,28 @@
         onRemove={hero => (matchBans = matchBans.filter(banned => banned.id !== hero.id))}
       />
 
-      {#if matches.pending}
-        <MatchBanner record={matches.pending} onOpenStats={() => (statsOpen = true)} />
+      {#if enemies.length > 0 && !myPick}
+        <EnemyRead {enemies} pool={junglers} responders={suggested(suggestions)} />
       {/if}
 
-      {#if enemies.length > 0}
-        <EnemyRead
-          {enemies}
-          pool={junglers}
-          responders={myPick ? chosen(myTeam) : suggested(suggestions)}
-        />
-      {/if}
+      {#snippet enemyRead()}
+        {#if enemies.length > 0}
+          <EnemyRead {enemies} pool={junglers} responders={chosen(myTeam)} inline />
+        {/if}
+      {/snippet}
 
       <SuggestionBlock
         {suggestions}
         {enemies}
-        {myTeam}
-        picksLeft={MAX_ALLIES - allies.length}
         {myPick}
         {hasDraft}
-        onLock={lock}
+        {pickRead}
+        {build}
+        {needs}
+        {unlogged}
+        {enemyRead}
+        onLock={take}
+        onOpenPlan={() => (planOpen = true)}
         onUnlock={() => {
           myPick = null
           flash('Pick unlocked')
@@ -224,13 +250,7 @@
       />
     </section>
 
-    <RosterPanel
-      heroes={roster}
-      {mode}
-      banned={bannedIds}
-      onModeChange={next => (mode = next)}
-      onPick={pick}
-    />
+    <RosterPanel heroes={roster} banned={bannedIds} bind:query={search} onPick={hero => (choosing = hero)} />
 
     {#if bansOpen}
       <PoolScreen {heroes} onClose={() => (bansOpen = false)} />
@@ -240,6 +260,33 @@
       <StatsScreen onClose={() => (statsOpen = false)} onReopen={reopen} />
     {/if}
   </div>
+
+  {#if choosing}
+    <DestinationSheet
+      hero={choosing}
+      pick={myPick}
+      allySlots={MAX_ALLIES - allies.length}
+      enemySlots={MAX_ENEMIES - enemies.length}
+      onJungle={route(take)}
+      onEnemy={route(hero => (enemies = [...enemies, hero]))}
+      onAlly={route(hero => (allies = [...allies, hero]))}
+      onBan={route(hero => {
+        matchBans = [...matchBans, hero]
+        flash(`${hero.hero_name} banned this match`)
+      })}
+      onClose={() => (choosing = null)}
+    />
+  {/if}
+
+  {#if planOpen && myPick && build}
+    <PlanSheet
+      {build}
+      {needs}
+      picksLeft={MAX_ALLIES - allies.length}
+      worksWith={pickRead?.worksWith ?? []}
+      onClose={() => (planOpen = false)}
+    />
+  {/if}
 
   {#if toast}
     {#key toast}

@@ -1,37 +1,50 @@
 <script lang="ts">
-  import type { Hero } from '../types/hero'
-  import type { Suggestion } from '../utils/presentation'
-  import { HEAVY_CC_AT, recommendBoots, situationalBudget } from '../utils/heroUtils'
-  import { capabilitiesFor, teamNeeds, tieGroups } from '../utils/presentation'
+  import type { Snippet } from 'svelte'
+  import type { BootRecommendation, Hero } from '../types/hero'
+  import type { MatchRecord } from '../types/match'
+  import type { PickReadout, Suggestion, TeamNeed } from '../utils/presentation'
+  import { HEAVY_CC_AT, situationalBudget } from '../utils/heroUtils'
+  import { capabilitiesFor, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
+  import MatchBanner from './MatchBanner.svelte'
+  import PickRead from './PickRead.svelte'
   import TierBadge from './TierBadge.svelte'
 
   interface Props {
     suggestions: Suggestion[]
     enemies: Hero[]
-    myTeam: Hero[]
-    picksLeft: number
     myPick: Hero | null
     hasDraft: boolean
+    pickRead: PickReadout | null
+    build: BootRecommendation | null
+    needs: TeamNeed[]
+    unlogged: { record: MatchRecord; hero: Hero | null } | null
+    enemyRead?: Snippet
     onLock: (hero: Hero) => void
     onUnlock: () => void
     onBan: (hero: Hero) => void
+    onOpenPlan: () => void
   }
 
   const {
     suggestions,
     enemies,
-    myTeam,
-    picksLeft,
     myPick,
     hasDraft,
+    pickRead,
+    build,
+    needs,
+    unlogged,
+    enemyRead,
     onLock,
     onUnlock,
     onBan,
+    onOpenPlan,
   }: Props = $props()
 
-  const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
-  const NEEDS_SHOWN = 3
+  const calls = $derived(
+    needs.length === 0 ? '' : `, ${needs.length} call${needs.length === 1 ? '' : 's'} for the team`
+  )
 
   type SortKey = 'total' | 'fit' | 'comfort'
 
@@ -81,7 +94,10 @@
     }
   }
 
-  const signed = (value: number) => `${value < 0 ? '-' : '+'}${Math.abs(Math.round(value))}`
+  const signed = (value: number) => {
+    const rounded = Math.round(value)
+    return `${rounded < 0 ? '-' : '+'}${Math.abs(rounded)}`
+  }
 
   // Left and right step through the dots as drawn, which is fit order, not
   // list order.
@@ -148,57 +164,26 @@
 </script>
 
 <section class="block">
-  {#if !hasDraft}
-    <div class="prompt">
-      <p class="prompt-title">Start with the enemy team</p>
-      <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
-    </div>
-  {:else if myPick}
-    {@const build = recommendBoots(myPick, enemies)}
-    <div class="locked">
-      <HeroAvatar hero={myPick} size={42} selected />
-      <div class="locked-copy">
-        <span class="kicker accent">YOUR JUNGLE PICK</span>
-        <span class="locked-name">
-          <span class="serif">{myPick.hero_name}</span>
-          <TierBadge tier={myPick.tier} />
+  {#if myPick}
+    <PickRead pick={myPick} readout={pickRead} read={enemyRead} {onUnlock} />
+
+    {#if build}
+      <button class="plan" onclick={onOpenPlan}>
+        <span class="kicker">YOUR PLAN</span>
+        <span class="plan-copy">
+          <strong>{build.boots}</strong> · 2 items{calls}
         </span>
-      </div>
-      <button class="change" onclick={onUnlock}>CHANGE</button>
-    </div>
-
-    <div class="panel">
-      <span class="kicker">WHAT TO BUY</span>
-      <div class="lines">
-        <p class="line">
-          <span class="line-name">{build.boots}</span>
-          <span class="line-why">{build.bootsReason}</span>
-        </p>
-        <p class="line">
-          <span class="line-name">{build.blessing} Retribution</span>
-          <span class="line-why">{build.blessingReason}</span>
-        </p>
-      </div>
-    </div>
-
-    {#if needs.length > 0}
-      <div class="panel">
-        <div class="panel-head">
-          <span class="kicker">TELL YOUR TEAM</span>
-          <span class="kicker">
-            {picksLeft > 0 ? `${picksLeft} pick${picksLeft === 1 ? '' : 's'} left` : 'items only now'}
-          </span>
-        </div>
-        <div class="lines">
-          {#each needs.slice(0, NEEDS_SHOWN) as need (need.key)}
-            <p class="line need">
-              <span class="line-name">{need.name}</span>
-              <span class="line-why">{need.evidence} — {need.gap}</span>
-            </p>
-          {/each}
-        </div>
-      </div>
+        <span class="chevron" aria-hidden="true">›</span>
+      </button>
     {/if}
+  {:else if !hasDraft}
+    <div class="prompt">
+      <p class="prompt-title">Add their team, or take the jungle now</p>
+      <p class="prompt-copy">Tap any hero below and choose where it goes. Suggestions sharpen with every enemy.</p>
+      {#if unlogged}
+        <MatchBanner record={unlogged.record} hero={unlogged.hero} />
+      {/if}
+    </div>
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}
     {@const bar = barOf(focus)}
@@ -378,11 +363,6 @@
     color: var(--color-ink-faint);
   }
 
-  .kicker.accent {
-    color: var(--color-accent);
-    font-weight: 700;
-  }
-
   .serif {
     font-family: var(--font-serif);
     letter-spacing: var(--tracking-tight);
@@ -409,83 +389,38 @@
     color: var(--color-ink-mute);
   }
 
-  .locked {
+  .plan {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md);
-    border: 1px solid var(--color-accent);
-    border-radius: var(--radius-lg);
-    background: var(--color-accent-soft);
+    gap: var(--space-sm);
+    inline-size: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: start;
   }
 
-  .locked-copy {
+  .plan-copy {
     flex: 1;
     min-inline-size: 0;
-    display: grid;
-    gap: var(--space-3xs);
-  }
-
-  .locked-name {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    font-size: var(--font-size-lg);
-  }
-
-  .change {
-    padding: var(--space-xs) var(--space-sm);
-    background: var(--color-panel);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    font-weight: 700;
-    letter-spacing: var(--tracking-mono);
-  }
-
-  .panel {
-    display: grid;
-    gap: var(--space-xs);
-    padding: var(--space-md);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-  }
-
-  .panel-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-sm);
-  }
-
-  .lines {
-    display: grid;
-    gap: var(--space-xs);
-  }
-
-  .line {
-    display: grid;
-    gap: 1px;
-    margin: 0;
-  }
-
-  .line.need {
-    padding-inline-start: var(--space-sm);
-    border-inline-start: 2px solid var(--color-neg);
-  }
-
-  .line-name {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-  }
-
-  .line-why {
-    max-inline-size: var(--measure);
     font-size: var(--font-size-sm);
     color: var(--color-ink-mute);
-    text-wrap: pretty;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .plan-copy strong {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    color: var(--color-ink-faint);
   }
 
   .head,
