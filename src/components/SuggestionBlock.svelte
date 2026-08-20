@@ -178,8 +178,8 @@
     {/if}
   {:else if !hasDraft}
     <div class="prompt">
-      <p class="prompt-title">Start with the enemy team</p>
-      <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
+      <p class="prompt-title">Add their team, or take the jungle now</p>
+      <p class="prompt-copy">Tap any hero below and choose where it goes. Suggestions sharpen with every enemy.</p>
       {#if unlogged}
         <MatchBanner record={unlogged.record} hero={unlogged.hero} />
       {/if}

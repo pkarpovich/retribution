@@ -3,7 +3,6 @@
   import type { Hero } from './types/hero'
   import { bans, signatures } from './lib/pool.svelte'
   import type { MatchRecord } from './types/match'
-  import type { DraftMode } from './lib/draftStorage'
   import { draftFromRecord, loadDraft, saveDraft } from './lib/draftStorage'
   import { matches, newMatchId } from './lib/matches.svelte'
   import {
@@ -17,6 +16,7 @@
   import { chosen, pickReadout, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import PoolScreen from './components/PoolScreen.svelte'
   import PlanSheet from './components/PlanSheet.svelte'
+  import DestinationSheet from './components/DestinationSheet.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
   import StatsScreen from './components/StatsScreen.svelte'
@@ -35,10 +35,11 @@
   let enemies = $state<Hero[]>(restored.enemies)
   let matchBans = $state<Hero[]>(restored.matchBans)
   let myPick = $state<Hero | null>(restored.myPick)
-  let mode = $state<DraftMode>(restored.mode)
+  let choosing = $state<Hero | null>(null)
+  let search = $state('')
 
   $effect(() => {
-    saveDraft({ allies, enemies, matchBans, myPick, mode }, Date.now())
+    saveDraft({ allies, enemies, matchBans, myPick }, Date.now())
   })
   let bansOpen = $state(false)
   let statsOpen = $state(false)
@@ -99,26 +100,14 @@
     toastTimer = setTimeout(() => (toast = null), 1600)
   }
 
-  function choosePick() {
-    mode = 'pick'
-  }
-
-  function pick(hero: Hero) {
-    if (mode === 'pick') {
-      take(hero)
-      return
+  function route(act: (hero: Hero) => void) {
+    return () => {
+      const hero = choosing
+      choosing = null
+      if (!hero) return
+      act(hero)
+      search = ''
     }
-    if (mode === 'ban') {
-      matchBans = [...matchBans, hero]
-      return
-    }
-    if (mode === 'ally') {
-      if (allies.length >= MAX_ALLIES) return flash('Ally slots full')
-      allies = [...allies, hero]
-      return
-    }
-    if (enemies.length >= MAX_ENEMIES) return flash('Enemy slots full')
-    enemies = [...enemies, hero]
   }
 
   // Built from the draft as it stands before the lock: once myPick is set the
@@ -158,7 +147,6 @@
     })
 
     myPick = hero
-    if (mode === 'pick') mode = 'enemy'
     flash('Jungle pick locked')
   }
 
@@ -170,7 +158,6 @@
     enemies = board.enemies
     matchBans = board.matchBans
     myPick = null
-    mode = board.mode
     statsOpen = false
     flash(`Reopened the draft you took ${record.pick.name} into`)
   }
@@ -182,7 +169,6 @@
     enemies = []
     matchBans = []
     myPick = null
-    mode = 'enemy'
   }
 </script>
 
@@ -224,7 +210,6 @@
         onRemoveAlly={hero => (allies = allies.filter(ally => ally.id !== hero.id))}
         onRemoveEnemy={hero => (enemies = enemies.filter(enemy => enemy.id !== hero.id))}
         onClearPick={() => (myPick = null)}
-        onChoosePick={choosePick}
       />
 
       <MatchBanStrip
@@ -265,13 +250,7 @@
       />
     </section>
 
-    <RosterPanel
-      heroes={roster}
-      {mode}
-      banned={bannedIds}
-      onModeChange={next => (mode = next)}
-      onPick={pick}
-    />
+    <RosterPanel heroes={roster} banned={bannedIds} bind:query={search} onPick={hero => (choosing = hero)} />
 
     {#if bansOpen}
       <PoolScreen {heroes} onClose={() => (bansOpen = false)} />
@@ -281,6 +260,23 @@
       <StatsScreen onClose={() => (statsOpen = false)} onReopen={reopen} />
     {/if}
   </div>
+
+  {#if choosing}
+    <DestinationSheet
+      hero={choosing}
+      pick={myPick}
+      allySlots={MAX_ALLIES - allies.length}
+      enemySlots={MAX_ENEMIES - enemies.length}
+      onJungle={route(take)}
+      onEnemy={route(hero => (enemies = [...enemies, hero]))}
+      onAlly={route(hero => (allies = [...allies, hero]))}
+      onBan={route(hero => {
+        matchBans = [...matchBans, hero]
+        flash(`${hero.hero_name} banned this match`)
+      })}
+      onClose={() => (choosing = null)}
+    />
+  {/if}
 
   {#if planOpen && myPick && build}
     <PlanSheet

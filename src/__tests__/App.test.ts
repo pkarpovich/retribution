@@ -15,8 +15,20 @@ const shortlist = (root: ParentNode) =>
   [...root.querySelectorAll('.axis-line .dot')]
     .map(dot => dot.getAttribute('aria-label')?.replace(/, fit .*$/, '') ?? '')
 
+const route = (name: RegExp) => fireEvent.click(screen.getByRole('button', { name }))
+
+const send = async (cell: HTMLElement, to: RegExp) => {
+  await fireEvent.click(cell)
+  await route(to)
+}
+
+const AS_ENEMY = /Add as enemy/
+const AS_ALLY = /Add as ally/
+const AS_JUNGLE = /Your jungle pick/
+const AS_BAN = /Ban this match/
+
 async function draft(root: ParentNode, times: number) {
-  for (let i = 0; i < times; i++) await fireEvent.click(cells(root)[0])
+  for (let i = 0; i < times; i++) await send(cells(root)[0], AS_ENEMY)
 }
 
 beforeEach(() => {
@@ -38,28 +50,40 @@ describe('App draft', () => {
     expect(screen.getByText('4/10')).toBeTruthy()
   })
 
-  it('stops at five enemies and says why', async () => {
+  it('closes the enemy side once its five slots are gone', async () => {
     const { container } = render(App)
 
     await draft(container, 5)
     expect(container.querySelectorAll('.slot.filled')).toHaveLength(5)
-    expect(screen.queryByRole('status')).toBeNull()
 
-    await draft(container, 1)
-    expect(container.querySelectorAll('.slot.filled')).toHaveLength(5)
-    expect(screen.getByRole('status').textContent).toBe('Enemy slots full')
+    await fireEvent.click(cells(container)[0])
+    expect(screen.getByRole("button", { name: AS_ENEMY }).hasAttribute("disabled")).toBe(true)
+    expect(screen.getByRole("button", { name: AS_ALLY }).hasAttribute("disabled")).toBe(false)
   })
 
-  it('stops at four allies and says why', async () => {
+  it('closes the ally side once its four slots are gone', async () => {
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
 
-    await draft(container, 4)
+    for (let i = 0; i < 4; i++) await send(cells(container)[0], AS_ALLY)
     expect(container.querySelectorAll('.slot.filled')).toHaveLength(4)
 
-    await draft(container, 1)
-    expect(container.querySelectorAll('.slot.filled')).toHaveLength(4)
-    expect(screen.getByRole('status').textContent).toBe('Ally slots full')
+    await fireEvent.click(cells(container)[0])
+    expect(screen.getByRole("button", { name: AS_ALLY }).hasAttribute("disabled")).toBe(true)
+    expect(screen.getByRole("button", { name: AS_ENEMY }).hasAttribute("disabled")).toBe(false)
+  })
+
+  it('empties the search once the hero has somewhere to go, but not when the sheet is dismissed', async () => {
+    const { container } = render(App)
+    const search = screen.getByLabelText('Search heroes') as HTMLInputElement
+
+    await fireEvent.input(search, { target: { value: 'Ling' } })
+    await fireEvent.click(cellFor(container, 'Ling'))
+    await fireEvent.click(screen.getByRole('button', { name: 'CANCEL' }))
+    expect(search.value).toBe('Ling')
+
+    await send(cellFor(container, 'Ling'), AS_ENEMY)
+    expect(search.value).toBe('')
+    expect(textOf(container, '.cell-name').length).toBeGreaterThan(1)
   })
 
   it('keeps a drafted hero out of the roster and puts it back on removal', async () => {
@@ -82,7 +106,7 @@ describe('App draft', () => {
 
     expect(screen.getByText('0/10')).toBeTruthy()
     expect(container.querySelectorAll('.slot.filled')).toHaveLength(0)
-    expect(screen.getByText('Start with the enemy team')).toBeTruthy()
+    expect(screen.getByText('Add their team, or take the jungle now')).toBeTruthy()
   })
 })
 
@@ -100,15 +124,6 @@ describe('App draft persistence', () => {
     expect(second.container.querySelectorAll('.slot.filled')).toHaveLength(3)
     expect(textOf(second.container, '.slot.filled')).toEqual(taken)
     expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
-  })
-
-  it('keeps the side you were drafting for', async () => {
-    const first = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
-    first.unmount()
-
-    render(App)
-    expect(screen.getByRole('tab', { name: 'Ban' }).getAttribute('aria-selected')).toBe('true')
   })
 
   it('does not bring back a board that was reset', async () => {
@@ -220,7 +235,7 @@ describe('App pick readout', () => {
   it('measures the delta against the enemies revealed at the lock, not against an empty board', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(cellFor(container, 'Gord'))
+    await send(cellFor(container, 'Gord'), AS_ENEMY)
 
     const rows = [...container.querySelectorAll('.row')] as HTMLElement[]
     const ling = rows.find(row => row.querySelector('.row-name')?.textContent?.trim() === 'Ling')!
@@ -274,36 +289,33 @@ describe('App reading a blind pick as the enemies reveal', () => {
   it('moves only on the priced reveals and holds exactly still on the rest', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Sun'))
+    await send(cellFor(container, 'Sun'), AS_JUNGLE)
     expect(reading(container)).toEqual(['+0', 'vs their board'])
 
-    await fireEvent.click(cellFor(container, 'Gord'))
+    await send(cellFor(container, 'Gord'), AS_ENEMY)
     expect(reading(container)).toEqual(['+0', 'vs their board'])
 
-    await fireEvent.click(cellFor(container, 'Masha'))
+    await send(cellFor(container, 'Masha'), AS_ENEMY)
     expect(reading(container)).toEqual(['+37', 'vs their board'])
 
-    await fireEvent.click(cellFor(container, 'Natan'))
+    await send(cellFor(container, 'Natan'), AS_ENEMY)
     expect(reading(container)).toEqual(['-31', 'vs their board'])
 
-    await fireEvent.click(cellFor(container, 'Miya'))
+    await send(cellFor(container, 'Miya'), AS_ENEMY)
     expect(reading(container)).toEqual(['-31', 'vs their board'])
 
-    await fireEvent.click(cellFor(container, 'Hanabi'))
+    await send(cellFor(container, 'Hanabi'), AS_ENEMY)
     expect(reading(container)).toEqual(['-31', 'vs their board'])
   })
 
   it('keeps an ally it works with off the board card, and names it in the plan', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Sun'))
-    await fireEvent.click(cellFor(container, 'Masha'))
+    await send(cellFor(container, 'Sun'), AS_JUNGLE)
+    await send(cellFor(container, 'Masha'), AS_ENEMY)
     const before = reading(container)
 
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
-    await fireEvent.click(cellFor(container, 'Akai'))
+    await send(cellFor(container, 'Akai'), AS_ALLY)
 
     expect(textOf(container, '.live .chip-name')).not.toContain('Akai')
     expect(reading(container)).toEqual(before)
@@ -317,18 +329,17 @@ describe('App reading a blind pick as the enemies reveal', () => {
     const { container } = render(App)
     const taken = () => container.querySelector('.live [data-kind="taken"]')
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Sun'))
+    await send(cellFor(container, 'Sun'), AS_JUNGLE)
 
-    await fireEvent.click(cellFor(container, 'Gord'))
+    await send(cellFor(container, 'Gord'), AS_ENEMY)
     expect(taken()).toBeNull()
     expect(screen.getByText('Nothing on their board cuts either way.')).toBeTruthy()
 
-    await fireEvent.click(cellFor(container, 'Masha'))
+    await send(cellFor(container, 'Masha'), AS_ENEMY)
     expect(textOf(container, '.live [data-kind="beaten"] .chip-name')).toEqual(['Masha'])
     expect(taken()).toBeNull()
 
-    await fireEvent.click(cellFor(container, 'Natan'))
+    await send(cellFor(container, 'Natan'), AS_ENEMY)
     expect(textOf(container, '.live [data-kind="taken"] .chip-name')).toEqual(['Natan'])
     expect(textOf(container, '.live [data-kind="taken"] .flag')).toEqual(['HIGH'])
     expect(reading(container)).toEqual(['-31', 'vs their board'])
@@ -340,20 +351,18 @@ describe('App picking outside the suggestions', () => {
   it('reads the pick from the moment it is marked, before any enemy is revealed', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Ling'))
+    await send(cellFor(container, 'Ling'), AS_JUNGLE)
 
     const read = container.querySelector('.live')!
     expect(read).toBeTruthy()
     expect(read.querySelector('.index')?.textContent).toBe('+0')
-    expect(screen.queryByText('Start with the enemy team')).toBeNull()
+    expect(screen.queryByText('Add their team, or take the jungle now')).toBeNull()
   })
 
   it('writes a blind record when there was no advice on screen to agree with', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Ling'))
+    await send(cellFor(container, 'Ling'), AS_JUNGLE)
 
     const record = matches.pending!
     expect(record.pick.name).toBe('Ling')
@@ -373,8 +382,7 @@ describe('App picking outside the suggestions', () => {
     const top = container.querySelector('.card .name')?.textContent
     const outside = textOf(container, '.cell-name').find(name => !listed.includes(name))!
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, outside))
+    await send(cellFor(container, outside), AS_JUNGLE)
 
     const record = matches.pending!
     expect(record.pick.name).toBe(outside)
@@ -404,19 +412,14 @@ describe('App picking outside the suggestions', () => {
     expect(record.top!.name).toBe(top)
   })
 
-  it('leaves pick mode when the lock comes from the card instead of the roster', async () => {
+  it('leaves a locked pick alone when the next tap goes to the enemy team', async () => {
     const { container } = render(App)
     await draft(container, 2)
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
 
     await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
     const locked = matches.pending!.pick.name
 
-    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
-
-    await fireEvent.click(cells(container)[0])
+    await send(cells(container)[0], AS_ENEMY)
 
     expect(matches.pending!.pick.name).toBe(locked)
     expect(container.querySelectorAll('.side')[1].querySelectorAll('.slot.filled')).toHaveLength(3)
@@ -424,11 +427,9 @@ describe('App picking outside the suggestions', () => {
 
   it('marks a pick blind when allies are on the board but no enemy is', async () => {
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
-    await draft(container, 1)
+    await send(cells(container)[0], AS_ALLY)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    await fireEvent.click(cellFor(container, 'Ling'))
+    await send(cellFor(container, 'Ling'), AS_JUNGLE)
 
     const record = matches.pending!
     expect(record.allies).toHaveLength(1)
@@ -442,30 +443,22 @@ describe('App marking your own hero', () => {
   it('takes a hero from the roster into the jungle slot without touching the enemy team', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
-    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
-    expect(screen.queryByRole('tab', { name: 'Add enemy' })).toBeNull()
-
-    await fireEvent.click(cellFor(container, 'Ling'))
+    await send(cellFor(container, 'Ling'), AS_JUNGLE)
 
     expect(screen.getByRole('button', { name: 'Clear your jungle pick' })).toBeTruthy()
     expect(container.querySelectorAll('.slot.filled')).toHaveLength(1)
     expect(screen.getByText('1/10')).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
   })
 
-  it('leaves the board alone when the marking is cancelled', async () => {
+  it('leaves the board alone when the sheet is dismissed', async () => {
     const { container } = render(App)
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
+    await fireEvent.click(cellFor(container, 'Ling'))
     await fireEvent.click(screen.getByRole('button', { name: 'CANCEL' }))
 
-    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
-
-    await fireEvent.click(cellFor(container, 'Ling'))
-
     expect(screen.queryByRole('button', { name: 'Clear your jungle pick' })).toBeNull()
-    expect(container.querySelectorAll('.slot.filled')).toHaveLength(1)
+    expect(container.querySelectorAll('.slot.filled')).toHaveLength(0)
+    expect(screen.getByText('0/10')).toBeTruthy()
   })
 })
 
@@ -507,10 +500,9 @@ describe('App reopening a logged game', () => {
 describe('App match bans', () => {
   it('takes a hero off the board from the ban side of the roster', async () => {
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
 
     const target = cells(container)[0].textContent?.trim()
-    await fireEvent.click(cells(container)[0])
+    await send(cells(container)[0], AS_BAN)
 
     expect(container.querySelector('.ban-strip .tally')?.textContent).toBe('1')
     expect(textOf(container, '.cell-name')).not.toContain(target)
@@ -532,10 +524,9 @@ describe('App match bans', () => {
 
   it('lifts a ban entered by mistake', async () => {
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
 
     const target = cells(container)[0].textContent?.trim()
-    await fireEvent.click(cells(container)[0])
+    await send(cells(container)[0], AS_BAN)
     await fireEvent.click(container.querySelector('.ban-strip .slot')!)
 
     expect(container.querySelector('.ban-strip')).toBeNull()
@@ -544,10 +535,8 @@ describe('App match bans', () => {
 
   it('clears match bans on reset', async () => {
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Ban' }))
-    await fireEvent.click(cells(container)[0])
+    await send(cells(container)[0], AS_BAN)
 
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add enemy' }))
     await draft(container, 1)
     await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
 
@@ -570,7 +559,7 @@ describe('App pool', () => {
     expect(textOf(container, '.cell-name')).toContain(target)
     expect(cellFor(container, target).querySelector('.strike')).toBeTruthy()
 
-    await fireEvent.click(cellFor(container, target))
+    await send(cellFor(container, target), AS_ENEMY)
     expect(screen.getByRole('button', { name: `Remove ${target} from the enemy team` })).toBeTruthy()
   })
 
@@ -579,8 +568,7 @@ describe('App pool', () => {
     bans.toggle(banned.id)
 
     const { container } = render(App)
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
-    await fireEvent.click(cellFor(container, banned.hero_name))
+    await send(cellFor(container, banned.hero_name), AS_ALLY)
 
     expect(
       screen.getByRole('button', { name: `Remove ${banned.hero_name} from your team` })

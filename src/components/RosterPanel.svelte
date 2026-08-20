@@ -1,29 +1,18 @@
 <script lang="ts">
   import type { Hero, HeroRole } from '../types/hero'
-  import type { DraftMode } from '../lib/draftStorage'
   import HeroAvatar from './HeroAvatar.svelte'
-
-  const TABS: { id: DraftMode; label: string }[] = [
-    { id: 'ally', label: 'Add ally' },
-    { id: 'enemy', label: 'Add enemy' },
-    { id: 'ban', label: 'Ban' },
-  ]
 
   interface Props {
     heroes: Hero[]
-    mode: DraftMode
     banned: Set<number>
-    onModeChange: (mode: DraftMode) => void
+    query?: string
     onPick: (hero: Hero) => void
   }
 
-  const { heroes, mode, banned, onModeChange, onPick }: Props = $props()
-
-  const cancelPickMode = () => onModeChange('enemy')
+  let { heroes, banned, query = $bindable(''), onPick }: Props = $props()
 
   const ROLES: HeroRole[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support']
 
-  let query = $state('')
   let role = $state<HeroRole | null>(null)
 
   // Filtering by rebuilding the list would destroy and recreate every cell on
@@ -40,26 +29,6 @@
 </script>
 
 <div class="panel">
-  {#if mode === 'pick'}
-    <div class="picking">
-      <span class="picking-label">YOUR JUNGLE PICK</span>
-      <button class="cancel" onclick={cancelPickMode}>CANCEL</button>
-    </div>
-  {:else}
-    <div class="tabs" role="tablist" aria-label="Draft side">
-      {#each TABS as tab (tab.id)}
-        <button
-          class="tab"
-          class:on={mode === tab.id}
-          data-side={tab.id}
-          role="tab"
-          aria-selected={mode === tab.id}
-          onclick={() => onModeChange(tab.id)}
-        >{tab.label}</button>
-      {/each}
-    </div>
-  {/if}
-
   <label class="search">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
@@ -104,76 +73,10 @@
 <style>
   .panel {
     display: grid;
-    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-xl) 0;
     min-block-size: 0;
-  }
-
-  .tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-block-end: 1px solid var(--color-border);
-  }
-
-  .tab {
-    padding-block: var(--space-sm);
-    background: none;
-    border: none;
-    border-block-end: 2px solid transparent;
-    margin-block-end: -1px;
-    cursor: pointer;
-    font-size: var(--font-size-md);
-    color: var(--color-ink-faint);
-    transition:
-      border-color var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
-
-    &.on {
-      color: var(--color-ink);
-      font-weight: 600;
-    }
-
-    &.on[data-side='ally'] {
-      border-color: var(--color-pos);
-    }
-
-    &.on[data-side='enemy'] {
-      border-color: var(--color-neg);
-    }
-
-    &.on[data-side='ban'] {
-      border-color: var(--color-ink-mute);
-    }
-  }
-
-  .picking {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-sm);
-    padding-block: var(--space-sm);
-    border-block-end: 2px solid var(--color-accent);
-  }
-
-  .picking-label {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: var(--tracking-mono);
-    color: var(--color-accent);
-  }
-
-  .cancel {
-    padding: var(--space-2xs) var(--space-xs);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    letter-spacing: var(--tracking-mono);
-    color: var(--color-ink-faint);
   }
 
   .search {

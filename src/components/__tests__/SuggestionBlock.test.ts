@@ -52,7 +52,7 @@ describe('SuggestionBlock states', () => {
   it('asks for a draft before anything is picked', () => {
     render(SuggestionBlock, { ...props, hasDraft: false })
 
-    expect(screen.getByText('Start with the enemy team')).toBeTruthy()
+    expect(screen.getByText('Add their team, or take the jungle now')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'LOCK THIS PICK' })).toBeNull()
   })
 
@@ -154,7 +154,7 @@ describe('SuggestionBlock states', () => {
     })
 
     expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
-    expect(screen.queryByText('Start with the enemy team')).toBeNull()
+    expect(screen.queryByText('Add their team, or take the jungle now')).toBeNull()
   })
 
   it('sends the hero in focus to the match ban list', async () => {

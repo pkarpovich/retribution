@@ -5,9 +5,7 @@ import { heroes, textOf } from './fixtures'
 
 const props = {
   heroes,
-  mode: 'enemy' as const,
   banned: new Set<number>(),
-  onModeChange: () => {},
   onPick: () => {},
 }
 
@@ -15,30 +13,6 @@ const tanks = heroes.filter(hero => hero.role.includes('Tank'))
 const count = (root: ParentNode) => root.querySelector('.count')?.textContent
 
 describe('RosterPanel', () => {
-  it('marks the side being drafted and can switch it', async () => {
-    const onModeChange = vi.fn()
-    render(RosterPanel, { ...props, onModeChange })
-
-    expect(screen.getByRole('tab', { name: 'Add enemy' }).getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByRole('tab', { name: 'Add ally' }).getAttribute('aria-selected')).toBe('false')
-
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
-    expect(onModeChange).toHaveBeenCalledWith('ally')
-  })
-
-  // Match bans are not limited to junglers: any hero taken off the board
-  // changes what the enemy can still pick, so the whole roster stays tappable.
-  it('offers a third side for heroes banned in the match', async () => {
-    const onModeChange = vi.fn()
-    const { container } = render(RosterPanel, { ...props, mode: 'ban', onModeChange })
-
-    expect(screen.getByRole('tab', { name: 'Ban' }).getAttribute('aria-selected')).toBe('true')
-    expect(container.querySelectorAll('.cell')).toHaveLength(heroes.length)
-
-    await fireEvent.click(screen.getByRole('tab', { name: 'Add enemy' }))
-    expect(onModeChange).toHaveBeenCalledWith('enemy')
-  })
-
   it('filters by role and lets the same chip clear itself', async () => {
     const { container } = render(RosterPanel, props)
     expect(count(container)).toBe(String(heroes.length))
@@ -118,27 +92,4 @@ describe('RosterPanel', () => {
     expect(onPick).toHaveBeenCalledWith(heroes[0])
   })
 
-  it('swaps the tabs for a cancellable row while a jungle pick is being marked', async () => {
-    const onModeChange = vi.fn()
-    const { container } = render(RosterPanel, { ...props, mode: 'pick', onModeChange })
-
-    expect(screen.queryByRole('tab', { name: 'Add enemy' })).toBeNull()
-    expect(screen.getByText('YOUR JUNGLE PICK')).toBeTruthy()
-    expect(container.querySelectorAll('.cell')).toHaveLength(heroes.length)
-
-    await fireEvent.click(screen.getByRole('button', { name: 'CANCEL' }))
-    expect(onModeChange).toHaveBeenCalledWith('enemy')
-  })
-
-  it('still hands the tapped hero back while marking a jungle pick', async () => {
-    const onPick = vi.fn()
-    const { container } = render(RosterPanel, { ...props, mode: 'pick', onPick })
-
-    await fireEvent.input(screen.getByLabelText('Search heroes'), {
-      target: { value: tanks[0].hero_name },
-    })
-    await fireEvent.click(container.querySelector('.cell:not([hidden])')!)
-
-    expect(onPick).toHaveBeenCalledWith(tanks[0])
-  })
 })

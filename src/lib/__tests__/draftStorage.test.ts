@@ -22,7 +22,6 @@ describe('draft storage', () => {
       enemies: [second, third],
       matchBans: [fourth],
       myPick: first,
-      mode: 'ban',
     }, NOW)
 
     const restored = loadDraft(heroes, NOW + 60_000)
@@ -31,7 +30,6 @@ describe('draft storage', () => {
     expect(restored.enemies).toEqual([second, third])
     expect(restored.matchBans).toEqual([fourth])
     expect(restored.myPick).toBe(first)
-    expect(restored.mode).toBe('ban')
   })
 
   // A board that looks ready but answers yesterday's enemy team is worse than
@@ -59,7 +57,6 @@ describe('draft storage', () => {
       enemies: heroes.slice(0, 9).map(hero => hero.id),
       matchBans: [],
       myPick: null,
-      mode: 'enemy',
     }))
 
     const restored = loadDraft(heroes, NOW)
@@ -71,19 +68,13 @@ describe('draft storage', () => {
     ['not json', 'nonsense'],
     ['a list', '[1,2,3]'],
     ['no timestamp', '{"enemies":[1]}'],
-    ['a mode nobody has', `{"at":${NOW},"mode":"spectator","enemies":[]}`],
+    ['a field the app no longer keeps', `{"at":${NOW},"mode":"spectator","enemies":[]}`],
   ])('survives storage holding %s', (label, stored) => {
     localStorage.setItem(STORAGE_KEY, stored)
     const restored = loadDraft(heroes, NOW)
 
     expect(restored.enemies, label).toEqual([])
-    expect(restored.mode, label).toBe(emptyDraft().mode)
-  })
-
-  it('brings back the mode for marking your own hero', () => {
-    saveDraft({ ...emptyDraft(), mode: 'pick' }, NOW)
-
-    expect(loadDraft(heroes, NOW).mode).toBe('pick')
+    expect(restored.myPick, label).toBeNull()
   })
 
   it('keeps working when storage refuses to write', () => {
