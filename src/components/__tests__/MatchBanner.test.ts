@@ -4,7 +4,7 @@ import MatchBanner from '../MatchBanner.svelte'
 import { matches } from '../../lib/matches.svelte'
 import { makeRecord } from '../../utils/__tests__/matchFixtures'
 
-const props = (record = makeRecord()) => ({ record, onOpenStats: () => {} })
+const props = (record = makeRecord()) => ({ record, hero: null })
 
 const meta = (container: HTMLElement) => container.querySelector('.when')?.textContent ?? ''
 
@@ -32,5 +32,13 @@ describe('MatchBanner', () => {
 
     expect(meta(container).trim()).not.toMatch(/^·/)
     expect(meta(container)).toContain('blind pick')
+  })
+
+  it('offers a result and a way out without sending anyone to the log', () => {
+    const { container } = render(MatchBanner, props())
+
+    expect(container.querySelector('.kicker')?.textContent).toBe('LAST GAME · UNLOGGED')
+    expect([...container.querySelectorAll('.call')].map(call => call.textContent))
+      .toEqual(['WON', 'LOST', 'SKIP'])
   })
 })

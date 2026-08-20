@@ -18,7 +18,6 @@
   import PoolScreen from './components/PoolScreen.svelte'
   import PlanSheet from './components/PlanSheet.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
-  import MatchBanner from './components/MatchBanner.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
   import StatsScreen from './components/StatsScreen.svelte'
   import RosterPanel from './components/RosterPanel.svelte'
@@ -83,8 +82,16 @@
       : null
   )
 
+  const NEEDS_SHOWN = 3
+
   const build = $derived(myPick ? recommendBoots(myPick, enemies) : null)
-  const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
+  const needs = $derived(myPick ? teamNeeds(myTeam, enemies).slice(0, NEEDS_SHOWN) : [])
+
+  const unlogged = $derived.by(() => {
+    const record = matches.pending
+    if (!record) return null
+    return { record, hero: heroes.find(hero => hero.id === record.pick.id) ?? null }
+  })
 
   function flash(message: string) {
     toast = message
@@ -225,17 +232,15 @@
         onRemove={hero => (matchBans = matchBans.filter(banned => banned.id !== hero.id))}
       />
 
-      {#if matches.pending}
-        <MatchBanner record={matches.pending} onOpenStats={() => (statsOpen = true)} />
+      {#if enemies.length > 0 && !myPick}
+        <EnemyRead {enemies} pool={junglers} responders={suggested(suggestions)} />
       {/if}
 
-      {#if enemies.length > 0}
-        <EnemyRead
-          {enemies}
-          pool={junglers}
-          responders={myPick ? chosen(myTeam) : suggested(suggestions)}
-        />
-      {/if}
+      {#snippet enemyRead()}
+        {#if enemies.length > 0}
+          <EnemyRead {enemies} pool={junglers} responders={chosen(myTeam)} inline />
+        {/if}
+      {/snippet}
 
       <SuggestionBlock
         {suggestions}
@@ -245,6 +250,8 @@
         {pickRead}
         {build}
         {needs}
+        {unlogged}
+        {enemyRead}
         onLock={take}
         onOpenPlan={() => (planOpen = true)}
         onUnlock={() => {

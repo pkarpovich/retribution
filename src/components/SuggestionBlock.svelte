@@ -1,9 +1,12 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import type { BootRecommendation, Hero } from '../types/hero'
+  import type { MatchRecord } from '../types/match'
   import type { PickReadout, Suggestion, TeamNeed } from '../utils/presentation'
   import { HEAVY_CC_AT, situationalBudget } from '../utils/heroUtils'
   import { capabilitiesFor, tieGroups } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
+  import MatchBanner from './MatchBanner.svelte'
   import PickRead from './PickRead.svelte'
   import TierBadge from './TierBadge.svelte'
 
@@ -15,6 +18,8 @@
     pickRead: PickReadout | null
     build: BootRecommendation | null
     needs: TeamNeed[]
+    unlogged: { record: MatchRecord; hero: Hero | null } | null
+    enemyRead?: Snippet
     onLock: (hero: Hero) => void
     onUnlock: () => void
     onBan: (hero: Hero) => void
@@ -29,6 +34,8 @@
     pickRead,
     build,
     needs,
+    unlogged,
+    enemyRead,
     onLock,
     onUnlock,
     onBan,
@@ -158,7 +165,7 @@
 
 <section class="block">
   {#if myPick}
-    <PickRead pick={myPick} readout={pickRead} {onUnlock} />
+    <PickRead pick={myPick} readout={pickRead} read={enemyRead} {onUnlock} />
 
     {#if build}
       <button class="plan" onclick={onOpenPlan}>
@@ -173,6 +180,9 @@
     <div class="prompt">
       <p class="prompt-title">Start with the enemy team</p>
       <p class="prompt-copy">Tap heroes below to fill the draft. Suggestions sharpen with every pick.</p>
+      {#if unlogged}
+        <MatchBanner record={unlogged.record} hero={unlogged.hero} />
+      {/if}
     </div>
   {:else if focus}
     {@const rank = rankLabel(focus.hero.hero_name)}

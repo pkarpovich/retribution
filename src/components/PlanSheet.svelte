@@ -13,8 +13,6 @@
 
   const { build, needs, picksLeft, worksWith, onClose }: Props = $props()
 
-  const NEEDS_SHOWN = 3
-
   const items = $derived([
     { name: build.boots, why: build.bootsReason },
     { name: `${build.blessing} Retribution`, why: build.blessingReason },
@@ -59,7 +57,7 @@
       </div>
 
       <div class="card">
-        {#each needs.slice(0, NEEDS_SHOWN) as need (need.key)}
+        {#each needs as need (need.key)}
           <p class="need">
             <span class="need-name">{need.name}</span>
             <span class="need-why">{need.evidence} - {need.gap}</span>

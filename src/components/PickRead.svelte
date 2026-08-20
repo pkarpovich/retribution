@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import type { Hero } from '../types/hero'
   import type { PickReadout } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
@@ -7,10 +8,11 @@
   interface Props {
     pick: Hero
     readout: PickReadout | null
+    read?: Snippet
     onUnlock: () => void
   }
 
-  const { pick, readout, onUnlock }: Props = $props()
+  const { pick, readout, read, onUnlock }: Props = $props()
 
   const signed = (value: number) => {
     const rounded = Math.round(value)
@@ -72,6 +74,10 @@
 
   {#if readout}
     <span class="rule" aria-hidden="true"></span>
+
+    {#if read}
+      {@render read()}
+    {/if}
 
     {#if readout.taken.length > 0}
       <div class="line" data-kind="taken">
@@ -233,6 +239,7 @@
   .chip-name {
     font-size: var(--font-size-sm);
     font-weight: 500;
+    text-box: trim-both cap alphabetic;
   }
 
   .chip.dim .chip-name {
@@ -244,6 +251,7 @@
     font-size: var(--font-size-2xs);
     font-weight: 700;
     letter-spacing: 0.08em;
+    text-box: trim-both cap alphabetic;
     color: var(--color-ink-faint);
 
     &[data-severity='HIGH'] {

@@ -165,29 +165,44 @@ describe('App match log', () => {
   })
 
   // The result lands fifteen minutes after the draft is cleared.
-  it('keeps the open game across a reset and settles it from the banner', async () => {
+  it('keeps the open game across a reset and settles it from the empty board', async () => {
     const { container } = render(App)
     await draft(container, 2)
     await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
     await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
 
     expect(matches.pending).toBeTruthy()
-    expect(screen.getByText('HOW DID IT GO')).toBeTruthy()
+    expect(screen.getByText('LAST GAME · UNLOGGED')).toBeTruthy()
 
     await fireEvent.click(screen.getByRole('button', { name: 'WON' }))
     expect(matches.pending).toBeNull()
     expect(matches.all[0].outcome).toBe('won')
-    expect(container.querySelector('.banner')).toBeNull()
+    expect(container.querySelector('.unlogged')).toBeNull()
+  })
+
+  it('asks about the last game only on an empty board, and marks the header until then', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    expect(container.querySelector('.unlogged')).toBeNull()
+    expect(container.querySelector('.bar .dot')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Your games, one waiting on a result' })).toBeTruthy()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
+    expect(container.querySelector('.unlogged')).toBeTruthy()
   })
 
   it('discards a game that should not have been logged', async () => {
     const { container } = render(App)
     await draft(container, 2)
     await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'RESET' }))
 
     await fireEvent.click(screen.getByRole('button', { name: 'Discard this game without a result' }))
     expect(matches.all).toEqual([])
-    expect(container.querySelector('.banner')).toBeNull()
+    expect(container.querySelector('.unlogged')).toBeNull()
+    expect(container.querySelector('.bar .dot')).toBeNull()
   })
 
   it('opens the log from the header and closes it again', async () => {
@@ -218,6 +233,32 @@ describe('App pick readout', () => {
     const read = container.querySelector('.live')!
     expect(read.querySelector('.index')?.textContent).not.toBe('+0')
     expect(read.querySelector('.note')?.textContent?.trim()).toBe('+0 since lock')
+  })
+})
+
+describe('App enemy read', () => {
+  it('sits on its own until a pick is locked, then folds into the card', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+
+    expect(container.querySelector('.peek')).toBeTruthy()
+    expect(container.querySelector('.live .peek')).toBeNull()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    expect(container.querySelector('.live .peek')).toBeTruthy()
+    expect(container.querySelectorAll('.peek')).toHaveLength(1)
+  })
+
+  it('opens the full read from inside the card', async () => {
+    const { container } = render(App)
+    await draft(container, 2)
+    await fireEvent.click(screen.getByRole('button', { name: 'LOCK THIS PICK' }))
+
+    await fireEvent.click(container.querySelector('.live .peek')!)
+
+    expect(container.querySelector('.live .full')).toBeTruthy()
+    expect(screen.getByText('THEIR TEAM')).toBeTruthy()
   })
 })
 

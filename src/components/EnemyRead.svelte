@@ -7,9 +7,10 @@
     enemies: Hero[]
     pool: Hero[]
     responders: Responders
+    inline?: boolean
   }
 
-  const { enemies, pool, responders }: Props = $props()
+  const { enemies, pool, responders, inline = false }: Props = $props()
 
   let open = $state(false)
   let tallyOpen = $state(false)
@@ -20,10 +21,14 @@
 
 {#if readout}
   {#if !open}
-    <button class="peek" onclick={() => (open = true)}>
-      <span class="rail" aria-hidden="true"></span>
+    <button class="peek" class:inline onclick={() => (open = true)}>
+      {#if !inline}
+        <span class="rail" aria-hidden="true"></span>
+      {/if}
       <span class="copy">
-        <span class="kicker">THEIR TEAM</span>
+        {#if !inline}
+          <span class="kicker">THEIR TEAM</span>
+        {/if}
         <span class="line">
           <em>{readout.statement}</em>
           {#if readout.poolGap}<strong>buy anti-heal</strong>{/if}
@@ -35,7 +40,7 @@
       <span class="chevron" aria-hidden="true">›</span>
     </button>
   {:else}
-    <section class="full">
+    <section class="full" class:inline>
       <div class="head">
         <span class="kicker">THEIR TEAM</span>
         <button class="close" onclick={() => (open = false)} aria-label="Collapse enemy read-out">×</button>
@@ -105,6 +110,12 @@
     background: var(--color-panel);
     border: none;
     border-block-end: 1px solid var(--color-border);
+
+    &.inline {
+      background: none;
+      border-block-end: none;
+      padding-inline: 0;
+    }
   }
 
   .kicker {
@@ -121,6 +132,10 @@
     padding: var(--space-sm) var(--space-lg);
     cursor: pointer;
     text-align: start;
+
+    &.inline {
+      padding-block: 0;
+    }
   }
 
   .rail {

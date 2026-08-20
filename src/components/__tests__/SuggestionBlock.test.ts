@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import type { BootRecommendation, Hero } from '../../types/hero'
+import type { MatchRecord } from '../../types/match'
 import type { PickReadout, TeamNeed } from '../../utils/presentation'
 import SuggestionBlock from '../SuggestionBlock.svelte'
 import { getCCScore, recommendBoots, situationalBudget } from '../../utils/heroUtils'
@@ -27,6 +28,7 @@ const props = {
   pickRead: null as PickReadout | null,
   build: null as BootRecommendation | null,
   needs: [] as TeamNeed[],
+  unlogged: null as { record: MatchRecord; hero: Hero | null } | null,
   onLock: () => {},
   onUnlock: () => {},
   onBan: () => {},
