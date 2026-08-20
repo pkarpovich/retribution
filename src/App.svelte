@@ -11,10 +11,12 @@
     MAX_ENEMIES,
     calculateJunglerRecommendation,
     getJunglers,
+    recommendBoots,
     recommendJunglers,
   } from './utils/heroUtils'
   import { chosen, pickReadout, suggested, teamNeeds, toSuggestions } from './utils/presentation'
   import PoolScreen from './components/PoolScreen.svelte'
+  import PlanSheet from './components/PlanSheet.svelte'
   import EnemyRead from './components/EnemyRead.svelte'
   import MatchBanner from './components/MatchBanner.svelte'
   import MatchBanStrip from './components/MatchBanStrip.svelte'
@@ -41,6 +43,7 @@
   })
   let bansOpen = $state(false)
   let statsOpen = $state(false)
+  let planOpen = $state(false)
   let toast = $state<string | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -79,6 +82,9 @@
       ? pickReadout(myPick, { myTeam, enemies, matchBans, roster: heroes }, matches.pending)
       : null
   )
+
+  const build = $derived(myPick ? recommendBoots(myPick, enemies) : null)
+  const needs = $derived(myPick ? teamNeeds(myTeam, enemies) : [])
 
   function flash(message: string) {
     toast = message
@@ -234,12 +240,13 @@
       <SuggestionBlock
         {suggestions}
         {enemies}
-        {myTeam}
-        picksLeft={MAX_ALLIES - allies.length}
         {myPick}
         {hasDraft}
         {pickRead}
+        {build}
+        {needs}
         onLock={take}
+        onOpenPlan={() => (planOpen = true)}
         onUnlock={() => {
           myPick = null
           flash('Pick unlocked')
@@ -267,6 +274,16 @@
       <StatsScreen onClose={() => (statsOpen = false)} onReopen={reopen} />
     {/if}
   </div>
+
+  {#if planOpen && myPick && build}
+    <PlanSheet
+      {build}
+      {needs}
+      picksLeft={MAX_ALLIES - allies.length}
+      worksWith={pickRead?.worksWith ?? []}
+      onClose={() => (planOpen = false)}
+    />
+  {/if}
 
   {#if toast}
     {#key toast}

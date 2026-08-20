@@ -233,6 +233,12 @@
     }
   }
 
+  @keyframes sheet-up {
+    from {
+      translate: 0 100%;
+    }
+  }
+
   /* The toast is removed on a 1600ms timer, so its fade-out is the tail of one
      animation rather than an exit transition nobody can drive from CSS. */
   @keyframes toast-life {

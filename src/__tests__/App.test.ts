@@ -215,16 +215,19 @@ describe('App pick readout', () => {
     expect(matches.pending!.pick.name).toBe('Ling')
     expect(matches.pending!.enemies.map(enemy => enemy.name)).toEqual(['Gord'])
 
-    const read = container.querySelector('.read')!
+    const read = container.querySelector('.live')!
     expect(read.querySelector('.index')?.textContent).not.toBe('+0')
-    expect(read.querySelector('.delta')?.textContent).toBe('+0 since lock')
+    expect(read.querySelector('.note')?.textContent?.trim()).toBe('+0 since lock')
   })
 })
 
 describe('App reading a blind pick as the enemies reveal', () => {
   const reading = (root: ParentNode) => {
-    const read = root.querySelector('.read')!
-    return [read.querySelector('.index')?.textContent, read.querySelector('.delta')?.textContent]
+    const read = root.querySelector('.live')!
+    return [
+      read.querySelector('.index')?.textContent,
+      read.querySelector('.note')?.textContent?.trim(),
+    ]
   }
 
   it('moves only on the priced reveals and holds exactly still on the rest', async () => {
@@ -232,25 +235,25 @@ describe('App reading a blind pick as the enemies reveal', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
     await fireEvent.click(cellFor(container, 'Sun'))
-    expect(reading(container)).toEqual(['+0', '+0 since lock'])
+    expect(reading(container)).toEqual(['+0', 'vs their board'])
 
     await fireEvent.click(cellFor(container, 'Gord'))
-    expect(reading(container)).toEqual(['+0', '+0 since lock'])
+    expect(reading(container)).toEqual(['+0', 'vs their board'])
 
     await fireEvent.click(cellFor(container, 'Masha'))
-    expect(reading(container)).toEqual(['+37', '+37 since lock'])
+    expect(reading(container)).toEqual(['+37', 'vs their board'])
 
     await fireEvent.click(cellFor(container, 'Natan'))
-    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+    expect(reading(container)).toEqual(['-31', 'vs their board'])
 
     await fireEvent.click(cellFor(container, 'Miya'))
-    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+    expect(reading(container)).toEqual(['-31', 'vs their board'])
 
     await fireEvent.click(cellFor(container, 'Hanabi'))
-    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+    expect(reading(container)).toEqual(['-31', 'vs their board'])
   })
 
-  it('names an ally it works with, holds the number still and says on screen why', async () => {
+  it('keeps an ally it works with off the board card, and names it in the plan', async () => {
     const { container } = render(App)
 
     await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
@@ -261,29 +264,33 @@ describe('App reading a blind pick as the enemies reveal', () => {
     await fireEvent.click(screen.getByRole('tab', { name: 'Add ally' }))
     await fireEvent.click(cellFor(container, 'Akai'))
 
-    expect(textOf(container, '.read .works .row-name')).toEqual(['Akai'])
+    expect(textOf(container, '.live .chip-name')).not.toContain('Akai')
     expect(reading(container)).toEqual(before)
-    expect(screen.getByText('Reads their side only - an ally never moves this number.')).toBeTruthy()
+
+    await fireEvent.click(container.querySelector('.plan')!)
+    expect(screen.getByText('WORKS WITH YOU')).toBeTruthy()
+    expect(textOf(container, '.sheet .chip-name')).toContain('Akai')
   })
 
   it('names the counter with its severity as the index falls', async () => {
     const { container } = render(App)
+    const taken = () => container.querySelector('.live [data-kind="taken"]')
 
     await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
     await fireEvent.click(cellFor(container, 'Sun'))
 
     await fireEvent.click(cellFor(container, 'Gord'))
-    expect(container.querySelector('.read .taken')).toBeNull()
+    expect(taken()).toBeNull()
     expect(screen.getByText('Nothing on their board cuts either way.')).toBeTruthy()
 
     await fireEvent.click(cellFor(container, 'Masha'))
-    expect(textOf(container, '.read .beaten .row-name')).toEqual(['Masha'])
-    expect(container.querySelector('.read .taken')).toBeNull()
+    expect(textOf(container, '.live [data-kind="beaten"] .chip-name')).toEqual(['Masha'])
+    expect(taken()).toBeNull()
 
     await fireEvent.click(cellFor(container, 'Natan'))
-    expect(textOf(container, '.read .taken .row-name')).toEqual(['Natan'])
-    expect(textOf(container, '.read .taken .severity')).toEqual(['HIGH'])
-    expect(reading(container)).toEqual(['-31', '-31 since lock'])
+    expect(textOf(container, '.live [data-kind="taken"] .chip-name')).toEqual(['Natan'])
+    expect(textOf(container, '.live [data-kind="taken"] .flag')).toEqual(['HIGH'])
+    expect(reading(container)).toEqual(['-31', 'vs their board'])
     expect(screen.queryByText('Nothing on their board cuts either way.')).toBeNull()
   })
 })
@@ -295,7 +302,7 @@ describe('App picking outside the suggestions', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Mark your jungle pick' }))
     await fireEvent.click(cellFor(container, 'Ling'))
 
-    const read = container.querySelector('.read')!
+    const read = container.querySelector('.live')!
     expect(read).toBeTruthy()
     expect(read.querySelector('.index')?.textContent).toBe('+0')
     expect(screen.queryByText('Start with the enemy team')).toBeNull()

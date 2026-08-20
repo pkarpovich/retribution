@@ -2,12 +2,15 @@
   import type { Hero } from '../types/hero'
   import type { PickReadout } from '../utils/presentation'
   import HeroAvatar from './HeroAvatar.svelte'
+  import TierBadge from './TierBadge.svelte'
 
   interface Props {
-    readout: PickReadout
+    pick: Hero
+    readout: PickReadout | null
+    onUnlock: () => void
   }
 
-  const { readout }: Props = $props()
+  const { pick, readout, onUnlock }: Props = $props()
 
   const signed = (value: number) => {
     const rounded = Math.round(value)
@@ -21,92 +24,111 @@
     return 'flat'
   }
 
-  const quiet = $derived(readout.taken.length === 0 && readout.beaten.length === 0)
+  const moved = $derived(
+    readout !== null
+      && readout.sinceLock !== null
+      && Math.round(readout.sinceLock) !== Math.round(readout.index)
+  )
+
+  const note = $derived(
+    moved && readout?.sinceLock != null
+      ? `${signed(readout.sinceLock)} since lock`
+      : 'vs their board'
+  )
+
+  const quiet = $derived(
+    readout !== null && readout.taken.length === 0 && readout.beaten.length === 0
+  )
 </script>
 
-{#snippet heroList(list: Hero[])}
-  <div class="rows">
-    {#each list as hero (hero.id)}
-      <span class="row">
-        <HeroAvatar {hero} size={20} />
-        <span class="row-name">{hero.hero_name}</span>
-      </span>
-    {/each}
-  </div>
+{#snippet chip(hero: Hero, severity: string | null, dim: boolean)}
+  <span class="chip" class:dim>
+    <HeroAvatar {hero} size={16} />
+    <span class="chip-name">{hero.hero_name}</span>
+    {#if severity}
+      <span class="flag" data-severity={severity}>{severity}</span>
+    {/if}
+  </span>
 {/snippet}
 
-<section class="read">
-  <div class="head">
-    <div class="head-copy">
-      <span class="kicker">AGAINST THIS BOARD</span>
-      <span class="scope">Reads their side only - an ally never moves this number.</span>
+<section class="live">
+  <div class="identity">
+    <HeroAvatar hero={pick} size={38} selected />
+    <div class="who">
+      <span class="kicker accent">YOUR JUNGLE PICK</span>
+      <span class="name-line">
+        <span class="serif">{pick.hero_name}</span>
+        <TierBadge tier={pick.tier} />
+      </span>
     </div>
-    <div class="figure">
-      <span class="index" data-tone={tone(readout.index)}>{signed(readout.index)}</span>
-      {#if readout.sinceLock !== null}
-        <span class="delta">{signed(readout.sinceLock)} since lock</span>
-      {/if}
-    </div>
+    {#if readout}
+      <div class="figure">
+        <span class="index" data-tone={tone(readout.index)}>{signed(readout.index)}</span>
+        <span class="note">{note}</span>
+      </div>
+    {/if}
+    <button class="change" onclick={onUnlock}>CHANGE</button>
   </div>
 
-  {#if readout.taken.length > 0}
-    <div class="group taken">
-      <div class="group-head">
-        <span class="kicker">TAKEN AGAINST YOU</span>
-      </div>
-      <div class="rows">
+  {#if readout}
+    <span class="rule" aria-hidden="true"></span>
+
+    {#if readout.taken.length > 0}
+      <div class="line" data-kind="taken">
         {#each readout.taken as threat (threat.hero.id)}
-          <span class="row">
-            <HeroAvatar hero={threat.hero} size={20} />
-            <span class="row-name">{threat.hero.hero_name}</span>
-            <span class="severity" data-severity={threat.severity}>{threat.severity}</span>
-          </span>
+          {@render chip(threat.hero, threat.severity, false)}
         {/each}
+        <span class="said">took your edge</span>
       </div>
-    </div>
-  {/if}
+    {/if}
 
-  {#if readout.beaten.length > 0}
-    <div class="group beaten">
-      <div class="group-head">
-        <span class="kicker">YOU BEAT</span>
+    {#if readout.beaten.length > 0}
+      <div class="line" data-kind="beaten">
+        {#each readout.beaten as hero (hero.id)}
+          {@render chip(hero, null, false)}
+        {/each}
+        <span class="said">you beat</span>
       </div>
-      {@render heroList(readout.beaten)}
-    </div>
-  {/if}
+    {/if}
 
-  {#if quiet}
-    <p class="flat">Nothing on their board cuts either way.</p>
-  {/if}
+    {#if quiet}
+      <p class="flat">Nothing on their board cuts either way.</p>
+    {/if}
 
-  {#if readout.worksWith.length > 0}
-    <div class="group works">
-      <div class="group-head">
-        <span class="kicker">WORKS WITH YOU</span>
-        <span class="kicker">not counted above</span>
+    {#if readout.live.length > 0}
+      <div class="line" data-kind="live">
+        {#each readout.live as hero (hero.id)}
+          {@render chip(hero, null, true)}
+        {/each}
+        <span class="count">
+          {readout.openSlots} enemy slot{readout.openSlots === 1 ? '' : 's'} open
+        </span>
       </div>
-      {@render heroList(readout.worksWith)}
-    </div>
-  {/if}
-
-  {#if readout.live.length > 0}
-    <div class="group live">
-      <div class="group-head">
-        <span class="kicker">THEY CAN STILL TAKE</span>
-        <span class="kicker">{readout.openSlots} slot{readout.openSlots === 1 ? '' : 's'} open</span>
-      </div>
-      {@render heroList(readout.live)}
-    </div>
+    {/if}
   {/if}
 </section>
 
 <style>
-  .read {
+  .live {
     display: grid;
     gap: var(--space-sm);
     padding: var(--space-md);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-accent);
     border-radius: var(--radius-lg);
+    background: var(--color-accent-soft);
+  }
+
+  .identity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .who {
+    flex: 1;
+    min-inline-size: 0;
+    display: grid;
+    gap: var(--space-3xs);
   }
 
   .kicker {
@@ -116,30 +138,28 @@
     color: var(--color-ink-faint);
   }
 
-  .head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: var(--space-sm);
+  .kicker.accent {
+    color: var(--color-accent);
+    font-weight: 700;
   }
 
-  .head-copy {
-    min-inline-size: 0;
-    display: grid;
-    gap: var(--space-3xs);
+  .name-line {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
   }
 
-  .scope {
-    max-inline-size: var(--measure);
-    font-size: var(--font-size-sm);
-    color: var(--color-ink-mute);
-    text-wrap: pretty;
+  .serif {
+    font-family: var(--font-serif);
+    font-size: var(--font-size-lg);
+    letter-spacing: var(--tracking-tight);
   }
 
   .figure {
     display: grid;
     justify-items: end;
     gap: var(--space-3xs);
+    flex-shrink: 0;
   }
 
   .index {
@@ -160,70 +180,66 @@
     }
   }
 
-  .delta {
+  .note {
     font-family: var(--font-mono);
     font-size: var(--font-size-2xs);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    color: var(--color-ink-mute);
+    color: var(--color-ink-faint);
   }
 
-  .group {
-    display: grid;
-    gap: var(--space-2xs);
-    padding-inline-start: var(--space-sm);
-    border-inline-start: 2px solid transparent;
-
-    &.taken {
-      border-inline-start-color: var(--color-neg);
-    }
-
-    &.beaten {
-      border-inline-start-color: var(--color-pos);
-    }
-
-    &.works {
-      border-inline-start-color: color-mix(in oklch, var(--color-pos) 45%, transparent);
-    }
-
-    &.live {
-      border-inline-start-color: var(--color-border-strong);
-    }
+  .change {
+    flex-shrink: 0;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-mono);
   }
 
-  .group-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-sm);
+  .rule {
+    block-size: 1px;
+    background: var(--color-border-strong);
   }
 
-  .rows {
+  .line {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2xs);
   }
 
-  .row {
-    display: flex;
+  .chip {
+    display: inline-flex;
     align-items: center;
     gap: var(--space-2xs);
     padding: var(--space-3xs) var(--space-2xs);
-    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-xs);
-    background: var(--color-bg);
-  }
-
-  .row-name {
-    font-size: var(--font-size-sm);
     white-space: nowrap;
+
+    &.dim {
+      background: none;
+      border-style: dashed;
+      border-color: var(--color-border);
+    }
   }
 
-  .live .row-name {
+  .chip-name {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+  }
+
+  .chip.dim .chip-name {
     color: var(--color-ink-mute);
   }
 
-  .severity {
+  .flag {
     font-family: var(--font-mono);
     font-size: var(--font-size-2xs);
     font-weight: 700;
@@ -237,6 +253,19 @@
     &[data-severity='MEDIUM'] {
       color: color-mix(in oklch, var(--color-neg) 70%, var(--color-ink-faint));
     }
+  }
+
+  .said {
+    font-size: var(--font-size-sm);
+    color: var(--color-ink-mute);
+  }
+
+  .count {
+    margin-inline-start: auto;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    white-space: nowrap;
+    color: var(--color-ink-faint);
   }
 
   .flat {

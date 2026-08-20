@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { render } from '@testing-library/svelte'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/svelte'
 import PickRead from '../PickRead.svelte'
 import type { PickReadout } from '../../utils/presentation'
 import { byName, textOf } from './fixtures'
 
+const sun = byName('Sun')
 const natan = byName('Natan')
 const masha = byName('Masha')
 const angela = byName('Angela')
@@ -31,104 +32,121 @@ const full = readout({
   openSlots: 3,
 })
 
+const mount = (value: PickReadout | null, onUnlock = () => {}) =>
+  render(PickRead, { pick: sun, readout: value, onUnlock })
+
+const lines = (root: ParentNode) =>
+  [...root.querySelectorAll('.line')].map(line => textOf(line, '.chip-name'))
+
 describe('PickRead', () => {
-  it('renders all four groups with their heroes', () => {
-    const { container } = render(PickRead, { readout: full })
+  it('carries the pick identity and the figure in one card', () => {
+    const { container } = mount(full)
 
-    expect(textOf(container, '.group.taken .row-name')).toEqual(['Natan'])
-    expect(textOf(container, '.group.beaten .row-name')).toEqual(['Masha'])
-    expect(textOf(container, '.group.works .row-name')).toEqual(['Angela'])
-    expect(textOf(container, '.group.live .row-name')).toEqual(['Ling'])
-    expect(textOf(container, '.kicker')).toContain('AGAINST THIS BOARD')
-    expect(textOf(container, '.group.live .kicker')).toContain('3 slots open')
+    expect(textOf(container, '.serif')).toEqual(['Sun'])
+    expect(container.querySelector('.kicker')?.textContent).toBe('YOUR JUNGLE PICK')
+    expect(container.querySelector('.index')?.textContent).toBe('-31')
+    expect(screen.getByRole('button', { name: 'CHANGE' })).toBeTruthy()
   })
 
-  it('tags a taken row with its severity', () => {
-    const { container } = render(PickRead, {
-      readout: readout({
-        taken: [
-          { hero: natan, severity: 'HIGH' },
-          { hero: ling, severity: 'MEDIUM' },
-        ],
-      }),
-    })
+  it('hands the pick back when CHANGE is tapped', async () => {
+    const onUnlock = vi.fn()
+    mount(full, onUnlock)
 
-    expect(textOf(container, '.severity')).toEqual(['HIGH', 'MEDIUM'])
-    expect(container.querySelector('.severity')?.getAttribute('data-severity')).toBe('HIGH')
+    await fireEvent.click(screen.getByRole('button', { name: 'CHANGE' }))
+    expect(onUnlock).toHaveBeenCalledOnce()
   })
 
-  it('leaves out a group with nothing in it', () => {
-    const { container } = render(PickRead, {
-      readout: readout({ index: 37, beaten: [masha] }),
-    })
+  it('names what is on their board, and nothing about your own team', () => {
+    const { container } = mount(full)
 
-    expect(container.querySelector('.group.beaten')).toBeTruthy()
-    expect(container.querySelector('.group.taken')).toBeNull()
-    expect(container.querySelector('.group.works')).toBeNull()
-    expect(container.querySelector('.group.live')).toBeNull()
+    expect(lines(container)).toEqual([['Natan'], ['Masha'], ['Ling']])
+    expect(textOf(container, '.said')).toEqual(['took your edge', 'you beat'])
+    expect(textOf(container, '.count')).toEqual(['3 enemy slots open'])
+    expect(textOf(container, '.chip-name')).not.toContain('Angela')
+  })
+
+  it('tags a taken chip with its severity', () => {
+    const { container } = mount(readout({
+      taken: [
+        { hero: natan, severity: 'HIGH' },
+        { hero: ling, severity: 'MEDIUM' },
+      ],
+    }))
+
+    expect(textOf(container, '.flag')).toEqual(['HIGH', 'MEDIUM'])
+    expect(container.querySelector('.flag')?.getAttribute('data-severity')).toBe('HIGH')
+  })
+
+  it('draws what they can still take as a dashed row', () => {
+    const { container } = mount(readout({ live: [ling], openSlots: 1 }))
+
+    expect(container.querySelector('.chip.dim .chip-name')?.textContent).toBe('Ling')
+    expect(textOf(container, '.count')).toEqual(['1 enemy slot open'])
+  })
+
+  it('leaves out a line with nothing in it', () => {
+    const { container } = mount(readout({ index: 37, beaten: [masha] }))
+
+    expect(lines(container)).toEqual([['Masha']])
     expect(container.querySelector('.flat')).toBeNull()
   })
 
   it('falls back to one line when nothing on their board cuts either way', () => {
-    const { container } = render(PickRead, {
-      readout: readout({ worksWith: [angela], live: [ling], openSlots: 1 }),
-    })
+    const { container } = mount(readout({ worksWith: [angela], live: [ling], openSlots: 1 }))
 
     expect(container.querySelector('.flat')?.textContent?.trim())
       .toBe('Nothing on their board cuts either way.')
-    expect(container.querySelector('.group.taken')).toBeNull()
-    expect(container.querySelector('.group.beaten')).toBeNull()
-    expect(textOf(container, '.group.works .row-name')).toEqual(['Angela'])
-    expect(textOf(container, '.group.live .row-name')).toEqual(['Ling'])
-    expect(textOf(container, '.group.live .kicker')).toContain('1 slot open')
+    expect(lines(container)).toEqual([['Ling']])
   })
 
-  it('reads 0 with the first two groups empty when no enemy is revealed', () => {
-    const { container } = render(PickRead, { readout: blank })
+  it('reads 0 with nothing named when no enemy is revealed', () => {
+    const { container } = mount(blank)
 
     expect(container.querySelector('.index')?.textContent).toBe('+0')
     expect(container.querySelector('.flat')).toBeTruthy()
-    expect(container.querySelector('.delta')).toBeNull()
   })
 
-  it('hides the delta without a baseline and prints +0 when nothing moved', () => {
-    const without = render(PickRead, { readout: readout({ index: -31, sinceLock: null }) })
-    expect(without.container.querySelector('.delta')).toBeNull()
+  it('names the delta only when it differs from the figure', () => {
+    const alone = mount(readout({ index: -31, sinceLock: null }))
+    expect(alone.container.querySelector('.note')?.textContent?.trim()).toBe('vs their board')
 
-    const held = render(PickRead, { readout: readout({ index: -31, sinceLock: 0 }) })
-    expect(held.container.querySelector('.delta')?.textContent?.trim()).toBe('+0 since lock')
+    const same = mount(readout({ index: -31, sinceLock: -31 }))
+    expect(same.container.querySelector('.note')?.textContent?.trim()).toBe('vs their board')
+
+    const moved = mount(readout({ index: -31, sinceLock: 0 }))
+    expect(moved.container.querySelector('.note')?.textContent?.trim()).toBe('+0 since lock')
   })
 
   it('renders the widest index and the widest delta in full', () => {
-    const { container } = render(PickRead, { readout: readout({ index: -139.8, sinceLock: -218.6 }) })
+    const { container } = mount(readout({ index: -139.8, sinceLock: -218.6 }))
 
     expect(container.querySelector('.index')?.textContent).toBe('-140')
-    expect(container.querySelector('.delta')?.textContent?.trim()).toBe('-219 since lock')
+    expect(container.querySelector('.note')?.textContent?.trim()).toBe('-219 since lock')
   })
 
   it('tones the index by its sign', () => {
-    const down = render(PickRead, { readout: readout({ index: -31 }) })
+    const down = mount(readout({ index: -31 }))
     expect(down.container.querySelector('.index')?.getAttribute('data-tone')).toBe('neg')
 
-    const up = render(PickRead, { readout: readout({ index: 37 }) })
+    const up = mount(readout({ index: 37 }))
     expect(up.container.querySelector('.index')?.getAttribute('data-tone')).toBe('pos')
 
-    const flat = render(PickRead, { readout: blank })
+    const flat = mount(blank)
     expect(flat.container.querySelector('.index')?.getAttribute('data-tone')).toBe('flat')
   })
 
   it('reads a hair below zero as flat, not as a negative', () => {
-    const { container } = render(PickRead, { readout: readout({ index: -0.064, sinceLock: -0.49 }) })
+    const { container } = mount(readout({ index: -0.064, sinceLock: -0.49 }))
 
     expect(container.querySelector('.index')?.textContent).toBe('+0')
     expect(container.querySelector('.index')?.getAttribute('data-tone')).toBe('flat')
-    expect(container.querySelector('.delta')?.textContent?.trim()).toBe('+0 since lock')
   })
 
-  it('says the number reads the enemy board only', () => {
-    const { container } = render(PickRead, { readout: full })
+  it('keeps the identity and the CHANGE button without a readout', () => {
+    const { container } = mount(null)
 
-    expect(container.querySelector('.scope')?.textContent?.trim())
-      .toBe('Reads their side only - an ally never moves this number.')
+    expect(textOf(container, '.serif')).toEqual(['Sun'])
+    expect(screen.getByRole('button', { name: 'CHANGE' })).toBeTruthy()
+    expect(container.querySelector('.index')).toBeNull()
   })
 })
